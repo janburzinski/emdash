@@ -1,31 +1,61 @@
-import { Clock, LineChart, Plus, Sparkles, type LucideIcon } from 'lucide-react';
+import {
+  FileText,
+  GitPullRequest,
+  Plus,
+  ShieldCheck,
+  Sparkles,
+  Trash2,
+  type LucideIcon,
+} from 'lucide-react';
 import React from 'react';
-import type { CreateAutomationInput, ScheduleType, TriggerType } from '@shared/automations/types';
+import {
+  TRIGGER_INTEGRATION_MAP,
+  type CreateAutomationInput,
+  type DayOfWeek,
+  type TriggerType,
+} from '@shared/automations/types';
 import { ISSUE_PROVIDER_META } from '@renderer/features/integrations/issue-provider-meta';
+import { useTheme } from '@renderer/lib/hooks/useTheme';
 import { Button } from '@renderer/lib/ui/button';
 
 type LogoKind =
   | { kind: 'image'; src: string; alt: string; invertInDark?: boolean }
-  | { kind: 'icon'; Icon: LucideIcon };
+  | { kind: 'icon'; Icon: LucideIcon }
+  | { kind: 'emoji'; emoji: string };
+
+function providerLogo(triggerType: TriggerType): LogoKind {
+  const providerId = TRIGGER_INTEGRATION_MAP[triggerType];
+  const meta = ISSUE_PROVIDER_META[providerId];
+  return {
+    kind: 'image',
+    src: meta.logo,
+    alt: meta.displayName,
+    invertInDark: meta.invertInDark,
+  };
+}
 
 export type AutomationTemplate = {
   id: string;
   title: string;
   description: string;
   logo: LogoKind;
-  category: 'event' | 'scheduled';
+  tags: string[];
   /** Partial input used to pre-fill the create form (projectId is left empty for the user to pick). */
   seed: Omit<CreateAutomationInput, 'projectId'>;
 };
 
 const DEFAULT_AGENT = 'claude';
 
-function dailyAt(hour: number, minute = 0) {
-  return { type: 'daily' as ScheduleType, hour, minute };
+function dailyAt(hour: number, minute = 0): CreateAutomationInput['schedule'] {
+  return { type: 'daily', hour, minute };
 }
 
-function weeklyAt(dayOfWeek: 'mon' | 'fri', hour: number, minute = 0) {
-  return { type: 'weekly' as ScheduleType, dayOfWeek, hour, minute };
+function weeklyAt(
+  dayOfWeek: DayOfWeek,
+  hour: number,
+  minute = 0
+): CreateAutomationInput['schedule'] {
+  return { type: 'weekly', dayOfWeek, hour, minute };
 }
 
 function triggerSeed(
@@ -38,7 +68,6 @@ function triggerSeed(
     prompt,
     agentId: DEFAULT_AGENT,
     mode: 'trigger',
-    schedule: dailyAt(9),
     triggerType,
     useWorktree: true,
   };
@@ -59,43 +88,15 @@ function scheduleSeed(
   };
 }
 
-const githubLogo: LogoKind = {
-  kind: 'image',
-  src: ISSUE_PROVIDER_META.github.logo,
-  alt: 'GitHub',
-  invertInDark: true,
-};
-const linearLogo: LogoKind = {
-  kind: 'image',
-  src: ISSUE_PROVIDER_META.linear.logo,
-  alt: 'Linear',
-  invertInDark: true,
-};
-const jiraLogo: LogoKind = { kind: 'image', src: ISSUE_PROVIDER_META.jira.logo, alt: 'Jira' };
-const gitlabLogo: LogoKind = {
-  kind: 'image',
-  src: ISSUE_PROVIDER_META.gitlab.logo,
-  alt: 'GitLab',
-};
-const forgejoLogo: LogoKind = {
-  kind: 'image',
-  src: ISSUE_PROVIDER_META.forgejo.logo,
-  alt: 'Forgejo',
-};
-const plainLogo: LogoKind = {
-  kind: 'image',
-  src: ISSUE_PROVIDER_META.plain.logo,
-  alt: 'Plain',
-  invertInDark: true,
-};
-
 export const AUTOMATION_TEMPLATES: AutomationTemplate[] = [
+  // Event-driven — issue triggers
   {
     id: 'triage-github-issues',
     title: 'GitHub Issue Triage',
-    description: 'Auto-triage new GitHub issues',
-    logo: githubLogo,
-    category: 'event',
+    description:
+      'Auto-triage new GitHub issues: suggest labels, flag missing info, and open quick-fix PRs when obvious.',
+    logo: providerLogo('github_issue'),
+    tags: ['Event'],
     seed: triggerSeed(
       'GitHub Issue Triage',
       'github_issue',
@@ -105,9 +106,10 @@ export const AUTOMATION_TEMPLATES: AutomationTemplate[] = [
   {
     id: 'linear-autostart',
     title: 'Linear Issue Autostart',
-    description: 'Start work on new Linear tickets',
-    logo: linearLogo,
-    category: 'event',
+    description:
+      'Start work on new Linear tickets automatically: read, reproduce, locate root cause, and draft a fix.',
+    logo: providerLogo('linear_issue'),
+    tags: ['Event'],
     seed: triggerSeed(
       'Linear Issue Autostart',
       'linear_issue',
@@ -117,9 +119,10 @@ export const AUTOMATION_TEMPLATES: AutomationTemplate[] = [
   {
     id: 'jira-autostart',
     title: 'Jira Ticket Autostart',
-    description: 'Start work on new Jira tickets',
-    logo: jiraLogo,
-    category: 'event',
+    description:
+      'Start work on new Jira tickets automatically: gather context and begin draft implementation.',
+    logo: providerLogo('jira_issue'),
+    tags: ['Event'],
     seed: triggerSeed(
       'Jira Ticket Autostart',
       'jira_issue',
@@ -129,9 +132,10 @@ export const AUTOMATION_TEMPLATES: AutomationTemplate[] = [
   {
     id: 'gitlab-issue-worker',
     title: 'GitLab Issue Worker',
-    description: 'Start work on new GitLab issues',
-    logo: gitlabLogo,
-    category: 'event',
+    description:
+      'Start work on new GitLab issues automatically: understand the request and open a first-pass MR.',
+    logo: providerLogo('gitlab_issue'),
+    tags: ['Event'],
     seed: triggerSeed(
       'GitLab Issue Worker',
       'gitlab_issue',
@@ -141,9 +145,10 @@ export const AUTOMATION_TEMPLATES: AutomationTemplate[] = [
   {
     id: 'forgejo-issue-worker',
     title: 'Forgejo Issue Worker',
-    description: 'Start work on new Forgejo issues',
-    logo: forgejoLogo,
-    category: 'event',
+    description:
+      'Start work on new Forgejo issues automatically: locate relevant code and draft a fix.',
+    logo: providerLogo('forgejo_issue'),
+    tags: ['Event'],
     seed: triggerSeed(
       'Forgejo Issue Worker',
       'forgejo_issue',
@@ -153,49 +158,80 @@ export const AUTOMATION_TEMPLATES: AutomationTemplate[] = [
   {
     id: 'support-thread-helper',
     title: 'Support Thread Helper',
-    description: 'Auto-respond to support threads',
-    logo: plainLogo,
-    category: 'event',
+    description:
+      'Auto-respond to support threads: read the message, look up context, and draft a helpful reply.',
+    logo: providerLogo('plain_thread'),
+    tags: ['Event'],
     seed: triggerSeed(
       'Support Thread Helper',
       'plain_thread',
       'A new support thread was opened. Read the customer message, look up context in the codebase and docs, and draft a helpful reply with concrete next steps.'
     ),
   },
+  // Daily
   {
-    id: 'daily-dependency-check',
-    title: 'Daily dependency check',
-    description: 'Scan outdated packages every morning',
-    logo: { kind: 'icon', Icon: Clock },
-    category: 'scheduled',
+    id: 'daily-pr-review-assistant',
+    title: 'Daily PR review assistant',
+    description:
+      'Review all open PRs daily: summarize each one, flag risky changes, and suggest reviewers.',
+    logo: { kind: 'icon', Icon: GitPullRequest },
+    tags: ['Daily'],
     seed: scheduleSeed(
-      'Daily dependency check',
-      dailyAt(9),
-      'Check for outdated dependencies in this project. Identify anything out-of-date, note major-version bumps requiring manual review, and open a PR bumping safe minor/patch updates.'
+      'Daily PR review assistant',
+      dailyAt(10),
+      'Review all open pull requests for this project. Summarize each one, flag high-risk changes, note missing tests or docs, and suggest reviewers if needed.'
     ),
   },
-  {
-    id: 'weekly-test-coverage',
-    title: 'Weekly coverage review',
-    description: 'Find untested paths and add tests',
-    logo: { kind: 'icon', Icon: LineChart },
-    category: 'scheduled',
-    seed: scheduleSeed(
-      'Weekly coverage review',
-      weeklyAt('mon', 10),
-      'Review the test coverage for this project. Find the most important uncovered code paths, rank them by risk, and add tests for the top 3 this week.'
-    ),
-  },
+  // Weekly
   {
     id: 'weekly-tidy',
     title: 'Weekly repo tidy',
-    description: 'Run linters and open a cleanup PR',
+    description:
+      'Run linters and formatters, remove dead code, and open a cleanup PR with a summary of changes.',
     logo: { kind: 'icon', Icon: Sparkles },
-    category: 'scheduled',
+    tags: ['Weekly'],
     seed: scheduleSeed(
       'Weekly repo tidy',
       weeklyAt('fri', 16),
       'Tidy this repository: run the linter and formatter, fix anything safe, remove obviously dead code, and open a cleanup PR summarizing the changes.'
+    ),
+  },
+  {
+    id: 'weekly-security-audit',
+    title: 'Weekly security audit',
+    description:
+      'Scan for leaked secrets, known vulnerabilities, insecure configs, and overly broad permissions.',
+    logo: { kind: 'icon', Icon: ShieldCheck },
+    tags: ['Weekly'],
+    seed: scheduleSeed(
+      'Weekly security audit',
+      weeklyAt('mon', 9),
+      'Run a security audit on this project: scan for leaked secrets, known vulnerabilities in dependencies, insecure configs, and overly broad permissions. Open issues for anything critical.'
+    ),
+  },
+  {
+    id: 'weekly-changelog-draft',
+    title: 'Weekly changelog draft',
+    description:
+      'Draft release notes from merged PRs since the last release; categorize and prepare a release PR.',
+    logo: { kind: 'icon', Icon: FileText },
+    tags: ['Weekly'],
+    seed: scheduleSeed(
+      'Weekly changelog draft',
+      weeklyAt('thu', 11),
+      'Draft a changelog entry for this project from merged PRs since the last release. Categorize changes (features, fixes, breaking), write user-facing descriptions, and prepare a release PR.'
+    ),
+  },
+  {
+    id: 'dead-code-hunter',
+    title: 'Dead code hunter',
+    description: 'Find unused exports, functions, files, and dependencies; propose a cleanup PR.',
+    logo: { kind: 'icon', Icon: Trash2 },
+    tags: ['Weekly'],
+    seed: scheduleSeed(
+      'Dead code hunter',
+      weeklyAt('fri', 11),
+      'Hunt for dead code in this project: unused exports, unreferenced functions, orphaned files, and redundant dependencies. Verify each finding is truly safe to remove and propose a cleanup PR.'
     ),
   },
 ];
@@ -205,52 +241,40 @@ type Props = {
 };
 
 export const AutomationTemplates: React.FC<Props> = ({ onPick }) => {
-  const eventTemplates = AUTOMATION_TEMPLATES.filter((t) => t.category === 'event');
-  const scheduledTemplates = AUTOMATION_TEMPLATES.filter((t) => t.category === 'scheduled');
-
   return (
     <div className="space-y-6">
-      <TemplateSection label="Event Triggers" templates={eventTemplates} onPick={onPick} />
-      <TemplateSection label="Scheduled" templates={scheduledTemplates} onPick={onPick} />
+      <div>
+        <h2 className="mb-3 text-xs font-medium tracking-wide text-muted-foreground">
+          All Templates
+        </h2>
+        <div
+          className="grid gap-2"
+          style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))' }}
+        >
+          {AUTOMATION_TEMPLATES.map((template) => (
+            <TemplateCard key={template.id} template={template} onPick={onPick} />
+          ))}
+        </div>
+      </div>
     </div>
   );
 };
 
-function TemplateSection({
-  label,
-  templates,
-  onPick,
-}: {
-  label: string;
-  templates: AutomationTemplate[];
-  onPick: (template: AutomationTemplate) => void;
-}) {
-  return (
-    <div>
-      <h2 className="mb-3 text-xs font-medium tracking-wide text-muted-foreground">{label}</h2>
-      <div
-        className="grid gap-3"
-        style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))' }}
-      >
-        {templates.map((template) => (
-          <TemplateCard key={template.id} template={template} onPick={onPick} />
-        ))}
-      </div>
-    </div>
-  );
-}
-
 function TemplateLogo({ logo }: { logo: LogoKind }) {
+  const { effectiveTheme } = useTheme();
+  const isDark = effectiveTheme === 'emdark';
   return (
-    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-border/60 bg-background">
+    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-border/60 bg-background">
       {logo.kind === 'image' ? (
         <img
           src={logo.src}
           alt={logo.alt}
-          className={`h-4 w-4 ${logo.invertInDark ? 'dark:invert' : ''}`}
+          className={`h-4 w-4 ${logo.invertInDark && isDark ? 'invert' : ''}`}
         />
-      ) : (
+      ) : logo.kind === 'icon' ? (
         <logo.Icon className="h-3.5 w-3.5 text-muted-foreground" />
+      ) : (
+        <span className="text-base leading-none">{logo.emoji}</span>
       )}
     </div>
   );
@@ -275,25 +299,35 @@ function TemplateCard({
           pick();
         }
       }}
-      className="group flex w-full cursor-pointer items-center gap-3 rounded-lg border border-border bg-muted/20 px-3 py-2.5 text-left transition-colors hover:bg-muted/40"
+      className="group flex w-full cursor-pointer items-center gap-2.5 rounded-lg border border-border bg-muted/20 px-2.5 py-2 text-left shadow-sm transition-[background-color,border-color,box-shadow,transform] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] hover:bg-muted/40 hover:shadow-md active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
     >
       <TemplateLogo logo={template.logo} />
       <div className="flex min-w-0 flex-1 flex-col">
-        <h3 className="truncate text-sm font-medium text-foreground">{template.title}</h3>
-        <p className="truncate text-xs text-muted-foreground">{template.description}</p>
+        <h3 className="truncate text-xs font-medium text-foreground">{template.title}</h3>
+        <p className="truncate text-[11px] text-muted-foreground">{template.description}</p>
+        <div className="flex flex-wrap gap-1">
+          {template.tags.map((tag) => (
+            <span
+              key={tag}
+              className="rounded bg-muted px-1 py-px text-[9px] font-medium leading-none text-muted-foreground"
+            >
+              {tag}
+            </span>
+          ))}
+        </div>
       </div>
       <Button
         type="button"
         variant="ghost"
         size="icon"
-        className="h-7 w-7 shrink-0 opacity-0 transition-opacity group-hover:opacity-100"
+        className="h-6 w-6 shrink-0 opacity-0 transition-opacity duration-150 group-hover:opacity-100 group-focus-within:opacity-100"
         onClick={(e) => {
           e.stopPropagation();
           pick();
         }}
         aria-label={`Use ${template.title} template`}
       >
-        <Plus className="h-4 w-4" />
+        <Plus className="h-3.5 w-3.5" />
       </Button>
     </div>
   );

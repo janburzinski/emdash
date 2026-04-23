@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import { AnimatePresence, motion } from 'framer-motion';
 import {
   ArrowLeft,
   Check,
@@ -6,12 +7,13 @@ import {
   ChevronDown,
   Clock,
   FileCode,
-  FolderGit2,
+  Folder,
   GitBranch,
   History,
   Loader2,
   Pause,
   Play,
+  Sparkles,
   Trash2,
   XCircle,
   Zap,
@@ -22,16 +24,11 @@ import type {
   Automation,
   AutomationMode,
   AutomationRunLog,
-  AutomationSchedule,
-  DayOfWeek,
-  ScheduleType,
-  TriggerConfig,
-  TriggerType,
   UpdateAutomationInput,
 } from '@shared/automations/types';
-import { ISSUE_PROVIDER_META } from '@renderer/features/integrations/issue-provider-meta';
 import AgentLogo from '@renderer/lib/components/agent-logo';
 import { rpc } from '@renderer/lib/ipc';
+import { useShowModal } from '@renderer/lib/modal/modal-provider';
 import { Button } from '@renderer/lib/ui/button';
 import {
   DropdownMenu,
@@ -39,156 +36,84 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@renderer/lib/ui/dropdown-menu';
-import { Input } from '@renderer/lib/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@renderer/lib/ui/popover';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@renderer/lib/ui/select';
+import { Textarea } from '@renderer/lib/ui/textarea';
 import { agentConfig } from '@renderer/utils/agentConfig';
 import { cn } from '@renderer/utils/utils';
 import { PromptInput } from './PromptInput';
-import { useIsAutomationRunning, useRunLogs } from './useAutomations';
+import {
+  scheduleLabel,
+  SchedulePopoverBody,
+  scheduleToState,
+  stateToSchedule,
+  type ScheduleFormValue,
+} from './schedule-controls';
+import {
+  stateToTriggerConfig,
+  TriggerPopoverBody,
+  TriggerTypeIcon,
+  type TriggerFormValue,
+} from './trigger-controls';
+import { useAutomationMemory, useIsAutomationRunning, useRunLogs } from './useAutomations';
 import { useDebouncedAutoSave, type AutoSaveState } from './useDebouncedAutoSave';
 import { formatDateTime, formatRelative, formatRelativeFuture, TRIGGER_TYPE_LABELS } from './utils';
 
-const DAYS: DayOfWeek[] = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
-const DAY_SHORT: Record<DayOfWeek, string> = {
-  mon: 'Mon',
-  tue: 'Tue',
-  wed: 'Wed',
-  thu: 'Thu',
-  fri: 'Fri',
-  sat: 'Sat',
-  sun: 'Sun',
-};
-const TRIGGER_TYPES: TriggerType[] = [
-  'github_issue',
-  'linear_issue',
-  'jira_issue',
-  'gitlab_issue',
-  'forgejo_issue',
-  'plain_thread',
-];
+type EditorState = ScheduleFormValue &
+  TriggerFormValue & {
+    name: string;
+    prompt: string;
+    projectId: string;
+    agentId: string;
+    mode: AutomationMode;
+    useWorktree: boolean;
+  };
 
-function TriggerTypeIcon({
-  triggerType,
-  className,
-}: {
-  triggerType: TriggerType;
-  className?: string;
-}) {
-  switch (triggerType) {
-    case 'github_pr':
-    case 'github_issue':
-      return (
-        <img
-          src={ISSUE_PROVIDER_META.github.logo}
-          alt="GitHub"
-          className={cn(className, 'dark:invert')}
-        />
-      );
-    case 'linear_issue':
-      return (
-        <img
-          src={ISSUE_PROVIDER_META.linear.logo}
-          alt="Linear"
-          className={cn(className, 'dark:invert')}
-        />
-      );
-    case 'jira_issue':
-      return <img src={ISSUE_PROVIDER_META.jira.logo} alt="Jira" className={className} />;
-    case 'gitlab_issue':
-    case 'gitlab_mr':
-      return <img src={ISSUE_PROVIDER_META.gitlab.logo} alt="GitLab" className={className} />;
-    case 'forgejo_issue':
-      return <img src={ISSUE_PROVIDER_META.forgejo.logo} alt="Forgejo" className={className} />;
-    case 'plain_thread':
-      return (
-        <img
-          src={ISSUE_PROVIDER_META.plain.logo}
-          alt="Plain"
-          className={cn(className, 'dark:invert')}
-        />
-      );
-    default:
-      return <Zap className={className} />;
-  }
-}
-
-type EditorState = {
-  name: string;
-  prompt: string;
-  projectId: string;
-  agentId: string;
-  mode: AutomationMode;
-  scheduleType: ScheduleType;
-  hour: number;
-  minute: number;
-  dayOfWeek: DayOfWeek;
-  dayOfMonth: number;
-  triggerType: TriggerType;
-  useWorktree: boolean;
-  assigneeFilter: string;
-};
+const EDITOR_STATE_KEYS = [
+  'name',
+  'prompt',
+  'projectId',
+  'agentId',
+  'mode',
+  'triggerType',
+  'useWorktree',
+  'assigneeFilter',
+  'scheduleType',
+  'hour',
+  'minute',
+  'dayOfWeek',
+  'dayOfMonth',
+  'customRRule',
+] as const satisfies readonly (keyof EditorState)[];
 
 function editorStatesEqual(a: EditorState, b: EditorState): boolean {
-  return JSON.stringify(a) === JSON.stringify(b);
+  for (const key of EDITOR_STATE_KEYS) {
+    if (a[key] !== b[key]) return false;
+  }
+  return true;
 }
 
 function canAutoSaveEditorState(form: EditorState): boolean {
-  return Boolean(form.name.trim() && form.prompt.trim() && form.projectId && form.agentId);
+  return Boolean(
+    form.projectId &&
+      form.agentId &&
+      (form.mode !== 'schedule' || form.scheduleType !== 'custom' || form.customRRule.trim())
+  );
 }
+
+const STATE_DEFAULTS = { hour: 9, minute: 0, dayOfWeek: 'mon', dayOfMonth: 1 } as const;
 
 function automationToState(a: Automation): EditorState {
   return {
+    ...scheduleToState(a.schedule, STATE_DEFAULTS),
     name: a.name,
     prompt: a.prompt,
     projectId: a.projectId,
     agentId: a.agentId,
     mode: a.mode,
-    scheduleType: a.schedule.type,
-    hour: a.schedule.hour ?? 9,
-    minute: a.schedule.minute ?? 0,
-    dayOfWeek: a.schedule.dayOfWeek ?? 'mon',
-    dayOfMonth: a.schedule.dayOfMonth ?? 1,
     triggerType: a.triggerType ?? 'github_issue',
     useWorktree: a.useWorktree,
     assigneeFilter: a.triggerConfig?.assigneeFilter ?? '',
   };
-}
-
-function stateToSchedule(s: EditorState): AutomationSchedule {
-  return {
-    type: s.scheduleType,
-    hour: s.hour,
-    minute: s.minute,
-    ...(s.scheduleType === 'weekly' ? { dayOfWeek: s.dayOfWeek } : {}),
-    ...(s.scheduleType === 'monthly' ? { dayOfMonth: s.dayOfMonth } : {}),
-  };
-}
-
-function stateToTriggerConfig(s: EditorState): TriggerConfig | null {
-  const config: TriggerConfig = {};
-  if (s.assigneeFilter.trim()) config.assigneeFilter = s.assigneeFilter.trim();
-  return Object.keys(config).length > 0 ? config : null;
-}
-
-function scheduleSummary(s: EditorState): string {
-  const time = `${String(s.hour).padStart(2, '0')}:${String(s.minute).padStart(2, '0')}`;
-  switch (s.scheduleType) {
-    case 'hourly':
-      return `Hourly :${String(s.minute).padStart(2, '0')}`;
-    case 'daily':
-      return `Daily ${time}`;
-    case 'weekly':
-      return `${DAY_SHORT[s.dayOfWeek]} ${time}`;
-    case 'monthly':
-      return `Day ${s.dayOfMonth} ${time}`;
-  }
 }
 
 type Props = {
@@ -198,6 +123,7 @@ type Props = {
   onDelete: () => void;
   onToggle: () => void;
   onTriggerNow: () => void;
+  onDiscardEmptyDraft: () => void;
   isBusy: boolean;
 };
 
@@ -208,9 +134,14 @@ export const AutomationEditor: React.FC<Props> = ({
   onDelete,
   onToggle,
   onTriggerNow,
+  onDiscardEmptyDraft,
   isBusy,
 }) => {
   const [form, setForm] = useState<EditorState>(() => automationToState(automation));
+  const formRef = useRef(form);
+  useEffect(() => {
+    formRef.current = form;
+  }, [form]);
   const remoteSnapshotRef = useRef<EditorState>(automationToState(automation));
   const isRunning = useIsAutomationRunning(automation.id);
   const { flushPendingChanges, hasUnsavedChanges, replaceSavedValue, saveState } =
@@ -219,20 +150,46 @@ export const AutomationEditor: React.FC<Props> = ({
       isEqual: editorStatesEqual,
       canSave: canAutoSaveEditorState,
       onSave: async (snapshot) => {
-        await onUpdate({
+        const updateInput: UpdateAutomationInput = {
           id: automation.id,
           name: snapshot.name.trim(),
           projectId: snapshot.projectId,
           prompt: snapshot.prompt.trim(),
           agentId: snapshot.agentId,
           mode: snapshot.mode,
-          schedule: stateToSchedule(snapshot),
           triggerType: snapshot.mode === 'trigger' ? snapshot.triggerType : null,
           triggerConfig: snapshot.mode === 'trigger' ? stateToTriggerConfig(snapshot) : null,
           useWorktree: snapshot.useWorktree,
-        });
+        };
+        if (snapshot.mode === 'schedule') {
+          updateInput.schedule = stateToSchedule(snapshot);
+        }
+        await onUpdate(updateInput);
       },
     });
+
+  const hasUnsavedChangesRef = useRef(hasUnsavedChanges);
+  const replaceSavedValueRef = useRef(replaceSavedValue);
+  const saveStateRef = useRef(saveState);
+  useEffect(() => {
+    hasUnsavedChangesRef.current = hasUnsavedChanges;
+    replaceSavedValueRef.current = replaceSavedValue;
+    saveStateRef.current = saveState;
+  }, [hasUnsavedChanges, replaceSavedValue, saveState]);
+
+  const handleBack = async () => {
+    const snapshot = formRef.current;
+    const isEmptyDraft = !snapshot.name.trim() && !snapshot.prompt.trim();
+    if (isEmptyDraft) {
+      onDiscardEmptyDraft();
+      return;
+    }
+    try {
+      await flushPendingChanges();
+    } finally {
+      onBack();
+    }
+  };
 
   const { data: projects = [] } = useQuery({
     queryKey: ['projects', 'list'],
@@ -248,13 +205,15 @@ export const AutomationEditor: React.FC<Props> = ({
     const same = editorStatesEqual(next, remoteSnapshotRef.current);
     remoteSnapshotRef.current = next;
     if (same) return;
-    // Only overwrite local state if user has no pending unsaved edits.
-    if (!hasUnsavedChanges(form)) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- remote updates should rehydrate the editor when there are no unsaved local edits
-      setForm(next);
-      replaceSavedValue(next);
-    }
-  }, [automation, form, hasUnsavedChanges, replaceSavedValue]);
+    // Don't clobber local edits: skip if the form differs from the last saved
+    // value OR if a save is still in flight (the queued value may not yet be
+    // reflected in lastSavedRef when the refetch lands).
+    if (hasUnsavedChangesRef.current(formRef.current)) return;
+    if (saveStateRef.current === 'saving') return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- remote updates should rehydrate the editor when there are no unsaved local edits
+    setForm(next);
+    replaceSavedValueRef.current(next);
+  }, [automation]);
 
   const patch = <K extends keyof EditorState>(key: K, value: EditorState[K]) =>
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -269,10 +228,10 @@ export const AutomationEditor: React.FC<Props> = ({
             <button
               type="button"
               onClick={() => {
-                void flushPendingChanges();
-                onBack();
+                void handleBack();
               }}
-              className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+              disabled={saveState === 'saving'}
+              className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-muted-foreground transition-[background-color,color,transform] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] hover:bg-muted hover:text-foreground active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-60"
             >
               <ArrowLeft className="h-3.5 w-3.5" />
               Automations
@@ -328,23 +287,26 @@ export const AutomationEditor: React.FC<Props> = ({
               type="button"
               onClick={onToggle}
               disabled={isBusy}
-              className="inline-flex items-center gap-1.5 rounded px-1 py-0.5 text-xs hover:bg-muted"
+              className="inline-flex items-center gap-1.5 rounded px-1 py-0.5 text-xs transition-colors duration-150 hover:bg-muted active:scale-[0.97]"
             >
               <StatusDot status={automation.status} running={isRunning} />
-              <span>
-                {isRunning
-                  ? 'Running'
-                  : isPaused
-                    ? 'Paused'
-                    : automation.status === 'error'
-                      ? 'Error'
-                      : 'Active'}
-              </span>
-              {isPaused ? (
-                <Play className="h-3 w-3 text-muted-foreground" />
-              ) : (
-                <Pause className="h-3 w-3 text-muted-foreground" />
-              )}
+              <span>{statusLabel(automation.status, isRunning, isPaused)}</span>
+              <AnimatePresence mode="wait" initial={false}>
+                <motion.span
+                  key={isPaused ? 'paused' : 'active'}
+                  initial={{ opacity: 0, scale: 0.5, filter: 'blur(2px)' }}
+                  animate={{ opacity: 1, scale: 1, filter: 'blur(0px)' }}
+                  exit={{ opacity: 0, scale: 0.5, filter: 'blur(2px)' }}
+                  transition={{ duration: 0.16, ease: [0.23, 1, 0.32, 1] }}
+                  className="inline-flex"
+                >
+                  {isPaused ? (
+                    <Play className="h-3 w-3 text-muted-foreground" />
+                  ) : (
+                    <Pause className="h-3 w-3 text-muted-foreground" />
+                  )}
+                </motion.span>
+              </AnimatePresence>
             </button>
           </SidebarRow>
           {form.mode === 'schedule' && (
@@ -401,7 +363,7 @@ export const AutomationEditor: React.FC<Props> = ({
               <DropdownMenuTrigger
                 render={
                   <SidebarValueButton
-                    icon={<FolderGit2 className="h-3.5 w-3.5" />}
+                    icon={<Folder className="h-3.5 w-3.5" />}
                     label={selectedProject?.name ?? 'Select'}
                     muted={!selectedProject}
                   />
@@ -413,7 +375,7 @@ export const AutomationEditor: React.FC<Props> = ({
                 ) : (
                   projects.map((p) => (
                     <DropdownMenuItem key={p.id} onClick={() => patch('projectId', p.id)}>
-                      <FolderGit2 className="h-4 w-4 text-muted-foreground" />
+                      <Folder className="h-4 w-4 text-muted-foreground" />
                       <span className="flex-1">{p.name}</span>
                       {form.projectId === p.id && <Check className="h-3.5 w-3.5" />}
                     </DropdownMenuItem>
@@ -461,7 +423,7 @@ export const AutomationEditor: React.FC<Props> = ({
                   render={
                     <SidebarValueButton
                       icon={<Clock className="h-3.5 w-3.5" />}
-                      label={scheduleSummary(form)}
+                      label={scheduleLabel(form, 'short')}
                     />
                   }
                 />
@@ -469,7 +431,10 @@ export const AutomationEditor: React.FC<Props> = ({
                   align="end"
                   className="w-auto min-w-[18rem] max-w-[22rem] p-0 overflow-hidden"
                 >
-                  <SchedulePopoverBody form={form} patch={patch} />
+                  <SchedulePopoverBody
+                    value={form}
+                    onChange={(next) => setForm((prev) => ({ ...prev, ...next }))}
+                  />
                 </PopoverContent>
               </Popover>
             </SidebarRow>
@@ -493,15 +458,18 @@ export const AutomationEditor: React.FC<Props> = ({
                         <Zap className="h-3.5 w-3.5" />
                       )
                     }
-                    label={selectedAgent?.name ?? 'Select'}
                   />
                 }
               />
-              <DropdownMenuContent align="end" className="max-h-72 overflow-y-auto">
+              <DropdownMenuContent align="end" className="max-h-72 min-w-52 overflow-y-auto">
                 {AGENT_PROVIDERS.map((p) => {
                   const cfg = agentConfig[p.id];
                   return (
-                    <DropdownMenuItem key={p.id} onClick={() => patch('agentId', p.id)}>
+                    <DropdownMenuItem
+                      key={p.id}
+                      onClick={() => patch('agentId', p.id)}
+                      className="py-2"
+                    >
                       {cfg && (
                         <AgentLogo
                           logo={cfg.logo}
@@ -535,7 +503,10 @@ export const AutomationEditor: React.FC<Props> = ({
                     }
                   />
                   <PopoverContent align="end" className="w-[18rem] p-0 overflow-hidden">
-                    <TriggerPopoverBody form={form} patch={patch} />
+                    <TriggerPopoverBody
+                      value={form}
+                      onChange={(next) => setForm((prev) => ({ ...prev, ...next }))}
+                    />
                   </PopoverContent>
                 </Popover>
               </SidebarRow>
@@ -543,11 +514,20 @@ export const AutomationEditor: React.FC<Props> = ({
           )}
         </Section>
 
+        <MemorySection automationId={automation.id} />
+
         <PreviousRunsSection automationId={automation.id} />
       </aside>
     </div>
   );
 };
+
+function statusLabel(status: Automation['status'], isRunning: boolean, isPaused: boolean): string {
+  if (isRunning) return 'Running';
+  if (isPaused) return 'Paused';
+  if (status === 'error') return 'Error';
+  return 'Active';
+}
 
 function StatusDot({ status, running }: { status: Automation['status']; running: boolean }) {
   if (running) return <span className="h-2 w-2 rounded-full bg-blue-500 animate-pulse" />;
@@ -557,18 +537,30 @@ function StatusDot({ status, running }: { status: Automation['status']; running:
 }
 
 function SaveIndicator({ state }: { state: AutoSaveState }) {
-  if (state === 'idle') return null;
   return (
-    <span className="ml-2 inline-flex items-center gap-1 text-[11px] text-muted-foreground">
-      {state === 'saving' ? (
-        <>
-          <Loader2 className="h-3 w-3 animate-spin" /> Saving…
-        </>
-      ) : (
-        <>
-          <Check className="h-3 w-3" /> Saved
-        </>
-      )}
+    <span className="ml-2 inline-flex h-[14px] min-w-[56px] items-center gap-1 text-[11px] text-muted-foreground">
+      <AnimatePresence mode="wait" initial={false}>
+        {state !== 'idle' && (
+          <motion.span
+            key={state}
+            className="inline-flex items-center gap-1"
+            initial={{ opacity: 0, filter: 'blur(2px)' }}
+            animate={{ opacity: 1, filter: 'blur(0px)' }}
+            exit={{ opacity: 0, filter: 'blur(2px)' }}
+            transition={{ duration: 0.18, ease: [0.23, 1, 0.32, 1] }}
+          >
+            {state === 'saving' ? (
+              <>
+                <Loader2 className="h-3 w-3 animate-spin" /> Saving…
+              </>
+            ) : (
+              <>
+                <Check className="h-3 w-3" /> Saved
+              </>
+            )}
+          </motion.span>
+        )}
+      </AnimatePresence>
     </span>
   );
 }
@@ -596,7 +588,7 @@ function SidebarRow({ label, children }: { label: string; children: React.ReactN
 const SidebarValueButton = React.forwardRef<
   HTMLButtonElement,
   {
-    label: string;
+    label?: string;
     icon?: React.ReactNode;
     muted?: boolean;
     onClick?: () => void;
@@ -608,17 +600,121 @@ const SidebarValueButton = React.forwardRef<
       type="button"
       onClick={onClick}
       className={cn(
-        'inline-flex h-6 max-w-[160px] items-center gap-1.5 rounded px-1.5 text-xs transition-colors hover:bg-muted',
+        'inline-flex h-6 max-w-[160px] items-center gap-1.5 rounded px-1.5 text-xs transition-[background-color,color,transform] duration-150 hover:bg-muted active:scale-[0.97]',
         muted && 'text-muted-foreground'
       )}
       {...rest}
     >
       {icon}
-      <span className="truncate">{label}</span>
+      {label && <span className="truncate">{label}</span>}
       <ChevronDown className="h-3 w-3 text-muted-foreground/60" />
     </button>
   );
 });
+
+function MemorySection({ automationId }: { automationId: string }) {
+  const { data, isLoading, save, clear, isSaving, isClearing } = useAutomationMemory(automationId);
+  const showConfirmModal = useShowModal('confirmActionModal');
+  const [expanded, setExpanded] = useState(false);
+  const [draft, setDraft] = useState<string | null>(null);
+
+  const savedContent = data?.content ?? '';
+  const effectiveDraft = draft ?? savedContent;
+  const dirty = draft !== null && draft !== savedContent;
+  const preview = savedContent
+    .split('\n')
+    .filter((l) => l.trim() && !l.trim().startsWith('#'))
+    .slice(0, 3)
+    .join(' ');
+
+  return (
+    <div className="flex flex-col gap-1 border-b border-border/40 px-3 py-3">
+      <div className="mb-1 flex items-center justify-between px-1">
+        <h3 className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground/70">
+          Memory
+        </h3>
+        <button
+          type="button"
+          onClick={() => setExpanded((v) => !v)}
+          className="text-[10px] text-muted-foreground transition-colors duration-150 hover:text-foreground"
+        >
+          {expanded ? 'Hide' : 'Edit'}
+        </button>
+      </div>
+
+      {isLoading ? (
+        <div className="flex flex-col gap-1.5 px-1 py-2">
+          <div className="h-3 w-11/12 animate-pulse rounded bg-muted/50" />
+          <div className="h-3 w-3/4 animate-pulse rounded bg-muted/50" />
+          <div className="h-3 w-5/6 animate-pulse rounded bg-muted/50" />
+        </div>
+      ) : expanded ? (
+        <div className="flex flex-col gap-2 px-1">
+          <Textarea
+            value={effectiveDraft}
+            onChange={(e) => setDraft(e.target.value)}
+            className="min-h-[140px] max-h-[320px] resize-y text-xs font-mono"
+            placeholder="Notes that persist across runs…"
+          />
+          <div className="flex items-center justify-between gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                showConfirmModal({
+                  title: 'Reset memory?',
+                  description:
+                    'This replaces the saved memory with an empty template. This cannot be undone.',
+                  confirmLabel: 'Reset',
+                  variant: 'destructive',
+                  onSuccess: () => {
+                    void clear().then(() => setDraft(null));
+                  },
+                });
+              }}
+              disabled={isClearing}
+              className="text-[11px] text-muted-foreground hover:text-destructive disabled:opacity-50"
+            >
+              Reset
+            </button>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-6 px-2 text-[11px]"
+                onClick={() => setDraft(null)}
+                disabled={!dirty || isSaving}
+              >
+                Discard
+              </Button>
+              <Button
+                size="sm"
+                className="h-6 px-2 text-[11px]"
+                onClick={() => {
+                  if (draft === null) return;
+                  void save(draft).then(() => setDraft(null));
+                }}
+                disabled={!dirty || isSaving}
+              >
+                {isSaving ? 'Saving…' : 'Save'}
+              </Button>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div className="flex flex-col gap-1 px-1">
+          {preview ? (
+            <p className="line-clamp-3 text-xs text-muted-foreground">{preview}</p>
+          ) : (
+            <div className="flex items-center gap-1.5 py-2 text-xs text-muted-foreground/70">
+              <Sparkles className="h-3 w-3" />
+              <span>Agent will write notes here after the first run.</span>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
 
 function PreviousRunsSection({ automationId }: { automationId: string }) {
   const { data: logs = [], isPending } = useRunLogs(automationId, 20);
@@ -628,7 +724,17 @@ function PreviousRunsSection({ automationId }: { automationId: string }) {
         Previous runs
       </h3>
       {isPending ? (
-        <div className="px-1 py-2 text-xs text-muted-foreground">Loading…</div>
+        <ul className="flex flex-col gap-0.5 px-1" aria-label="Loading runs">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <li key={i} className="flex items-center justify-between gap-2 rounded px-1 py-1.5">
+              <div className="flex min-w-0 items-center gap-2">
+                <div className="h-3 w-3 shrink-0 animate-pulse rounded-full bg-muted/50" />
+                <div className="h-3 w-20 animate-pulse rounded bg-muted/50" />
+              </div>
+              <div className="h-3 w-12 animate-pulse rounded bg-muted/40" />
+            </li>
+          ))}
+        </ul>
       ) : logs.length === 0 ? (
         <div className="flex flex-col items-center gap-1 px-1 py-6 text-center">
           <History className="h-5 w-5 text-muted-foreground/40" />
@@ -664,192 +770,5 @@ function RunLogRow({ log }: { log: AutomationRunLog }) {
         {formatRelative(log.startedAt)}
       </span>
     </li>
-  );
-}
-
-const HOUR_OPTIONS = Array.from({ length: 24 }, (_, i) => i);
-const MINUTE_OPTIONS = Array.from({ length: 12 }, (_, i) => i * 5);
-const DAY_OF_MONTH_OPTIONS = Array.from({ length: 31 }, (_, i) => i + 1);
-const pad2 = (n: number) => String(n).padStart(2, '0');
-
-function TimeSelect({
-  value,
-  onChange,
-  options,
-  width = 'w-[58px]',
-}: {
-  value: number;
-  onChange: (n: number) => void;
-  options: number[];
-  width?: string;
-}) {
-  return (
-    <Select value={String(value)} onValueChange={(v) => v !== null && onChange(Number(v))}>
-      <SelectTrigger className={cn('h-7 text-xs tabular-nums', width)}>
-        <SelectValue>{pad2(value)}</SelectValue>
-      </SelectTrigger>
-      <SelectContent className="max-h-60">
-        {options.map((n) => (
-          <SelectItem key={n} value={String(n)} className="tabular-nums">
-            {pad2(n)}
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
-  );
-}
-
-function SchedulePopoverBody({
-  form,
-  patch,
-}: {
-  form: EditorState;
-  patch: <K extends keyof EditorState>(key: K, value: EditorState[K]) => void;
-}) {
-  return (
-    <div className="flex flex-col px-3 py-3">
-      <div className="flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
-        <span>Run</span>
-        <Select
-          value={form.scheduleType}
-          onValueChange={(v) => v !== null && patch('scheduleType', v as ScheduleType)}
-        >
-          <SelectTrigger className="h-7 w-[96px] text-xs">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="hourly">Hourly</SelectItem>
-            <SelectItem value="daily">Daily</SelectItem>
-            <SelectItem value="weekly">Weekly</SelectItem>
-            <SelectItem value="monthly">Monthly</SelectItem>
-          </SelectContent>
-        </Select>
-
-        {form.scheduleType === 'weekly' && (
-          <>
-            <span>on</span>
-            <Select
-              value={form.dayOfWeek}
-              onValueChange={(v) => v !== null && patch('dayOfWeek', v as DayOfWeek)}
-            >
-              <SelectTrigger className="h-7 w-[76px] text-xs">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {DAYS.map((d) => (
-                  <SelectItem key={d} value={d}>
-                    {DAY_SHORT[d]}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </>
-        )}
-
-        {form.scheduleType === 'monthly' && (
-          <>
-            <span>on day</span>
-            <Select
-              value={String(form.dayOfMonth)}
-              onValueChange={(v) => v !== null && patch('dayOfMonth', Number(v))}
-            >
-              <SelectTrigger className="h-7 w-[64px] text-xs tabular-nums">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent className="max-h-60">
-                {DAY_OF_MONTH_OPTIONS.map((d) => (
-                  <SelectItem key={d} value={String(d)} className="tabular-nums">
-                    {d}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </>
-        )}
-
-        <span>at</span>
-        {form.scheduleType !== 'hourly' && (
-          <>
-            <TimeSelect
-              value={form.hour}
-              onChange={(n) => patch('hour', n)}
-              options={HOUR_OPTIONS}
-            />
-            <span className="text-foreground/60">:</span>
-          </>
-        )}
-        <TimeSelect
-          value={form.minute}
-          onChange={(n) => patch('minute', n)}
-          options={MINUTE_OPTIONS}
-        />
-        {form.scheduleType === 'hourly' && <span>min past the hour</span>}
-      </div>
-    </div>
-  );
-}
-
-function TriggerPopoverBody({
-  form,
-  patch,
-}: {
-  form: EditorState;
-  patch: <K extends keyof EditorState>(key: K, value: EditorState[K]) => void;
-}) {
-  return (
-    <div className="flex flex-col">
-      <div className="px-3 pt-3 pb-2">
-        <div className="flex items-center gap-2.5">
-          <span className="w-16 shrink-0 text-[11px] text-muted-foreground">Source</span>
-          <div className="min-w-0 flex-1">
-            <Select
-              value={form.triggerType}
-              onValueChange={(v) => v !== null && patch('triggerType', v as TriggerType)}
-            >
-              <SelectTrigger className="h-7 text-xs">
-                <SelectValue>
-                  <div className="flex items-center gap-1.5">
-                    <TriggerTypeIcon triggerType={form.triggerType} className="h-3.5 w-3.5" />
-                    <span>{TRIGGER_TYPE_LABELS[form.triggerType]}</span>
-                  </div>
-                </SelectValue>
-              </SelectTrigger>
-              <SelectContent>
-                {TRIGGER_TYPES.map((t) => (
-                  <SelectItem key={t} value={t}>
-                    <div className="flex items-center gap-2">
-                      <TriggerTypeIcon triggerType={t} className="h-4 w-4" />
-                      <span>{TRIGGER_TYPE_LABELS[t]}</span>
-                    </div>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-      </div>
-
-      <div className="border-t border-border/60" />
-      <div className="px-3 pt-2.5 pb-1.5 text-[10px] font-medium uppercase tracking-wider text-muted-foreground/70">
-        Filters
-      </div>
-      <div className="flex flex-col gap-2 px-3 pb-3">
-        <div className="flex items-center gap-2.5">
-          <span className="w-16 shrink-0 text-[11px] text-muted-foreground">Assignee</span>
-          <div className="min-w-0 flex-1">
-            <Input
-              value={form.assigneeFilter}
-              onChange={(e) => patch('assigneeFilter', e.target.value)}
-              placeholder="username"
-              className="h-7 text-xs"
-            />
-          </div>
-        </div>
-      </div>
-
-      <div className="border-t border-border/60 bg-muted/30 px-3 py-2 text-[11px] text-muted-foreground">
-        Polls every 60s · new items trigger a run · assignee filter only for now
-      </div>
-    </div>
   );
 }

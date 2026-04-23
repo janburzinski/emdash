@@ -1,10 +1,10 @@
-import { Clock, History, Loader2, MessageSquare, Pause, Play, Trash2, Zap } from 'lucide-react';
+import { Clock, History, Loader2, Pause, Play, Trash2, Zap } from 'lucide-react';
 import React from 'react';
-import type { Automation, TriggerType } from '@shared/automations/types';
-import { ISSUE_PROVIDER_META } from '@renderer/features/integrations/issue-provider-meta';
+import type { Automation } from '@shared/automations/types';
 import { Button } from '@renderer/lib/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@renderer/lib/ui/tooltip';
 import { cn } from '@renderer/utils/utils';
+import { TriggerTypeIcon } from './trigger-controls';
 import { useIsAutomationRunning } from './useAutomations';
 import { describeSchedule, describeTrigger, formatRelative, formatRelativeFuture } from './utils';
 
@@ -17,39 +17,6 @@ type Props = {
   onEdit: () => void;
   busy?: boolean;
 };
-
-function TriggerIcon({ triggerType, className }: { triggerType: TriggerType; className?: string }) {
-  switch (triggerType) {
-    case 'github_pr':
-    case 'github_issue':
-      return (
-        <img
-          src={ISSUE_PROVIDER_META.github.logo}
-          alt="GitHub"
-          className={cn(className, 'dark:invert')}
-        />
-      );
-    case 'linear_issue':
-      return (
-        <img
-          src={ISSUE_PROVIDER_META.linear.logo}
-          alt="Linear"
-          className={cn(className, 'dark:invert')}
-        />
-      );
-    case 'jira_issue':
-      return <img src={ISSUE_PROVIDER_META.jira.logo} alt="Jira" className={className} />;
-    case 'gitlab_issue':
-    case 'gitlab_mr':
-      return <img src={ISSUE_PROVIDER_META.gitlab.logo} alt="GitLab" className={className} />;
-    case 'forgejo_issue':
-      return <img src={ISSUE_PROVIDER_META.forgejo.logo} alt="Forgejo" className={className} />;
-    case 'plain_thread':
-      return <MessageSquare className={className} />;
-    default:
-      return <Zap className={className} />;
-  }
-}
 
 function StatusLabel({ automation, isRunning }: { automation: Automation; isRunning: boolean }) {
   if (isRunning) {
@@ -99,15 +66,15 @@ export const AutomationRow: React.FC<Props> = ({
         }
       }}
       className={cn(
-        'group cursor-pointer rounded-lg border border-border bg-muted/20 px-3 py-2.5 shadow-sm transition-all hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50',
+        'group cursor-pointer rounded-xl border border-border bg-muted/20 px-3 py-2.5 shadow-sm transition-[background-color,border-color,opacity,box-shadow,transform] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] hover:bg-muted/40 active:scale-[0.995] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50',
         isPaused && !busy && !isRunning && 'opacity-60',
         isRunning && 'border-blue-500/30 bg-blue-500/[0.04]'
       )}
     >
       <div className="flex items-center gap-3">
-        <div className="shrink-0 flex h-8 w-8 items-center justify-center rounded-md bg-muted/60 text-muted-foreground">
+        <div className="shrink-0 flex h-8 w-8 items-center justify-center rounded-lg bg-muted/60 text-muted-foreground">
           {automation.mode === 'trigger' && automation.triggerType ? (
-            <TriggerIcon triggerType={automation.triggerType} className="h-4 w-4" />
+            <TriggerTypeIcon triggerType={automation.triggerType} className="h-4 w-4" />
           ) : (
             <Clock className="h-4 w-4" />
           )}
@@ -132,7 +99,7 @@ export const AutomationRow: React.FC<Props> = ({
                 stop(e);
                 onShowLogs();
               }}
-              className="shrink-0 tabular-nums hover:text-foreground transition-colors"
+              className="shrink-0 tabular-nums transition-colors duration-150 hover:text-foreground"
             >
               {automation.runCount} {automation.runCount === 1 ? 'run' : 'runs'}
             </button>
@@ -148,7 +115,7 @@ export const AutomationRow: React.FC<Props> = ({
           )}
         </div>
 
-        <div className="flex items-center gap-0.5 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+        <div className="flex items-center gap-0.5 shrink-0 opacity-0 transition-opacity duration-150 group-hover:opacity-100 group-focus-within:opacity-100">
           {automation.mode === 'schedule' && (
             <Tooltip>
               <TooltipTrigger>
