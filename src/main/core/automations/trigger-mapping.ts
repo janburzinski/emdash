@@ -27,6 +27,7 @@ export interface RawEvent {
   assignee?: string;
   identifier?: string;
   description?: string;
+  updatedAt?: string;
 }
 
 export const SUPPORTED_TRIGGER_TYPES: TriggerType[] = [
@@ -64,6 +65,7 @@ export function issueToRawEvent(issue: Issue, triggerType: TriggerType): RawEven
     assignee: issue.assignees?.[0],
     identifier: issue.identifier,
     description: issue.description,
+    updatedAt: issue.updatedAt,
   };
 }
 

@@ -75,8 +75,6 @@ export interface CreateAutomationInput {
   triggerType?: TriggerType;
   triggerConfig?: TriggerConfig;
   useWorktree?: boolean;
-  /** Initial status; defaults to `'active'`. Use `'paused'` for drafts. */
-  status?: AutomationStatus;
 }
 
 export interface UpdateAutomationInput {

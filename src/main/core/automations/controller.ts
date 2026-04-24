@@ -24,6 +24,10 @@ export const automationsController = createRPCController({
 
   delete: (args: { id: string }) => wrap('delete', () => automationsService.delete(args.id)),
 
+  pause: (args: { id: string }) => wrap('pause', () => automationsService.pause(args.id)),
+
+  resume: (args: { id: string }) => wrap('resume', () => automationsService.resume(args.id)),
+
   toggle: (args: { id: string }) => wrap('toggle', () => automationsService.toggleStatus(args.id)),
 
   triggerNow: (args: { id: string }) =>

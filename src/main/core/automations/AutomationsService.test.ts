@@ -1,4 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import type { Task } from '@shared/tasks';
+import { createTask } from '@main/core/tasks/createTask';
 import { AutomationsService, automationsService } from './AutomationsService';
 
 const mocks = vi.hoisted(() => ({
@@ -10,6 +12,8 @@ const mocks = vi.hoisted(() => ({
   updateMock: vi.fn(),
   setMock: vi.fn(),
   updateWhereMock: vi.fn(),
+  orderByMock: vi.fn(),
+  runLogsLimitMock: vi.fn(),
 }));
 
 vi.mock('@main/core/issues/registry', () => ({
@@ -22,6 +26,14 @@ vi.mock('@main/core/projects/operations/getProjects', () => ({
 
 vi.mock('@main/core/tasks/createTask', () => ({
   createTask: vi.fn(),
+}));
+
+vi.mock('./memory', () => ({
+  buildMemoryPromptSection: vi.fn(() => ''),
+  deleteAutomationMemory: vi.fn(),
+  loadAutomationMemory: vi.fn(async () => ({ path: '/tmp/memory.md', content: '' })),
+  resetAutomationMemory: vi.fn(),
+  writeAutomationMemory: vi.fn(),
 }));
 
 vi.mock('@main/db/client', () => ({
@@ -74,8 +86,10 @@ beforeEach(() => {
 
   mocks.selectMock.mockReturnValue({ from: mocks.fromMock });
   mocks.fromMock.mockReturnValue({ where: mocks.whereMock });
-  mocks.whereMock.mockReturnValue({ limit: mocks.limitMock });
+  mocks.whereMock.mockReturnValue({ limit: mocks.limitMock, orderBy: mocks.orderByMock });
   mocks.limitMock.mockResolvedValue([legacyTriggerRow]);
+  mocks.orderByMock.mockReturnValue({ limit: mocks.runLogsLimitMock });
+  mocks.runLogsLimitMock.mockResolvedValue([]);
 
   mocks.updateMock.mockReturnValue({ set: mocks.setMock });
   mocks.setMock.mockReturnValue({ where: mocks.updateWhereMock });
@@ -83,6 +97,28 @@ beforeEach(() => {
 });
 
 describe('automationsService.update', () => {
+  it('rejects blank names before persisting updates', async () => {
+    await expect(
+      automationsService.update({
+        id: legacyTriggerRow.id,
+        name: '   ',
+      })
+    ).rejects.toThrow('name is required');
+
+    expect(mocks.updateMock).not.toHaveBeenCalled();
+  });
+
+  it('rejects invalid agent ids before persisting updates', async () => {
+    await expect(
+      automationsService.update({
+        id: legacyTriggerRow.id,
+        agentId: 'not-a-provider',
+      })
+    ).rejects.toThrow('Invalid agent id: not-a-provider');
+
+    expect(mocks.updateMock).not.toHaveBeenCalled();
+  });
+
   it('keeps legacy trigger automations editable when only other fields change', async () => {
     const updated = await automationsService.update({
       id: legacyTriggerRow.id,
@@ -142,6 +178,79 @@ describe('automationsService.update', () => {
       })
     );
   });
+
+  it('computes a next run when switching a trigger automation to schedule mode', async () => {
+    const updated = await automationsService.update({
+      id: legacyTriggerRow.id,
+      mode: 'schedule',
+    });
+
+    expect(updated).toMatchObject({
+      id: legacyTriggerRow.id,
+      mode: 'schedule',
+      schedule: { type: 'daily', hour: 9, minute: 0 },
+    });
+    expect(updated?.nextRunAt).not.toBeNull();
+    expect(mocks.setMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        mode: 'schedule',
+        nextRunAt: expect.any(String),
+      })
+    );
+  });
+
+  it('keeps rows with invalid persisted schedules editable via a safe default', async () => {
+    mocks.limitMock.mockResolvedValueOnce([
+      { ...legacyTriggerRow, mode: 'schedule', schedule: '{' },
+    ]);
+
+    const updated = await automationsService.update({
+      id: legacyTriggerRow.id,
+      name: 'Recovered schedule automation',
+    });
+
+    expect(updated).toMatchObject({
+      name: 'Recovered schedule automation',
+      schedule: { type: 'daily', hour: 9, minute: 0 },
+    });
+    expect(mocks.setMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        schedule: JSON.stringify({ type: 'daily', hour: 9, minute: 0 }),
+      })
+    );
+  });
+});
+
+describe('automationsService.create', () => {
+  it('rejects blank names before loading the project', async () => {
+    await expect(
+      automationsService.create({
+        name: ' ',
+        projectId: 'project-1',
+        prompt: 'Do work',
+        agentId: 'codex',
+        mode: 'schedule',
+        schedule: { type: 'daily', hour: 9, minute: 0 },
+      })
+    ).rejects.toThrow('name is required');
+
+    expect(mocks.getProjectByIdMock).not.toHaveBeenCalled();
+  });
+
+  it('rejects invalid agent ids before loading the project', async () => {
+    await expect(
+      automationsService.create({
+        name: 'Daily work',
+        projectId: 'project-1',
+        prompt: 'Do work',
+        agentId: 'invalid-agent',
+        mode: 'schedule',
+        schedule: { type: 'daily', hour: 9, minute: 0 },
+      })
+    ).rejects.toThrow('Invalid agent id: invalid-agent');
+
+    expect(mocks.getProjectByIdMock).not.toHaveBeenCalled();
+  });
 });
 
 describe('automationsService.updateRunLog', () => {
@@ -178,5 +287,68 @@ describe('automationsService.updateRunLog', () => {
     a.inFlightRuns.add('shared-id');
     // @ts-expect-error — access private field for test-only state inspection
     expect(b.inFlightRuns.has('shared-id')).toBe(false);
+  });
+});
+
+describe('automationsService execution', () => {
+  it('uses a unique worktree branch for each automation run', async () => {
+    const service = new AutomationsService();
+    const automation = {
+      ...legacyTriggerRow,
+      id: 'auto-abcdef123456',
+      mode: 'schedule',
+      schedule: { type: 'daily', hour: 9, minute: 0 },
+      triggerType: null,
+      triggerConfig: null,
+      useWorktree: true,
+    } as const;
+
+    mocks.getProjectByIdMock.mockResolvedValue({
+      id: 'project-1',
+      name: 'Project 1',
+      type: 'local',
+      path: '/repo',
+      baseRef: 'refs/heads/main',
+    });
+    const task: Task = {
+      id: 'task-1',
+      projectId: 'project-1',
+      name: 'Automation task',
+      status: 'todo',
+      sourceBranch: 'main',
+      createdAt: '2026-04-23T10:00:00.000Z',
+      updatedAt: '2026-04-23T10:00:00.000Z',
+      statusChangedAt: '2026-04-23T10:00:00.000Z',
+      isPinned: false,
+      prs: [],
+      conversations: {},
+    };
+    vi.mocked(createTask).mockResolvedValue({ success: true, data: task });
+
+    // @ts-expect-error — private method exercised to inspect task creation params
+    await service.executeAutomation(automation, 'run_first111111');
+    // @ts-expect-error — private method exercised to inspect task creation params
+    await service.executeAutomation(automation, 'run_second222222');
+
+    expect(vi.mocked(createTask).mock.calls[0]?.[0].strategy).toEqual({
+      kind: 'new-branch',
+      taskBranch: 'automation-123456-111111',
+    });
+    expect(vi.mocked(createTask).mock.calls[1]?.[0].strategy).toEqual({
+      kind: 'new-branch',
+      taskBranch: 'automation-123456-222222',
+    });
+  });
+});
+
+describe('automationsService.getRunLogs', () => {
+  it('clamps caller supplied limits', async () => {
+    const service = new AutomationsService();
+
+    await service.getRunLogs('auto-1', 5000);
+    await service.getRunLogs('auto-1', -10);
+
+    expect(mocks.runLogsLimitMock).toHaveBeenNthCalledWith(1, 100);
+    expect(mocks.runLogsLimitMock).toHaveBeenNthCalledWith(2, 1);
   });
 });

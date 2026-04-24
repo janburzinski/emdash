@@ -108,6 +108,7 @@ const dataMutex = new AsyncMutex();
 
 const VALID_AUTOMATION_STATUS: Automation['status'][] = ['active', 'paused', 'error'];
 const VALID_RUN_STATUS: AutomationRunLog['status'][] = ['running', 'success', 'failure'];
+const DEFAULT_SCHEDULE: AutomationSchedule = { type: 'daily', hour: 9, minute: 0 };
 
 const DEFAULT_MAX_RUN_DURATION_MS = 2 * 60 * 60 * 1000; // 2h
 const SCHEDULER_TICK_MS = 30_000;
@@ -145,6 +146,14 @@ function normalizeMode(value: unknown): AutomationMode {
   return 'schedule';
 }
 
+function requireNonEmpty(value: string, field: string): string {
+  const trimmed = value.trim();
+  if (!trimmed) {
+    throw new Error(`${field} is required`);
+  }
+  return trimmed;
+}
+
 function normalizeTriggerType(value: unknown): TriggerType | null {
   if (typeof value === 'string' && value in TRIGGER_INTEGRATION_MAP) {
     return value as TriggerType;
@@ -170,6 +179,15 @@ function deserializeTriggerConfig(serialized: string | null): TriggerConfig | nu
   }
 }
 
+function deserializeAutomationSchedule(serialized: string): AutomationSchedule {
+  try {
+    return deserializeSchedule(serialized);
+  } catch (err) {
+    log.warn('[Automations] Failed to parse schedule, using default:', err);
+    return DEFAULT_SCHEDULE;
+  }
+}
+
 function mapAutomationRow(row: AutomationRow): Automation {
   return {
     id: row.id,
@@ -179,7 +197,7 @@ function mapAutomationRow(row: AutomationRow): Automation {
     prompt: row.prompt,
     agentId: row.agentId,
     mode: normalizeMode(row.mode),
-    schedule: deserializeSchedule(row.schedule),
+    schedule: deserializeAutomationSchedule(row.schedule),
     triggerType: normalizeTriggerType(row.triggerType),
     triggerConfig: deserializeTriggerConfig(row.triggerConfig),
     useWorktree: row.useWorktree === 1,
@@ -217,6 +235,11 @@ type PendingRun = {
   taskId: string;
 };
 
+type PendingTriggerEvent = {
+  automationId: string;
+  eventId: string;
+};
+
 export class AutomationsService {
   private timer: ReturnType<typeof setInterval> | null = null;
   private triggerTimer: ReturnType<typeof setInterval> | null = null;
@@ -233,6 +256,9 @@ export class AutomationsService {
 
   /** Pending runs keyed by taskId — used to finalize run logs on agent exit. */
   private pendingRunsByTaskId = new Map<string, PendingRun>();
+
+  /** Trigger events keyed by runLogId — committed only after task creation succeeds. */
+  private pendingTriggerEventsByRunId = new Map<string, PendingTriggerEvent>();
 
   /** Unsubscribe function for the agent session exited event bus. */
   private agentExitUnsub: (() => void) | null = null;
@@ -293,6 +319,7 @@ export class AutomationsService {
     if (this.ticking) return;
     this.ticking = true;
     try {
+      await this.failStaleRunningLogs(false);
       await this.executeTick();
     } catch (err) {
       log.error('[Automations] Tick failed:', err);
@@ -419,6 +446,7 @@ export class AutomationsService {
         const nowIso = new Date().toISOString();
         const enrichedPrompt = enrichPromptWithEvent(automation.prompt, event);
         const nextRunCount = automation.runCount + 1;
+        let dispatched = false;
 
         await dataMutex.run(async () => {
           if (this.inFlightRuns.has(automation.id)) return;
@@ -430,11 +458,15 @@ export class AutomationsService {
             runLogId,
           });
           this.inFlightRuns.add(automation.id);
-          this.commitKnownEvent(automation.id, event.id);
+          this.pendingTriggerEventsByRunId.set(runLogId, {
+            automationId: automation.id,
+            eventId: event.id,
+          });
+          dispatched = true;
         });
         await pruneRunLogs(automation.id);
 
-        if (!this.inFlightRuns.has(automation.id)) continue;
+        if (!dispatched) continue;
 
         triggers.push({
           automation: {
@@ -488,12 +520,24 @@ export class AutomationsService {
     const rawEvents = await eventsPromise;
 
     if (!this.knownEventIds.has(automation.id)) {
-      // First sighting — seed and do not fire.
-      this.knownEventIds.set(automation.id, new Set(rawEvents.map((e) => e.id)));
+      // First sighting — seed old events, but still catch events updated since
+      // this automation last ran. This covers app downtime without replaying history.
+      const cutoff = new Date(automation.lastRunAt ?? automation.createdAt).getTime();
+      const missedEvents = rawEvents.filter((event) => {
+        if (!matchesTriggerFilters(event, automation.triggerConfig)) return false;
+        if (!event.updatedAt) return false;
+        const updatedAt = new Date(event.updatedAt).getTime();
+        return Number.isFinite(updatedAt) && updatedAt > cutoff;
+      });
+      const missedEventIds = new Set(missedEvents.map((event) => event.id));
+      this.knownEventIds.set(
+        automation.id,
+        new Set(rawEvents.filter((event) => !missedEventIds.has(event.id)).map((event) => event.id))
+      );
       log.info(
         `[Automations] Seeded ${rawEvents.length} known events for "${automation.name}" (${automation.triggerType})`
       );
-      return [];
+      return missedEvents;
     }
 
     const known = this.knownEventIds.get(automation.id) ?? new Set<string>();
@@ -586,7 +630,7 @@ export class AutomationsService {
       const sourceBranch = bareRefName(project.baseRef ?? 'refs/heads/main');
       const taskId = crypto.randomUUID();
       const conversationId = crypto.randomUUID();
-      const branchSuffix = automation.id.slice(-6);
+      const branchSuffix = `${automation.id.slice(-6)}-${runLogId.slice(-6)}`;
 
       if (!isValidProviderId(automation.agentId)) {
         await this.failRun(runLogId, automation.id, `Invalid agent id: ${automation.agentId}`);
@@ -628,6 +672,8 @@ export class AutomationsService {
         await this.failRun(runLogId, automation.id, errorMsg);
         return;
       }
+
+      this.commitPendingTriggerEvent(runLogId, automation.id);
 
       // Register pending run so agent exit listener finalizes it
       this.pendingRunsByTaskId.set(taskId, {
@@ -724,6 +770,7 @@ export class AutomationsService {
     automationId: string,
     errorMessage: string
   ): Promise<void> {
+    this.pendingTriggerEventsByRunId.delete(runLogId);
     const nowIso = new Date().toISOString();
     await this.updateRunLog(
       runLogId,
@@ -762,6 +809,13 @@ export class AutomationsService {
   }
 
   async create(input: CreateAutomationInput): Promise<Automation> {
+    const name = requireNonEmpty(input.name, 'name');
+    const prompt = requireNonEmpty(input.prompt, 'prompt');
+    const agentId = requireNonEmpty(input.agentId, 'agentId');
+    if (!isValidProviderId(agentId)) {
+      throw new Error(`Invalid agent id: ${agentId}`);
+    }
+
     const mode: AutomationMode = input.mode ?? 'schedule';
     if (mode === 'schedule') {
       if (!input.schedule) {
@@ -784,27 +838,23 @@ export class AutomationsService {
     // Triggers don't use a schedule; store a stable placeholder so the persisted
     // entity shape stays uniform without polluting the create API.
     const schedule: AutomationSchedule = isTrigger
-      ? { type: 'daily', hour: 9, minute: 0 }
+      ? DEFAULT_SCHEDULE
       : (input.schedule as AutomationSchedule);
-    const status = input.status ?? 'active';
     const automation: Automation = {
       id: generateId('auto'),
-      name: input.name,
+      name,
       projectId: input.projectId,
       projectName: input.projectName ?? project.name ?? '',
-      prompt: input.prompt,
-      agentId: input.agentId,
+      prompt,
+      agentId,
       mode,
       schedule,
       triggerType: isTrigger ? (input.triggerType ?? null) : null,
       triggerConfig: isTrigger ? (input.triggerConfig ?? null) : null,
       useWorktree: input.useWorktree ?? true,
-      status,
+      status: 'active',
       lastRunAt: null,
-      nextRunAt:
-        isTrigger || status === 'paused'
-          ? null
-          : computeNextRun(schedule, new Date(now), new Date(now)),
+      nextRunAt: isTrigger ? null : computeNextRun(schedule, new Date(now), new Date(now)),
       runCount: 0,
       lastRunResult: null,
       lastRunError: null,
@@ -872,8 +922,19 @@ export class AutomationsService {
 
     const current = mapAutomationRow(row);
     const nextMode = input.mode ?? current.mode;
+    const nextName = input.name === undefined ? current.name : requireNonEmpty(input.name, 'name');
+    const nextPrompt =
+      input.prompt === undefined ? current.prompt : requireNonEmpty(input.prompt, 'prompt');
+    const nextAgentId =
+      input.agentId === undefined ? current.agentId : requireNonEmpty(input.agentId, 'agentId');
+    if (!isValidProviderId(nextAgentId)) {
+      throw new Error(`Invalid agent id: ${nextAgentId}`);
+    }
+
     const nextSchedule =
-      nextMode === 'schedule' ? (input.schedule ?? current.schedule) : current.schedule;
+      nextMode === 'schedule'
+        ? (input.schedule ?? (current.mode === 'trigger' ? DEFAULT_SCHEDULE : current.schedule))
+        : current.schedule;
     if (nextMode === 'schedule') {
       validateSchedule(nextSchedule);
     }
@@ -903,11 +964,11 @@ export class AutomationsService {
 
     const updated: Automation = {
       ...current,
-      name: input.name ?? current.name,
+      name: nextName,
       projectId: nextProjectId,
       projectName: input.projectName ?? nextProject?.name ?? current.projectName,
-      prompt: input.prompt ?? current.prompt,
-      agentId: input.agentId ?? current.agentId,
+      prompt: nextPrompt,
+      agentId: nextAgentId,
       mode: nextMode,
       status: input.status ?? current.status,
       useWorktree: input.useWorktree ?? current.useWorktree,
@@ -921,7 +982,7 @@ export class AutomationsService {
             : null,
       nextRunAt: isTrigger
         ? null
-        : input.schedule
+        : input.schedule || current.mode !== 'schedule' || current.nextRunAt === null
           ? computeNextRun(nextSchedule, new Date(nextUpdatedAt), new Date(nextUpdatedAt))
           : current.nextRunAt,
       updatedAt: nextUpdatedAt,
@@ -980,6 +1041,9 @@ export class AutomationsService {
     await db.delete(automationsTable).where(eq(automationsTable.id, id));
     this.knownEventIds.delete(id);
     this.inFlightRuns.delete(id);
+    for (const [runLogId, pending] of this.pendingTriggerEventsByRunId) {
+      if (pending.automationId === id) this.pendingTriggerEventsByRunId.delete(runLogId);
+    }
     this.seedingAutomations.delete(id);
     this.warnedUnsupportedFilters.delete(id);
     await deleteAutomationMemory(id);
@@ -1005,7 +1069,10 @@ export class AutomationsService {
     return resetAutomationMemory(id);
   }
 
-  async toggleStatus(id: string): Promise<Automation | null> {
+  private async setStatus(
+    id: string,
+    nextStatus: Automation['status']
+  ): Promise<Automation | null> {
     const rows = await db
       .select()
       .from(automationsTable)
@@ -1015,7 +1082,6 @@ export class AutomationsService {
     if (!row) return null;
 
     const automation = mapAutomationRow(row);
-    const nextStatus: Automation['status'] = automation.status === 'active' ? 'paused' : 'active';
     const nowIso = new Date().toISOString();
 
     const updated: Automation = {
@@ -1049,6 +1115,20 @@ export class AutomationsService {
     }
 
     return updated;
+  }
+
+  async pause(id: string): Promise<Automation | null> {
+    return this.setStatus(id, 'paused');
+  }
+
+  async resume(id: string): Promise<Automation | null> {
+    return this.setStatus(id, 'active');
+  }
+
+  async toggleStatus(id: string): Promise<Automation | null> {
+    const automation = await this.get(id);
+    if (!automation) return null;
+    return this.setStatus(id, automation.status === 'active' ? 'paused' : 'active');
   }
 
   async triggerNow(id: string): Promise<Automation | null> {
@@ -1098,12 +1178,13 @@ export class AutomationsService {
   // -------------------------------------------------------------------
 
   async getRunLogs(automationId: string, limit = 20): Promise<AutomationRunLog[]> {
+    const safeLimit = Number.isInteger(limit) ? Math.min(Math.max(limit, 1), 100) : 20;
     const rows = await db
       .select()
       .from(automationRunLogsTable)
       .where(eq(automationRunLogsTable.automationId, automationId))
       .orderBy(desc(automationRunLogsTable.startedAt), desc(automationRunLogsTable.id))
-      .limit(limit);
+      .limit(safeLimit);
     return rows.map(mapRunRow);
   }
 
@@ -1120,6 +1201,56 @@ export class AutomationsService {
     await persistRunLogUpdate(runId, update);
     if (update.status === 'success' || update.status === 'failure') {
       this.inFlightRuns.delete(automationId);
+      if (update.status === 'failure') this.pendingTriggerEventsByRunId.delete(runId);
+    }
+  }
+
+  private commitPendingTriggerEvent(runLogId: string, automationId: string): void {
+    const pending = this.pendingTriggerEventsByRunId.get(runLogId);
+    if (!pending) return;
+    this.pendingTriggerEventsByRunId.delete(runLogId);
+    if (pending.automationId !== automationId) return;
+    this.commitKnownEvent(pending.automationId, pending.eventId);
+  }
+
+  private async failStaleRunningLogs(includeInterrupted: boolean): Promise<void> {
+    const now = new Date();
+    const nowIso = now.toISOString();
+    const runningRows = await db
+      .select()
+      .from(automationRunLogsTable)
+      .where(eq(automationRunLogsTable.status, 'running'));
+
+    const affectedErrors = new Map<string, string>();
+    for (const row of runningRows) {
+      const startedAt = new Date(row.startedAt);
+      const elapsed = now.getTime() - startedAt.getTime();
+      if (!includeInterrupted && elapsed <= DEFAULT_MAX_RUN_DURATION_MS) continue;
+
+      const errMsg =
+        elapsed > DEFAULT_MAX_RUN_DURATION_MS
+          ? `Run timed out after ${Math.round(elapsed / 60_000)} minutes`
+          : 'Interrupted (app was closed or crashed)';
+
+      await db
+        .update(automationRunLogsTable)
+        .set({ status: 'failure', error: errMsg, finishedAt: nowIso })
+        .where(eq(automationRunLogsTable.id, row.id));
+
+      this.inFlightRuns.delete(row.automationId);
+      this.pendingTriggerEventsByRunId.delete(row.id);
+      affectedErrors.set(row.automationId, errMsg);
+    }
+
+    for (const [automationId, lastRunError] of affectedErrors) {
+      await db
+        .update(automationsTable)
+        .set({
+          lastRunResult: 'failure',
+          lastRunError,
+          updatedAt: nowIso,
+        })
+        .where(eq(automationsTable.id, automationId));
     }
   }
 
@@ -1138,40 +1269,7 @@ export class AutomationsService {
         const now = new Date();
         const nowIso = now.toISOString();
 
-        // Fail orphaned "running" logs
-        const runningRows = await db
-          .select()
-          .from(automationRunLogsTable)
-          .where(eq(automationRunLogsTable.status, 'running'));
-
-        const affectedErrors = new Map<string, string>();
-        for (const row of runningRows) {
-          const startedAt = new Date(row.startedAt);
-          const elapsed = now.getTime() - startedAt.getTime();
-          const errMsg =
-            elapsed > DEFAULT_MAX_RUN_DURATION_MS
-              ? `Run timed out after ${Math.round(elapsed / 60_000)} minutes`
-              : 'Interrupted (app was closed or crashed)';
-
-          await db
-            .update(automationRunLogsTable)
-            .set({ status: 'failure', error: errMsg, finishedAt: nowIso })
-            .where(eq(automationRunLogsTable.id, row.id));
-
-          this.inFlightRuns.delete(row.automationId);
-          affectedErrors.set(row.automationId, errMsg);
-        }
-
-        for (const [automationId, lastRunError] of affectedErrors) {
-          await db
-            .update(automationsTable)
-            .set({
-              lastRunResult: 'failure',
-              lastRunError,
-              updatedAt: nowIso,
-            })
-            .where(eq(automationsTable.id, automationId));
-        }
+        await this.failStaleRunningLogs(true);
 
         // Catch up missed schedules
         const dueRows = await db
