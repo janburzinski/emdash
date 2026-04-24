@@ -5,8 +5,10 @@ import { isBinaryForDiff } from '@renderer/lib/editor/fileKind';
 import { modelRegistry } from '@renderer/lib/monaco/monaco-model-registry';
 import { buildMonacoModelPath } from '@renderer/lib/monaco/monacoModelPath';
 import { getLanguageFromPath } from '@renderer/utils/languageUtils';
-import { MAX_STACKED_FILES, type DiffViewStore } from './diff-view-store';
+import type { DiffViewStore } from './diff-view-store';
 import type { GitStore } from './git-store';
+
+const MAX_STACKED_FILES = 50;
 
 type DiffType = 'disk' | 'staged' | 'git' | 'pr';
 
