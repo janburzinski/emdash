@@ -1,3 +1,4 @@
+import { AnimatePresence, motion } from 'framer-motion';
 import { Check, ChevronDown, Clock } from 'lucide-react';
 import React from 'react';
 import type { AutomationSchedule, DayOfWeek, ScheduleType } from '@shared/automations/types';
@@ -16,7 +17,7 @@ import {
   SelectValue,
 } from '@renderer/lib/ui/select';
 import { cn } from '@renderer/utils/utils';
-import { pad2 } from './utils';
+import { EASE_OUT, pad2 } from './utils';
 
 export const CUSTOM_RRULE_EXAMPLE =
   'RRULE:FREQ=WEEKLY;BYHOUR=9;BYMINUTE=0;BYDAY=SU,MO,TU,WE,TH,FR,SA';
@@ -150,13 +151,13 @@ const SCHEDULE_TYPES: ScheduleType[] = ['hourly', 'daily', 'weekly', 'monthly', 
 export function SchedulePopoverBody({ value, onChange }: SchedulePopoverBodyProps) {
   return (
     <div className="flex flex-col">
-      <div className="flex flex-col gap-2 px-3 pb-3 pt-2">
+      <div className="px-3 pt-2">
         <DropdownMenu>
           <DropdownMenuTrigger
             render={
               <button
                 type="button"
-                className="group/st flex h-8 w-full items-center justify-between gap-2 rounded-md border border-border bg-background/30 px-2.5 text-xs outline-none hover:bg-background-quaternary/60 focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 active:scale-[0.97] [transition:background-color_150ms,border-color_150ms,color_150ms,box-shadow_150ms,transform_120ms_cubic-bezier(0.23,1,0.32,1)]"
+                className="group/st flex h-8 w-full items-center justify-between gap-2 rounded-md border border-border bg-background/30 px-2.5 text-xs outline-none hover:bg-background-quaternary/60 focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 [transition:background-color_150ms,border-color_150ms,color_150ms,box-shadow_150ms]"
               >
                 <span>{SCHEDULE_TYPE_LABELS[value.scheduleType]}</span>
                 <ChevronDown className="h-3.5 w-3.5 text-muted-foreground/70 transition-transform duration-150 ease-out group-data-[state=open]/st:rotate-180 group-data-[popup-open]/st:rotate-180" />
@@ -172,93 +173,110 @@ export function SchedulePopoverBody({ value, onChange }: SchedulePopoverBodyProp
             ))}
           </DropdownMenuContent>
         </DropdownMenu>
-
-        {(value.scheduleType === 'daily' ||
-          value.scheduleType === 'weekly' ||
-          value.scheduleType === 'monthly') && (
-          <div className="flex items-center gap-2">
-            <Clock className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-            {value.scheduleType === 'weekly' && (
-              <DropdownMenu>
-                <DropdownMenuTrigger
-                  render={
-                    <button
-                      type="button"
-                      className="group/dw flex h-7 w-[74px] items-center justify-between gap-1.5 rounded-md border border-border bg-transparent px-2.5 text-xs outline-none hover:bg-muted focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 active:scale-[0.97] [transition:background-color_150ms,border-color_150ms,color_150ms,box-shadow_150ms,transform_120ms_cubic-bezier(0.23,1,0.32,1)]"
-                    >
-                      <span>{DAY_SHORT[value.dayOfWeek]}</span>
-                      <ChevronDown className="h-3 w-3 text-muted-foreground/70 transition-transform duration-150 ease-out group-data-[state=open]/dw:rotate-180 group-data-[popup-open]/dw:rotate-180" />
-                    </button>
-                  }
-                />
-                <DropdownMenuContent align="start">
-                  {DAYS.map((d) => (
-                    <DropdownMenuItem key={d} onClick={() => onChange({ dayOfWeek: d })}>
-                      <span className="flex-1">{DAY_SHORT[d]}</span>
-                      {value.dayOfWeek === d && <Check className="h-3.5 w-3.5" />}
-                    </DropdownMenuItem>
-                  ))}
-                </DropdownMenuContent>
-              </DropdownMenu>
-            )}
-            {value.scheduleType === 'monthly' && (
-              <DropdownMenu>
-                <DropdownMenuTrigger
-                  render={
-                    <button
-                      type="button"
-                      className="group/dm flex h-7 w-[82px] items-center justify-between gap-1.5 rounded-md border border-border bg-transparent px-2.5 text-xs tabular-nums outline-none hover:bg-muted focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 active:scale-[0.97] [transition:background-color_150ms,border-color_150ms,color_150ms,box-shadow_150ms,transform_120ms_cubic-bezier(0.23,1,0.32,1)]"
-                    >
-                      <span>Day {value.dayOfMonth}</span>
-                      <ChevronDown className="h-3 w-3 text-muted-foreground/70 transition-transform duration-150 ease-out group-data-[state=open]/dm:rotate-180 group-data-[popup-open]/dm:rotate-180" />
-                    </button>
-                  }
-                />
-                <DropdownMenuContent align="start" className="max-h-60">
-                  {DAY_OF_MONTH_OPTIONS.map((d) => (
-                    <DropdownMenuItem key={d} onClick={() => onChange({ dayOfMonth: d })}>
-                      <span className="flex-1 tabular-nums">{d}</span>
-                      {value.dayOfMonth === d && <Check className="h-3.5 w-3.5" />}
-                    </DropdownMenuItem>
-                  ))}
-                </DropdownMenuContent>
-              </DropdownMenu>
-            )}
-            <TimeSelect
-              value={value.hour}
-              onChange={(n) => onChange({ hour: n })}
-              options={HOUR_OPTIONS}
-            />
-            <span className="text-xs text-muted-foreground">:</span>
-            <TimeSelect
-              value={value.minute}
-              onChange={(n) => onChange({ minute: n })}
-              options={MINUTE_OPTIONS}
-            />
-          </div>
-        )}
-
-        {value.scheduleType === 'hourly' && (
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-muted-foreground">at minute</span>
-            <TimeSelect
-              value={value.minute}
-              onChange={(n) => onChange({ minute: n })}
-              options={MINUTE_OPTIONS}
-            />
-          </div>
-        )}
-
-        {value.scheduleType === 'custom' && (
-          <Input
-            value={value.customRRule}
-            onChange={(e) => onChange({ customRRule: e.target.value })}
-            spellCheck={false}
-            className="h-7 font-mono text-[11px]"
-            placeholder={CUSTOM_RRULE_EXAMPLE}
-          />
-        )}
       </div>
+
+      <motion.div
+        layout
+        transition={{ duration: 0.18, ease: EASE_OUT }}
+        className="overflow-hidden"
+      >
+        <AnimatePresence initial={false} mode="popLayout">
+          <motion.div
+            key={value.scheduleType}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.1, ease: 'linear' }}
+            className="px-3 pb-3 pt-2"
+          >
+            {(value.scheduleType === 'daily' ||
+              value.scheduleType === 'weekly' ||
+              value.scheduleType === 'monthly') && (
+              <div className="flex items-center gap-2">
+                <Clock className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                {value.scheduleType === 'weekly' && (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger
+                      render={
+                        <button
+                          type="button"
+                          className="group/dw flex h-7 w-[74px] items-center justify-between gap-1.5 rounded-md border border-border bg-transparent px-2.5 text-xs outline-none hover:bg-muted focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 [transition:background-color_150ms,border-color_150ms,color_150ms,box-shadow_150ms]"
+                        >
+                          <span>{DAY_SHORT[value.dayOfWeek]}</span>
+                          <ChevronDown className="h-3 w-3 text-muted-foreground/70 transition-transform duration-150 ease-out group-data-[state=open]/dw:rotate-180 group-data-[popup-open]/dw:rotate-180" />
+                        </button>
+                      }
+                    />
+                    <DropdownMenuContent align="start">
+                      {DAYS.map((d) => (
+                        <DropdownMenuItem key={d} onClick={() => onChange({ dayOfWeek: d })}>
+                          <span className="flex-1">{DAY_SHORT[d]}</span>
+                          {value.dayOfWeek === d && <Check className="h-3.5 w-3.5" />}
+                        </DropdownMenuItem>
+                      ))}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                )}
+                {value.scheduleType === 'monthly' && (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger
+                      render={
+                        <button
+                          type="button"
+                          className="group/dm flex h-7 w-[82px] items-center justify-between gap-1.5 rounded-md border border-border bg-transparent px-2.5 text-xs tabular-nums outline-none hover:bg-muted focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 [transition:background-color_150ms,border-color_150ms,color_150ms,box-shadow_150ms]"
+                        >
+                          <span>Day {value.dayOfMonth}</span>
+                          <ChevronDown className="h-3 w-3 text-muted-foreground/70 transition-transform duration-150 ease-out group-data-[state=open]/dm:rotate-180 group-data-[popup-open]/dm:rotate-180" />
+                        </button>
+                      }
+                    />
+                    <DropdownMenuContent align="start" className="max-h-60">
+                      {DAY_OF_MONTH_OPTIONS.map((d) => (
+                        <DropdownMenuItem key={d} onClick={() => onChange({ dayOfMonth: d })}>
+                          <span className="flex-1 tabular-nums">{d}</span>
+                          {value.dayOfMonth === d && <Check className="h-3.5 w-3.5" />}
+                        </DropdownMenuItem>
+                      ))}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                )}
+                <TimeSelect
+                  value={value.hour}
+                  onChange={(n) => onChange({ hour: n })}
+                  options={HOUR_OPTIONS}
+                />
+                <span className="text-xs text-muted-foreground">:</span>
+                <TimeSelect
+                  value={value.minute}
+                  onChange={(n) => onChange({ minute: n })}
+                  options={MINUTE_OPTIONS}
+                />
+              </div>
+            )}
+
+            {value.scheduleType === 'hourly' && (
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-muted-foreground">at minute</span>
+                <TimeSelect
+                  value={value.minute}
+                  onChange={(n) => onChange({ minute: n })}
+                  options={MINUTE_OPTIONS}
+                />
+              </div>
+            )}
+
+            {value.scheduleType === 'custom' && (
+              <Input
+                value={value.customRRule}
+                onChange={(e) => onChange({ customRRule: e.target.value })}
+                spellCheck={false}
+                className="h-7 font-mono text-[11px]"
+                placeholder={CUSTOM_RRULE_EXAMPLE}
+              />
+            )}
+          </motion.div>
+        </AnimatePresence>
+      </motion.div>
     </div>
   );
 }

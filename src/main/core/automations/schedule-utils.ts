@@ -36,7 +36,7 @@ const RRULE_DAY_MAP = {
   SA: 'sat',
 } as const;
 
-type RRuleFrequency = 'HOURLY' | 'DAILY' | 'WEEKLY' | 'MONTHLY';
+type RRuleFrequency = 'MINUTELY' | 'HOURLY' | 'DAILY' | 'WEEKLY' | 'MONTHLY';
 
 type ParsedCustomRRule = {
   freq: RRuleFrequency;
@@ -159,7 +159,7 @@ function parseCustomRRule(rrule: string): ParsedCustomRRule {
   }
 
   const freq = fields.get('FREQ');
-  if (!freq || !['HOURLY', 'DAILY', 'WEEKLY', 'MONTHLY'].includes(freq)) {
+  if (!freq || !['MINUTELY', 'HOURLY', 'DAILY', 'WEEKLY', 'MONTHLY'].includes(freq)) {
     throw new Error(`Invalid RRULE FREQ: ${freq ?? 'missing'}`);
   }
   const parsedFreq = freq as RRuleFrequency;
@@ -182,6 +182,11 @@ function parseCustomRRule(rrule: string): ParsedCustomRRule {
     : null;
 
   switch (parsedFreq) {
+    case 'MINUTELY':
+      if (byHour.length > 0 || byMinute.length > 0 || byDay.length > 0 || byMonthDay.length > 0) {
+        throw new Error('Minutely RRULE only supports FREQ, INTERVAL and COUNT');
+      }
+      break;
     case 'HOURLY':
       if (byMinute.length === 0) {
         throw new Error('Hourly RRULE requires BYMINUTE');
@@ -227,8 +232,19 @@ function parseCustomRRule(rrule: string): ParsedCustomRRule {
   };
 }
 
+function startOfMinute(date: Date): Date {
+  const next = new Date(date);
+  next.setSeconds(0, 0);
+  return next;
+}
+
 function matchesInterval(date: Date, rule: ParsedCustomRRule, anchorDate: Date): boolean {
   switch (rule.freq) {
+    case 'MINUTELY': {
+      const diff =
+        (startOfMinute(date).getTime() - startOfMinute(anchorDate).getTime()) / (60 * 1000);
+      return diff >= 0 && Number.isInteger(diff) && diff % rule.interval === 0;
+    }
     case 'HOURLY': {
       const diff =
         (startOfHour(date).getTime() - startOfHour(anchorDate).getTime()) / (60 * 60 * 1000);
@@ -271,6 +287,18 @@ function computeNextRunFromCustomRRule(rrule: string, fromDate?: Date, anchorDat
     if (candidate > now) return candidate.toISOString();
     return null;
   };
+
+  if (rule.freq === 'MINUTELY') {
+    const candidate = startOfMinute(anchor < now ? anchor : now);
+    while (candidate <= deadline) {
+      if (matchesInterval(candidate, rule, anchor)) {
+        const result = trackOccurrence(candidate);
+        if (result) return result;
+      }
+      candidate.setMinutes(candidate.getMinutes() + 1);
+    }
+    throw new Error('Could not compute next run for custom RRULE within 2 years');
+  }
 
   if (rule.freq === 'HOURLY') {
     const candidate = new Date(anchor < now ? anchor : now);

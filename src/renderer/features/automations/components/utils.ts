@@ -29,8 +29,43 @@ export function describeScheduleShort(schedule: AutomationSchedule): string {
     case 'monthly':
       return 'Monthly';
     case 'custom':
+      return describeCustomRRuleShort(schedule.rrule);
+  }
+}
+
+function describeCustomRRuleShort(rrule: string): string {
+  const fields = parseRRuleFields(rrule);
+  if (!fields) return 'Custom';
+  const freq = fields.get('FREQ');
+  const interval = Number(fields.get('INTERVAL') ?? '1');
+  const n = Number.isInteger(interval) && interval > 0 ? interval : 1;
+  switch (freq) {
+    case 'MINUTELY':
+      return n === 1 ? 'Every minute' : `Every ${n}m`;
+    case 'HOURLY':
+      return n === 1 ? 'Hourly' : `Every ${n}h`;
+    case 'DAILY':
+      return n === 1 ? 'Daily' : `Every ${n}d`;
+    case 'WEEKLY':
+      return n === 1 ? 'Weekly' : `Every ${n}w`;
+    case 'MONTHLY':
+      return n === 1 ? 'Monthly' : `Every ${n}mo`;
+    default:
       return 'Custom';
   }
+}
+
+function parseRRuleFields(rrule: string): Map<string, string> | null {
+  const trimmed = rrule.trim();
+  if (!trimmed) return null;
+  const body = trimmed.startsWith('RRULE:') ? trimmed.slice('RRULE:'.length) : trimmed;
+  const fields = new Map<string, string>();
+  for (const part of body.split(';')) {
+    const [k, v] = part.split('=', 2);
+    if (!k || !v) continue;
+    fields.set(k.trim().toUpperCase(), v.trim());
+  }
+  return fields;
 }
 
 function toCompact(date: Date): string {

@@ -50,6 +50,43 @@ describe('custom automation schedules', () => {
     expect(nextRun).toBe(expected);
   });
 
+  it('accepts FREQ=MINUTELY with INTERVAL', () => {
+    expect(() =>
+      validateSchedule({
+        type: 'custom',
+        rrule: 'RRULE:FREQ=MINUTELY;INTERVAL=10',
+      })
+    ).not.toThrow();
+    expect(() => validateSchedule({ type: 'custom', rrule: 'RRULE:FREQ=MINUTELY' })).not.toThrow();
+  });
+
+  it('rejects MINUTELY with BY* fields', () => {
+    expect(() =>
+      validateSchedule({ type: 'custom', rrule: 'RRULE:FREQ=MINUTELY;BYMINUTE=0' })
+    ).toThrow(/Minutely RRULE only supports/);
+    expect(() =>
+      validateSchedule({ type: 'custom', rrule: 'RRULE:FREQ=MINUTELY;BYHOUR=9' })
+    ).toThrow(/Minutely RRULE only supports/);
+  });
+
+  it('computes the next minute for FREQ=MINUTELY;INTERVAL=10 aligned to anchor', () => {
+    const anchor = new Date(2026, 3, 24, 10, 0, 0); // Apr 24, 10:00:00
+    const from = new Date(2026, 3, 24, 10, 5, 30); // 10:05:30 — between fires
+    const nextRun = computeNextRun(
+      { type: 'custom', rrule: 'RRULE:FREQ=MINUTELY;INTERVAL=10' },
+      from,
+      anchor
+    );
+    expect(nextRun).toBe(new Date(2026, 3, 24, 10, 10, 0).toISOString());
+  });
+
+  it('computes the next minute for FREQ=MINUTELY (every minute)', () => {
+    const anchor = new Date(2026, 3, 24, 10, 0, 0);
+    const from = new Date(2026, 3, 24, 10, 5, 30);
+    const nextRun = computeNextRun({ type: 'custom', rrule: 'RRULE:FREQ=MINUTELY' }, from, anchor);
+    expect(nextRun).toBe(new Date(2026, 3, 24, 10, 6, 0).toISOString());
+  });
+
   it('stops scheduling after COUNT occurrences have been exhausted', () => {
     expect(() =>
       computeNextRun(

@@ -170,34 +170,32 @@ export const AutomationsView: React.FC = () => {
       >
         <div className="mx-auto w-full max-w-3xl px-8 py-8">
           <div className="mb-6 flex items-start justify-between gap-4">
-            <div className="min-w-0 overflow-hidden">
-              <AnimatePresence mode="popLayout" initial={false}>
-                {createMode.open ? (
+            <div className="relative min-w-0 overflow-hidden">
+              <motion.div
+                animate={{ opacity: createMode.open ? 0 : 1 }}
+                transition={createMode.open ? exitTransition : enterTransition}
+                aria-hidden={createMode.open}
+              >
+                <h1 className="text-lg font-semibold text-balance">Automations</h1>
+                <p className="mt-1 text-xs text-muted-foreground text-pretty">
+                  Run agents on a schedule or in response to GitHub, Linear, Jira and other
+                  integration events.
+                </p>
+              </motion.div>
+              <AnimatePresence initial={false}>
+                {createMode.open && (
                   <motion.button
                     key="create-back"
                     type="button"
                     onClick={closeCreate}
                     initial={{ opacity: 0 }}
-                    animate={{ opacity: 1, x: 0, transition: enterTransition }}
+                    animate={{ opacity: 1, transition: enterTransition }}
                     exit={{ opacity: 0, transition: exitTransition }}
-                    className="relative inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-xs text-muted-foreground transition-colors duration-150 hover:bg-muted hover:text-foreground active:scale-[0.97] [transition:background-color_150ms,color_150ms,transform_120ms_cubic-bezier(0.23,1,0.32,1)] before:absolute before:-inset-2 before:content-['']"
+                    className="absolute left-0 top-0 inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-xs text-muted-foreground hover:bg-muted hover:text-foreground active:scale-[0.97] [transition:background-color_150ms,color_150ms,transform_120ms_cubic-bezier(0.23,1,0.32,1)] before:absolute before:-inset-2 before:content-['']"
                   >
                     <ChevronLeft className="h-3.5 w-3.5" />
                     Back
                   </motion.button>
-                ) : (
-                  <motion.div
-                    key="list-title"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1, x: 0, transition: enterTransition }}
-                    exit={{ opacity: 0, transition: exitTransition }}
-                  >
-                    <h1 className="text-lg font-semibold text-balance">Automations</h1>
-                    <p className="mt-1 text-xs text-muted-foreground text-pretty">
-                      Run agents on a schedule or in response to GitHub, Linear, Jira and other
-                      integration events.
-                    </p>
-                  </motion.div>
                 )}
               </AnimatePresence>
             </div>

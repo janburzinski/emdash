@@ -13,7 +13,6 @@ import {
   Loader2,
   Pause,
   Play,
-  Sparkles,
   Trash2,
   XCircle,
   Zap,
@@ -29,7 +28,6 @@ import type {
 import AgentLogo from '@renderer/lib/components/agent-logo';
 import { rpc } from '@renderer/lib/ipc';
 import { useNavigate } from '@renderer/lib/layout/navigation-provider';
-import { useShowModal } from '@renderer/lib/modal/modal-provider';
 import { Button } from '@renderer/lib/ui/button';
 import {
   DropdownMenu,
@@ -38,7 +36,6 @@ import {
   DropdownMenuTrigger,
 } from '@renderer/lib/ui/dropdown-menu';
 import { Popover, PopoverContent, PopoverTrigger } from '@renderer/lib/ui/popover';
-import { Textarea } from '@renderer/lib/ui/textarea';
 import { agentConfig } from '@renderer/utils/agentConfig';
 import { cn } from '@renderer/utils/utils';
 import { PromptInput } from './PromptInput';
@@ -55,7 +52,7 @@ import {
   TriggerTypeIcon,
   type TriggerFormValue,
 } from './trigger-controls';
-import { useAutomationMemory, useRunLogs } from './useAutomations';
+import { useRunLogs } from './useAutomations';
 import { useDebouncedAutoSave, type AutoSaveState } from './useDebouncedAutoSave';
 import {
   EASE_OUT,
@@ -530,8 +527,6 @@ export const AutomationEditor: React.FC<Props> = ({
           )}
         </Section>
 
-        <MemorySection automationId={automation.id} />
-
         <PreviousRunsSection automationId={automation.id} projectId={automation.projectId} />
       </aside>
     </div>
@@ -614,7 +609,7 @@ const SidebarValueButton = React.forwardRef<
       type="button"
       onClick={onClick}
       className={cn(
-        'group/sv inline-flex h-6 max-w-[160px] items-center gap-1.5 rounded px-1.5 text-xs transition-colors duration-150 hover:bg-muted active:scale-[0.97] [transition:background-color_150ms,color_150ms,transform_120ms_cubic-bezier(0.23,1,0.32,1)]',
+        'group/sv inline-flex h-6 max-w-[160px] items-center gap-1.5 rounded px-1.5 text-xs transition-colors duration-150 hover:bg-muted [transition:background-color_150ms,color_150ms]',
         muted && 'text-muted-foreground'
       )}
       {...rest}
@@ -625,115 +620,6 @@ const SidebarValueButton = React.forwardRef<
     </button>
   );
 });
-
-function MemorySection({ automationId }: { automationId: string }) {
-  const { data, isLoading, save, clear, isSaving, isClearing } = useAutomationMemory(automationId);
-  const showConfirmModal = useShowModal('confirmActionModal');
-  const [expanded, setExpanded] = useState(false);
-  const [draft, setDraft] = useState<string | null>(null);
-
-  const savedContent = data?.content ?? '';
-  const effectiveDraft = draft ?? savedContent;
-  const dirty = draft !== null && draft !== savedContent;
-  const preview = savedContent
-    .split('\n')
-    .filter((l) => l.trim() && !l.trim().startsWith('#'))
-    .slice(0, 3)
-    .join(' ');
-
-  return (
-    <div className="flex flex-col gap-1 px-3 py-3 shadow-[inset_0_-1px_0_rgb(0_0_0/0.05)] dark:shadow-[inset_0_-1px_0_rgb(255_255_255/0.05)]">
-      <div className="mb-1 flex items-center justify-between px-1">
-        <h3 className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground/70">
-          Memory
-        </h3>
-        <button
-          type="button"
-          onClick={() => setExpanded((v) => !v)}
-          className="relative -my-1 -mr-1 rounded px-1.5 py-1 text-[10px] text-muted-foreground outline-none hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/50 active:scale-[0.95] [transition:background-color_150ms,color_150ms,transform_120ms_cubic-bezier(0.23,1,0.32,1)] before:absolute before:inset-[-8px] before:content-['']"
-        >
-          {expanded ? 'Hide' : 'Edit'}
-        </button>
-      </div>
-
-      {isLoading ? (
-        <div className="flex flex-col gap-1.5 px-1 py-2">
-          <div className="h-3 w-11/12 animate-pulse rounded bg-muted/50" />
-          <div className="h-3 w-3/4 animate-pulse rounded bg-muted/50" />
-          <div className="h-3 w-5/6 animate-pulse rounded bg-muted/50" />
-        </div>
-      ) : expanded ? (
-        <motion.div
-          initial={{ opacity: 0, y: 2 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.15, ease: EASE_OUT }}
-          className="flex flex-col gap-2 px-1"
-        >
-          <Textarea
-            value={effectiveDraft}
-            onChange={(e) => setDraft(e.target.value)}
-            className="min-h-[140px] max-h-[320px] resize-y text-xs font-mono"
-            placeholder="Notes that persist across runs…"
-          />
-          <div className="flex items-center justify-between gap-2">
-            <button
-              type="button"
-              onClick={() => {
-                showConfirmModal({
-                  title: 'Reset memory?',
-                  description:
-                    'This replaces the saved memory with an empty template. This cannot be undone.',
-                  confirmLabel: 'Reset',
-                  variant: 'destructive',
-                  onSuccess: () => {
-                    void clear().then(() => setDraft(null));
-                  },
-                });
-              }}
-              disabled={isClearing}
-              className="text-[11px] text-muted-foreground hover:text-destructive disabled:opacity-50"
-            >
-              Reset
-            </button>
-            <div className="flex items-center gap-2">
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-6 px-2 text-[11px]"
-                onClick={() => setDraft(null)}
-                disabled={!dirty || isSaving}
-              >
-                Discard
-              </Button>
-              <Button
-                size="sm"
-                className="h-6 px-2 text-[11px]"
-                onClick={() => {
-                  if (draft === null) return;
-                  void save(draft).then(() => setDraft(null));
-                }}
-                disabled={!dirty || isSaving}
-              >
-                {isSaving ? 'Saving…' : 'Save'}
-              </Button>
-            </div>
-          </div>
-        </motion.div>
-      ) : (
-        <div className="flex flex-col gap-1 px-1">
-          {preview ? (
-            <p className="line-clamp-3 text-xs text-muted-foreground">{preview}</p>
-          ) : (
-            <div className="flex items-center gap-1.5 py-2 text-xs text-muted-foreground/70">
-              <Sparkles className="h-3 w-3" />
-              <span>Agent will write notes here after the first run.</span>
-            </div>
-          )}
-        </div>
-      )}
-    </div>
-  );
-}
 
 function PreviousRunsSection({
   automationId,

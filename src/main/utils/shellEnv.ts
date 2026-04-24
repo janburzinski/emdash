@@ -122,12 +122,6 @@ export function detectSshAuthSock(): string | undefined {
     return process.env.SSH_AUTH_SOCK;
   }
 
-  // Try to detect from user's login shell (sources .zshrc/.bash_profile)
-  const shellValue = getShellEnvVar('SSH_AUTH_SOCK');
-  if (shellValue) {
-    return shellValue;
-  }
-
   // Check common socket locations as fallback
   for (const location of COMMON_SSH_AGENT_LOCATIONS) {
     try {

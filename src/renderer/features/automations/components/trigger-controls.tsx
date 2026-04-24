@@ -74,7 +74,7 @@ export function TriggerPopoverBody({ value, onChange }: TriggerPopoverBodyProps)
               render={
                 <button
                   type="button"
-                  className="group/tt flex h-7 w-full items-center justify-between gap-1.5 rounded-md border border-border bg-transparent px-2.5 text-xs outline-none hover:bg-muted focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 active:scale-[0.97] [transition:background-color_150ms,border-color_150ms,color_150ms,box-shadow_150ms,transform_120ms_cubic-bezier(0.23,1,0.32,1)]"
+                  className="group/tt flex h-7 w-full items-center justify-between gap-1.5 rounded-md border border-border bg-transparent px-2.5 text-xs outline-none hover:bg-muted focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 [transition:background-color_150ms,border-color_150ms,color_150ms,box-shadow_150ms]"
                 >
                   <div className="flex items-center gap-1.5">
                     <TriggerTypeIcon triggerType={value.triggerType} className="h-3.5 w-3.5" />

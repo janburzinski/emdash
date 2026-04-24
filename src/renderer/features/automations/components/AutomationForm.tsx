@@ -508,9 +508,9 @@ const PillButton = React.forwardRef<HTMLButtonElement, PillButtonProps>(function
       type="button"
       onClick={onClick}
       className={cn(
-        'group/pb inline-flex h-7 min-w-0 items-center gap-1.5 rounded-md border border-transparent px-2 text-xs active:scale-[0.97]',
+        'group/pb inline-flex h-7 min-w-0 items-center gap-1.5 rounded-md border border-transparent px-2 text-xs',
         'hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50',
-        '[transition:background-color_150ms,border-color_150ms,color_150ms,transform_120ms_cubic-bezier(0.23,1,0.32,1)]',
+        '[transition:background-color_150ms,border-color_150ms,color_150ms]',
         active && 'border-border bg-muted text-foreground',
         !active && muted && 'text-muted-foreground'
       )}

@@ -14,7 +14,8 @@ vi.mock('@renderer/lib/ui/tooltip', () => ({
   Tooltip: ({ children }: { children: ReactNode }) => children,
   TooltipContent: () => null,
   TooltipProvider: ({ children }: { children: ReactNode }) => children,
-  TooltipTrigger: ({ children }: { children: ReactNode }) => children,
+  TooltipTrigger: ({ children, render }: { children?: ReactNode; render?: ReactNode }) =>
+    render ?? children,
 }));
 
 const sampleAutomation: Automation = {

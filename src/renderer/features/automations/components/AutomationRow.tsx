@@ -162,7 +162,7 @@ export const AutomationRow: React.FC<Props> = ({
                     }}
                     disabled={busy}
                     aria-label="Delete"
-                    className="text-muted-foreground hover:!bg-destructive/10 hover:!text-destructive dark:hover:!bg-destructive/20"
+                    className="text-muted-foreground hover:!bg-red-500/10 hover:!text-red-600 dark:hover:!bg-red-500/15 dark:hover:!text-red-400"
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>
