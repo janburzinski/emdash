@@ -55,7 +55,11 @@ export class LocalPtySession implements Pty {
   }
 
   write(data: string): void {
-    this.proc.write(data);
+    try {
+      this.proc.write(data);
+    } catch (e: unknown) {
+      log.warn('LocalPtySession:write failed', { id: this.id, error: errorMessage(e) });
+    }
   }
 
   resize(cols: number, rows: number): void {
@@ -64,7 +68,7 @@ export class LocalPtySession implements Pty {
     try {
       this.proc.resize(c, r);
     } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : String(e);
+      const msg = errorMessage(e);
       if (/EBADF|ENOTTY|ioctl\(2\) failed|not open|Napi::Error/.test(msg)) {
         return;
       }
@@ -73,18 +77,42 @@ export class LocalPtySession implements Pty {
   }
 
   kill(): void {
-    this.proc.kill();
+    try {
+      this.proc.kill();
+    } catch (e: unknown) {
+      log.warn('LocalPtySession:kill failed', { id: this.id, error: errorMessage(e) });
+    }
   }
 
   onData(handler: (data: string) => void): void {
-    this.proc.onData(handler);
+    this.proc.onData((data) => {
+      try {
+        handler(data);
+      } catch (e: unknown) {
+        log.error('LocalPtySession:onData handler failed', {
+          id: this.id,
+          error: errorMessage(e),
+        });
+      }
+    });
   }
 
   onExit(handler: (info: PtyExitInfo) => void): void {
     this.proc.onExit(({ exitCode, signal }) => {
-      handler({ exitCode, signal: normalizeSignal(signal) });
+      try {
+        handler({ exitCode, signal: normalizeSignal(signal) });
+      } catch (e: unknown) {
+        log.error('LocalPtySession:onExit handler failed', {
+          id: this.id,
+          error: errorMessage(e),
+        });
+      }
     });
   }
+}
+
+function errorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
 }
 
 function resolveWindowsPtySpawn(
