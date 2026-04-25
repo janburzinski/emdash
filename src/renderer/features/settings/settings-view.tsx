@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, type ReactNode } from 'react';
+import { type ReactNode } from 'react';
 import {
   SettingsPage,
   type SettingsPageTab,
@@ -6,38 +6,9 @@ import {
 import { Titlebar } from '@renderer/lib/components/titlebar/Titlebar';
 import { useParams } from '@renderer/lib/layout/navigation-provider';
 
-const SettingsTabContext = createContext<{
-  tab: SettingsPageTab;
-  onTabChange: (tab: SettingsPageTab) => void;
-}>({ tab: 'general', onTabChange: () => {} });
-
 /** Minimal passthrough — exists so the registry can infer WrapParams<'settings'>. */
-export function SettingsViewWrapper({
-  children,
-  tab = 'general',
-}: {
-  children: ReactNode;
-  tab?: SettingsPageTab;
-}) {
-  const { setParams } = useParams('settings');
-  const handleTabChange = useCallback(
-    (tab: SettingsPageTab) => {
-      setParams({ tab });
-    },
-    [setParams]
-  );
-  return (
-    <SettingsTabContext.Provider value={{ tab, onTabChange: handleTabChange }}>
-      {children}
-    </SettingsTabContext.Provider>
-  );
-}
-
-export function useSettingsTab() {
-  if (!useContext(SettingsTabContext)) {
-    throw new Error('useSettingsTab must be used within a SettingsViewWrapper');
-  }
-  return useContext(SettingsTabContext);
+export function SettingsViewWrapper({ children }: { children: ReactNode; tab?: SettingsPageTab }) {
+  return <>{children}</>;
 }
 
 export function SettingsTitlebar() {
@@ -53,10 +24,10 @@ export function SettingsTitlebar() {
 }
 
 export function SettingsMainPanel() {
-  const { tab, onTabChange } = useSettingsTab();
+  const { params } = useParams('settings');
   return (
     <div className="relative z-10 flex min-h-0 flex-1 overflow-hidden bg-background">
-      <SettingsPage tab={tab} onTabChange={onTabChange} />
+      <SettingsPage tab={params.tab ?? 'general'} />
     </div>
   );
 }

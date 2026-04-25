@@ -1,4 +1,4 @@
-import { Github } from 'lucide-react';
+import { GithubLogo as Github } from '@phosphor-icons/react';
 import { Button } from '@renderer/lib/ui/button';
 
 export function GithubAuthDisclaimer({

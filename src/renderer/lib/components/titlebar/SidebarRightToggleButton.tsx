@@ -1,4 +1,4 @@
-import { PanelRight } from 'lucide-react';
+import { SidebarSimple as PanelRight } from '@phosphor-icons/react';
 import React from 'react';
 import { Button } from '@renderer/lib/ui/button';
 import { useRightSidebar } from '@renderer/lib/ui/right-sidebar';

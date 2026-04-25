@@ -1,5 +1,5 @@
+import { Check, CaretDown as ChevronDown } from '@phosphor-icons/react';
 import { useQuery } from '@tanstack/react-query';
-import { Check, ChevronDown } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { type PullRequest } from '@shared/pull-requests';
 import { rpc } from '@renderer/lib/ipc';

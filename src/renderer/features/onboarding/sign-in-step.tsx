@@ -1,4 +1,4 @@
-import { CheckCircle, Github, LogIn, User } from 'lucide-react';
+import { CheckCircle, GithubLogo as Github, SignIn as LogIn, User } from '@phosphor-icons/react';
 import { useState } from 'react';
 import { useAccountSession, useAccountSignIn } from '@renderer/lib/hooks/useAccount';
 import { Button } from '@renderer/lib/ui/button';
@@ -66,7 +66,7 @@ export function SignInStep({ onComplete }: { onComplete: () => void }) {
   return (
     <div className="flex flex-col space-y-8 max-w-sm">
       <div className="flex flex-col items-center justify-center gap-6">
-        <Github className="h-10 w-10" absoluteStrokeWidth strokeWidth={1.5} />
+        <Github className="h-10 w-10" />
         <div className="flex flex-col items-center justify-center gap-2">
           <h1 className="text-xl text-center">Connect your GitHub account to Emdash</h1>
           <p className="text-md text-foreground-muted text-center">

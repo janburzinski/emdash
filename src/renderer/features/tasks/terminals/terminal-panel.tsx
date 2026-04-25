@@ -1,5 +1,5 @@
+import { ListBullets as LayoutList, Pause, Play, Terminal } from '@phosphor-icons/react';
 import { useHotkey } from '@tanstack/react-hotkeys';
-import { LayoutList, Pause, Play, Terminal } from 'lucide-react';
 import { observer } from 'mobx-react-lite';
 import { useState } from 'react';
 import { asMounted, getProjectStore } from '@renderer/features/projects/stores/project-selectors';

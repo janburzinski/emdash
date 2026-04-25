@@ -1,4 +1,4 @@
-import { Check, X } from 'lucide-react';
+import { Check, X } from '@phosphor-icons/react';
 import { useRef, useState } from 'react';
 import { Button } from '@renderer/lib/ui/button';
 import { Comment, useTextareaAutoFocus } from './comment-card';

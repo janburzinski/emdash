@@ -1,4 +1,4 @@
-import { LogIn, LogOut, User } from 'lucide-react';
+import { SignIn as LogIn, SignOut as LogOut, User } from '@phosphor-icons/react';
 import { useState } from 'react';
 import { useToast } from '@renderer/lib/hooks/use-toast';
 import {

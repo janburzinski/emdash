@@ -1,5 +1,5 @@
+import { MagnifyingGlass as Search } from '@phosphor-icons/react';
 import { useHotkey } from '@tanstack/react-hotkeys';
-import { Search } from 'lucide-react';
 import * as React from 'react';
 import { Input } from '@renderer/lib/ui/input';
 import { cn } from '@renderer/utils/utils';

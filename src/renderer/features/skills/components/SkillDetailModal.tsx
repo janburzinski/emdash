@@ -1,4 +1,4 @@
-import { FolderOpen, Trash2 } from 'lucide-react';
+import { FolderOpen, Trash as Trash2 } from '@phosphor-icons/react';
 import React, { useCallback, useState } from 'react';
 import type { CatalogSkill } from '@shared/skills/types';
 import { parseFrontmatter } from '@shared/skills/validation';

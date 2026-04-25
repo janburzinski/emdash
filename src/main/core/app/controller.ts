@@ -1,5 +1,6 @@
 import { createRPCController } from '@shared/ipc/rpc';
 import type { OpenInAppId } from '@shared/openInApps';
+import { applyGlassSidebar, getMainWindow } from '@main/app/window';
 import { capture } from '@main/lib/telemetry';
 import { appService } from './service';
 
@@ -45,4 +46,8 @@ export const appController = createRPCController({
   getAppVersion: () => appService.getCachedAppVersion(),
   getElectronVersion: () => process.versions.electron,
   getPlatform: () => process.platform,
+  setGlassSidebar: async (enabled: boolean) => {
+    const window = getMainWindow();
+    if (window) applyGlassSidebar(window, enabled);
+  },
 });

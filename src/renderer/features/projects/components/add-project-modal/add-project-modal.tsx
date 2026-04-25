@@ -1,5 +1,5 @@
+import { House as Home, HardDrives as Server } from '@phosphor-icons/react';
 import { useQuery } from '@tanstack/react-query';
-import { Home, Server } from 'lucide-react';
 import { observer } from 'mobx-react-lite';
 import { useMemo, useState } from 'react';
 import { SshConnectionSelector } from '@renderer/features/projects/components/add-project-modal/ssh-connection-selector';

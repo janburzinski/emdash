@@ -1,4 +1,4 @@
-import { Monitor, Moon, Sun } from 'lucide-react';
+import { Monitor, Moon, Sun } from '@phosphor-icons/react';
 import React from 'react';
 import type { Theme } from '@shared/app-settings';
 import { useTheme } from '@renderer/lib/hooks/useTheme';
@@ -15,7 +15,7 @@ const ThemeCard: React.FC = () => {
   };
 
   const buttonBase =
-    'flex min-h-24 flex-col items-center justify-center gap-2 rounded-lg border px-2 py-2.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background sm:px-3';
+    'flex min-h-24 flex-col items-center justify-center gap-2 rounded-lg border px-2 py-2.5 text-sm font-medium transition-colors sm:px-3';
   const activeClass = 'bg-background-2';
   const inactiveClass =
     'border-border/60 bg-background text-foreground-muted hover:bg-background-1';

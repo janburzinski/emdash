@@ -1,4 +1,11 @@
-import { ChevronDown, Ellipsis, ExternalLink, GithubIcon, Globe, Trash2 } from 'lucide-react';
+import {
+  CaretDown as ChevronDown,
+  DotsThree as Ellipsis,
+  ArrowSquareOut as ExternalLink,
+  GithubLogo as GithubIcon,
+  Globe,
+  Trash as Trash2,
+} from '@phosphor-icons/react';
 import { observer } from 'mobx-react-lite';
 import {
   asMounted,

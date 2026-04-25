@@ -1,4 +1,4 @@
-import { Server } from 'lucide-react';
+import { HardDrives as Server } from '@phosphor-icons/react';
 import React from 'react';
 import { coerceRawSvgContent, prepareInlineSvgMarkup } from './mcp-icon-data';
 

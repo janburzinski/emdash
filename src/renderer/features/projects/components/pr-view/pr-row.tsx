@@ -1,4 +1,7 @@
-import { ExternalLink, ScanSearch } from 'lucide-react';
+import {
+  ArrowSquareOut as ExternalLink,
+  MagnifyingGlassPlus as ScanSearch,
+} from '@phosphor-icons/react';
 import { memo } from 'react';
 import { getPrNumber, type PullRequest } from '@shared/pull-requests';
 import { PrMergeLine } from '@renderer/lib/components/pr-merge-line';

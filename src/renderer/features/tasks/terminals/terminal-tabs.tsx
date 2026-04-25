@@ -1,4 +1,9 @@
-import { CircleFadingArrowUp, CirclePlayIcon, Plus, Terminal } from 'lucide-react';
+import {
+  ArrowCircleUp as CircleFadingArrowUp,
+  PlayCircle as CirclePlayIcon,
+  Plus,
+  Terminal,
+} from '@phosphor-icons/react';
 import { observer } from 'mobx-react-lite';
 import React from 'react';
 import {

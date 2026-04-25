@@ -1,4 +1,4 @@
-import { Check, Loader2, Undo2 } from 'lucide-react';
+import { Check, CircleNotch as Loader2, ArrowUUpLeft as Undo2 } from '@phosphor-icons/react';
 import { observer } from 'mobx-react-lite';
 import { useMemo, useState } from 'react';
 import type { Branch } from '@shared/git';
@@ -296,7 +296,7 @@ export const ProjectSettingsForm = observer(function ProjectSettingsForm({
                   type="button"
                   variant="link"
                   size="sm"
-                  className="group inline-flex h-auto cursor-pointer items-center gap-1 px-0 text-sm font-normal text-muted-foreground hover:text-foreground hover:no-underline focus-visible:outline-none focus-visible:ring-0"
+                  className="group inline-flex h-auto cursor-pointer items-center gap-1 px-0 text-sm font-normal text-muted-foreground hover:text-foreground hover:no-underline"
                   onClick={() => rpc.app.openExternal('https://www.emdash.sh/docs/project-config')}
                 >
                   <span className="font-mono text-xs transition-colors group-hover:text-foreground">

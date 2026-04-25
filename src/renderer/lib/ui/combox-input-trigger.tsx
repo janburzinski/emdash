@@ -1,4 +1,4 @@
-import { ChevronsUpDownIcon } from 'lucide-react';
+import { CaretUpDown as ChevronsUpDownIcon } from '@phosphor-icons/react';
 import { type ReactNode } from 'react';
 
 export function ComboxInputTrigger({

@@ -1,5 +1,5 @@
+import { CaretDown as ChevronDown } from '@phosphor-icons/react';
 import { useHotkey } from '@tanstack/react-hotkeys';
-import { ChevronDown } from 'lucide-react';
 import React, { useCallback, useMemo } from 'react';
 import { getAppById, isValidOpenInAppId, type OpenInAppId } from '@shared/openInApps';
 import { useAppSettingsKey } from '@renderer/features/settings/use-app-settings-key';

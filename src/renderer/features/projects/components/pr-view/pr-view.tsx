@@ -1,4 +1,10 @@
-import { CheckIcon, ChevronDownIcon, Github, RefreshCw, X } from 'lucide-react';
+import {
+  Check as CheckIcon,
+  CaretDown as ChevronDownIcon,
+  GithubLogo as Github,
+  ArrowsClockwise as RefreshCw,
+  X,
+} from '@phosphor-icons/react';
 import { observer } from 'mobx-react-lite';
 import { motion } from 'motion/react';
 import { useState } from 'react';

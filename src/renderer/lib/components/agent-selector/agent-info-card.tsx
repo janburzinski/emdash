@@ -1,4 +1,4 @@
-import { ArrowUpRight, Check, Copy } from 'lucide-react';
+import { ArrowUpRight, Check, Copy } from '@phosphor-icons/react';
 import React, { useEffect, useRef, useState } from 'react';
 import {
   getDescriptionForProvider,

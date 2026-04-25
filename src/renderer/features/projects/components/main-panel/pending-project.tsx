@@ -1,4 +1,9 @@
-import { AlertCircle, Check, Loader2, X } from 'lucide-react';
+import {
+  WarningCircle as AlertCircle,
+  Check,
+  CircleNotch as Loader2,
+  X,
+} from '@phosphor-icons/react';
 import { observer } from 'mobx-react-lite';
 import { UnregisteredProject } from '@renderer/features/projects/stores/project';
 import { getProjectManagerStore } from '@renderer/features/projects/stores/project-selectors';

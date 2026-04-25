@@ -1,4 +1,9 @@
-import { ArrowDown, ArrowUp, GitBranch, RefreshCcw } from 'lucide-react';
+import {
+  ArrowDown,
+  ArrowUp,
+  GitBranch,
+  ArrowsCounterClockwise as RefreshCcw,
+} from '@phosphor-icons/react';
 import { observer } from 'mobx-react-lite';
 import {
   getProjectStore,

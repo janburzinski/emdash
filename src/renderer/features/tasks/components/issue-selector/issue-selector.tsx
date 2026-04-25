@@ -1,4 +1,4 @@
-import { ExternalLink, Loader2 } from 'lucide-react';
+import { ArrowSquareOut as ExternalLink, CircleNotch as Loader2 } from '@phosphor-icons/react';
 import { forwardRef, useCallback, useRef, useState } from 'react';
 import type { Issue } from '@shared/tasks';
 import {

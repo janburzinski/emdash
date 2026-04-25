@@ -1,4 +1,4 @@
-import { Loader2 } from 'lucide-react';
+import { CircleNotch as Loader2 } from '@phosphor-icons/react';
 import { observer } from 'mobx-react-lite';
 import { Activity } from 'react';
 import {

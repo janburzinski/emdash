@@ -1,32 +1,9 @@
-import { FolderOpen, Github, Plus, Server, type LucideIcon } from 'lucide-react';
 import emdashLogoWhite from '@/assets/images/emdash/emdash_logo_white.svg';
 import emdashLogo from '@/assets/images/emdash/emdash_logo.svg';
 import { Titlebar } from '@renderer/lib/components/titlebar/Titlebar';
 import { useTheme } from '@renderer/lib/hooks/useTheme';
-import { useShowModal } from '@renderer/lib/modal/modal-provider';
-
-const PROJECT_ACTIONS = [
-  {
-    label: 'Open project',
-    icon: FolderOpen,
-    modalArgs: { strategy: 'local', mode: 'pick' },
-  },
-  {
-    label: 'Create New Project',
-    icon: Plus,
-    modalArgs: { strategy: 'local', mode: 'new' },
-  },
-  {
-    label: 'Clone from GitHub',
-    icon: Github,
-    modalArgs: { strategy: 'local', mode: 'clone' },
-  },
-  {
-    label: 'Add Remote Project',
-    icon: Server,
-    modalArgs: { strategy: 'ssh', mode: 'pick' },
-  },
-] as const;
+import { HomeChatbox } from './home-chatbox';
+import { HomeRecentTasks } from './home-recent-tasks';
 
 export function HomeTitlebar() {
   return <Titlebar />;
@@ -34,7 +11,6 @@ export function HomeTitlebar() {
 
 export function HomeMainPanel() {
   const { effectiveTheme } = useTheme();
-  const showAddProjectModal = useShowModal('addProjectModal');
 
   return (
     <div className="flex h-full flex-col overflow-y-auto bg-background text-foreground">
@@ -68,42 +44,14 @@ export function HomeMainPanel() {
             Agentic Development Environment
           </p>
         </div>
-        <div className="mx-auto mt-4 grid w-full max-w-[600px] grid-cols-2 gap-2 sm:grid-cols-[repeat(4,minmax(132px,1fr))]">
-          {PROJECT_ACTIONS.map((action) => (
-            <HomeProjectAction
-              key={action.label}
-              label={action.label}
-              icon={action.icon}
-              onClick={() => showAddProjectModal(action.modalArgs)}
-            />
-          ))}
+        <div className="mx-auto mt-4 w-full max-w-[640px]">
+          <HomeChatbox />
+        </div>
+        <div className="mx-auto mt-8 w-full max-w-[640px]">
+          <HomeRecentTasks />
         </div>
       </div>
     </div>
-  );
-}
-
-function HomeProjectAction({
-  label,
-  icon: Icon,
-  onClick,
-}: {
-  label: string;
-  icon: LucideIcon;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      aria-label={label}
-      onClick={onClick}
-      className="group flex h-[68px] w-full flex-col items-start rounded-md border border-border/80 bg-background px-3.5 py-3 text-left shadow-sm transition-all hover:border-border-1 hover:bg-background-1 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-    >
-      <Icon className="size-4 text-foreground-muted transition-colors group-hover:text-foreground" />
-      <span className="mt-auto whitespace-nowrap pt-4 text-[11px] font-semibold leading-none tracking-normal text-foreground">
-        {label}
-      </span>
-    </button>
   );
 }
 

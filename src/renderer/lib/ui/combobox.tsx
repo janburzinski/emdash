@@ -1,5 +1,5 @@
 import { Combobox as ComboboxPrimitive } from '@base-ui/react';
-import { CheckIcon, XIcon } from 'lucide-react';
+import { Check as CheckIcon, X as XIcon } from '@phosphor-icons/react';
 import * as React from 'react';
 import { Button } from '@renderer/lib/ui/button';
 import {
@@ -159,7 +159,7 @@ function ComboboxItem({ className, children, ...props }: ComboboxPrimitive.Item.
           <span className="pointer-events-none absolute right-2 flex size-3.5 items-center justify-center" />
         }
       >
-        <CheckIcon className="pointer-events-none" absoluteStrokeWidth strokeWidth={3} />
+        <CheckIcon className="pointer-events-none" />
       </ComboboxPrimitive.ItemIndicator>
     </ComboboxPrimitive.Item>
   );

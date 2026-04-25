@@ -1,4 +1,10 @@
-import { CheckCircle2, ExternalLink, Loader2, MinusCircle, XCircle } from 'lucide-react';
+import {
+  CheckCircle as CheckCircle2,
+  ArrowSquareOut as ExternalLink,
+  CircleNotch as Loader2,
+  MinusCircle,
+  XCircle,
+} from '@phosphor-icons/react';
 import { observer } from 'mobx-react-lite';
 import { useMemo } from 'react';
 import type { PullRequest } from '@shared/pull-requests';

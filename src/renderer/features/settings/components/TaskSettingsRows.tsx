@@ -1,4 +1,4 @@
-import { Info } from 'lucide-react';
+import { Info } from '@phosphor-icons/react';
 import React from 'react';
 import { useTaskSettings } from '@renderer/features/tasks/hooks/useTaskSettings';
 import { Switch } from '@renderer/lib/ui/switch';

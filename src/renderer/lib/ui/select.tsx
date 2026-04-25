@@ -1,9 +1,13 @@
-'use client';
-
 import { Select as SelectPrimitive } from '@base-ui/react/select';
-import { CheckIcon, ChevronDownIcon, ChevronUpIcon } from 'lucide-react';
+import {
+  Check as CheckIcon,
+  CaretDown as ChevronDownIcon,
+  CaretUp as ChevronUpIcon,
+} from '@phosphor-icons/react';
 import * as React from 'react';
 import { cn } from '@renderer/utils/utils';
+
+('use client');
 
 const Select = SelectPrimitive.Root;
 

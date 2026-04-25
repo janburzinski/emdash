@@ -1,4 +1,4 @@
-import { ExternalLink } from 'lucide-react';
+import { ArrowSquareOut as ExternalLink } from '@phosphor-icons/react';
 import { getPrNumber, type PullRequest } from '@shared/pull-requests';
 import { PrMergeLine } from '@renderer/lib/components/pr-merge-line';
 import { Popover, PopoverContent, PopoverTrigger } from '@renderer/lib/ui/popover';

@@ -1,4 +1,4 @@
-import { ChevronDown, GitBranch } from 'lucide-react';
+import { CaretDown as ChevronDown, GitBranch } from '@phosphor-icons/react';
 import { BranchDisplay } from '@renderer/lib/components/branch-display';
 import { ProjectBranchSelector } from '@renderer/lib/components/project-branch-selector';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@renderer/lib/ui/collapsible';
@@ -41,11 +41,7 @@ export function BranchPickerField({
               <div className="flex flex-col text-left text-sm gap-0.5">
                 <span className="text-foreground-passive text-xs">{label}</span>
                 <span className="flex items-center gap-1">
-                  <GitBranch
-                    absoluteStrokeWidth
-                    strokeWidth={2}
-                    className="size-3.5 shrink-0 text-foreground-muted"
-                  />
+                  <GitBranch className="size-3.5 shrink-0 text-foreground-muted" />
                   <ComboboxValue placeholder="Select a branch" />
                 </span>
               </div>

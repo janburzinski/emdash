@@ -1,4 +1,4 @@
-import { Plus, Undo2 } from 'lucide-react';
+import { Plus, ArrowUUpLeft as Undo2 } from '@phosphor-icons/react';
 import { observer } from 'mobx-react-lite';
 import { commitRef, HEAD_REF } from '@shared/git';
 import { useProvisionedTask, useTaskViewContext } from '@renderer/features/tasks/task-view-context';

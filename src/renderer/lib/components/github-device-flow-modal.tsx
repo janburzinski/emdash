@@ -1,4 +1,9 @@
-import { AlertCircle, Check, Copy, ExternalLink } from 'lucide-react';
+import {
+  WarningCircle as AlertCircle,
+  Check,
+  Copy,
+  ArrowSquareOut as ExternalLink,
+} from '@phosphor-icons/react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import emdashLogo from '@/assets/images/emdash/emdash_logo_white.svg';
 import {
@@ -253,7 +258,7 @@ export function GithubDeviceFlowModal({ onClose, onError }: GithubDeviceFlowModa
           // Success State
           <div className="flex flex-col items-center space-y-6 duration-300 animate-in fade-in zoom-in">
             <div className="flex h-16 w-16 items-center justify-center rounded-full bg-green-500 duration-500 animate-in zoom-in">
-              <Check className="h-8 w-8 text-white" strokeWidth={3} />
+              <Check className="h-8 w-8 text-white" />
             </div>
             <div className="space-y-2 text-center">
               <h2 className="text-2xl font-semibold">Success!</h2>

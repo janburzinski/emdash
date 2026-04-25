@@ -1,4 +1,4 @@
-import { ChevronsUpDownIcon } from 'lucide-react';
+import { CaretUpDown as ChevronsUpDownIcon } from '@phosphor-icons/react';
 import { GithubAuthDisclaimer } from '@renderer/features/integrations/components/github-auth-disclaimer';
 import { ComboboxTrigger, ComboboxValue } from '@renderer/lib/ui/combobox';
 import { ComboboxPopover } from '@renderer/lib/ui/combobox-popover';

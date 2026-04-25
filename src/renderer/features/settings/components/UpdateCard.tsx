@@ -1,4 +1,10 @@
-import { AlertCircle, CheckCircle2, Download, Loader2, RefreshCw } from 'lucide-react';
+import {
+  WarningCircle as AlertCircle,
+  CheckCircle as CheckCircle2,
+  Download,
+  CircleNotch as Loader2,
+  ArrowsClockwise as RefreshCw,
+} from '@phosphor-icons/react';
 import { observer } from 'mobx-react-lite';
 import React from 'react';
 import { PRODUCT_NAME } from '@shared/app-identity';

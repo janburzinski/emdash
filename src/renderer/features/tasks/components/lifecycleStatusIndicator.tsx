@@ -31,9 +31,8 @@ function StatusIcon({ status, className }: { status: TaskLifecycleStatus; classN
             'size-3 text-foreground-tertiary-muted hover:text-foreground-tertiary',
             className
           )}
-          strokeWidth="1.5"
         >
-          <circle cx="8" cy="8" r="7" stroke="currentColor" strokeWidth="1.5" />
+          <circle cx="8" cy="8" r="7" stroke="currentColor" />
         </svg>
       );
     case 'done':
@@ -42,7 +41,6 @@ function StatusIcon({ status, className }: { status: TaskLifecycleStatus; classN
           xmlns="http://www.w3.org/2000/svg"
           stroke="currentColor"
           fill="currentColor"
-          strokeWidth="1.5"
           viewBox="0 0 512 512"
           className={cn('size-3 fill-status-done hover:fill-status-done-hover', className)}
           height="1em"
@@ -56,7 +54,6 @@ function StatusIcon({ status, className }: { status: TaskLifecycleStatus; classN
         <svg
           stroke="currentColor"
           fill="currentColor"
-          strokeWidth="1.5"
           viewBox="0 0 512 512"
           className={cn('size-3 fill-status-canceled hover:fill-status-canceled-hover', className)}
           height="1em"
@@ -75,9 +72,8 @@ function StatusIcon({ status, className }: { status: TaskLifecycleStatus; classN
             'size-3 text-status-in-progress hover:text-status-in-progress-hover',
             className
           )}
-          strokeWidth="1.5"
         >
-          <circle cx="8" cy="8" r="7" stroke="currentColor" strokeWidth="1.5" fill="none"></circle>
+          <circle cx="8" cy="8" r="7" stroke="currentColor" fill="none"></circle>
           <path d="M 8 3 A 5 5 0 0 1 8 13 L 8 8 Z" fill="currentColor"></path>
         </svg>
       );
@@ -90,9 +86,8 @@ function StatusIcon({ status, className }: { status: TaskLifecycleStatus; classN
             'size-3 text-status-in-review hover:text-status-in-review-hover',
             className
           )}
-          strokeWidth="1.5"
         >
-          <circle cx="8" cy="8" r="7" stroke="currentColor" strokeWidth="1.5" fill="none"></circle>
+          <circle cx="8" cy="8" r="7" stroke="currentColor" fill="none"></circle>
           <path d="M 8 3 A 5 5 0 1 1 3 8 L 8 8 Z" fill="currentColor"></path>
         </svg>
       );

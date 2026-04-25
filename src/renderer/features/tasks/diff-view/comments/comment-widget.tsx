@@ -1,4 +1,4 @@
-import { Check, Pencil, Trash2, X } from 'lucide-react';
+import { Check, PencilSimple as Pencil, Trash as Trash2, X } from '@phosphor-icons/react';
 import { useRef, useState } from 'react';
 import { Button } from '@renderer/lib/ui/button';
 import type { DraftComment } from '../stores/draft-comments-store';

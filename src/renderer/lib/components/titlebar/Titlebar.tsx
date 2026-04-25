@@ -1,4 +1,4 @@
-import { PanelLeft, PanelRight } from 'lucide-react';
+import { SidebarSimple as PanelRight } from '@phosphor-icons/react';
 import { ReactNode } from 'react';
 import { useWorkspaceLayoutContext } from '@renderer/lib/layout/layout-provider';
 import { useWorkspaceSlots } from '@renderer/lib/layout/navigation-provider';
@@ -13,33 +13,13 @@ export function Titlebar({ leftSlot, rightSlot }: { leftSlot?: ReactNode; rightS
   return (
     <header
       className={cn(
-        'flex h-10 shrink-0 items-center bg-background-secondary pr-2 border-b border-border [-webkit-app-region:drag] dark:bg-background',
-        !isLeftOpen && 'pl-17'
+        'flex h-10 shrink-0 items-center bg-background-secondary pr-2 [-webkit-app-region:drag] dark:bg-background',
+        !isLeftOpen && 'pl-28'
       )}
     >
       <div className="pointer-events-auto flex w-full items-center gap-1">
-        {!isLeftOpen && <div className="[-webkit-app-region:no-drag]"></div>}
         <div className="flex w-full items-center justify-between">
           <div className="flex items-center justify-start [-webkit-app-region:no-drag]">
-            {!isLeftOpen && (
-              <Tooltip>
-                <TooltipTrigger>
-                  <Toggle
-                    pressed={isLeftOpen}
-                    variant="outline"
-                    size="sm"
-                    className="ml-2 size-7"
-                    onPressedChange={() => setCollapsed('left', isLeftOpen)}
-                  >
-                    <PanelLeft className="h-4 w-4" />
-                  </Toggle>
-                </TooltipTrigger>
-                <TooltipContent>
-                  Toggle left sidebar
-                  <ShortcutHint settingsKey="toggleLeftSidebar" />
-                </TooltipContent>
-              </Tooltip>
-            )}
             {leftSlot}
           </div>
           <div className="flex items-center justify-end [-webkit-app-region:no-drag]">
@@ -47,13 +27,13 @@ export function Titlebar({ leftSlot, rightSlot }: { leftSlot?: ReactNode; rightS
             <Tooltip>
               <TooltipTrigger>
                 <Toggle
+                  className="[-webkit-app-region:no-drag] data-pressed:bg-transparent"
                   disabled={!RightPanel}
                   pressed={isRightOpen}
                   size="sm"
-                  variant="outline"
                   onPressedChange={() => setCollapsed('right', isRightOpen)}
                 >
-                  <PanelRight className="size-3.5" />
+                  <PanelRight />
                 </Toggle>
               </TooltipTrigger>
               <TooltipContent>

@@ -1,5 +1,5 @@
+import { PencilSimple as Pencil, Plus } from '@phosphor-icons/react';
 import { motion } from 'framer-motion';
-import { Pencil, Plus } from 'lucide-react';
 import React from 'react';
 import type { CatalogSkill } from '@shared/skills/types';
 import SkillIconRenderer from './SkillIconRenderer';

@@ -1,4 +1,8 @@
-import { ChevronDown, Plus, RefreshCw } from 'lucide-react';
+import {
+  CaretDown as ChevronDown,
+  Plus,
+  ArrowsClockwise as RefreshCw,
+} from '@phosphor-icons/react';
 import { SelectionState } from '@renderer/features/tasks/diff-view/stores/changes-view-store';
 import { Badge } from '@renderer/lib/ui/badge';
 import { Button } from '@renderer/lib/ui/button';

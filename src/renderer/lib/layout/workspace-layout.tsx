@@ -1,8 +1,17 @@
-import { ReactNode } from 'react';
+import { ReactNode, useSyncExternalStore } from 'react';
 import { useDefaultLayout } from 'react-resizable-panels';
 import { useWorkspaceLayoutContext } from '@renderer/lib/layout/layout-provider';
+import { panelDragStore } from '@renderer/lib/layout/panel-drag-store';
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@renderer/lib/ui/resizable';
 import { cn } from '@renderer/utils/utils';
+
+function useIsPanelDragging() {
+  return useSyncExternalStore(
+    panelDragStore.subscribe,
+    panelDragStore.getSnapshot,
+    panelDragStore.getSnapshot
+  );
+}
 
 const LEFT_PANEL_DEFAULT_SIZE = '20%';
 const RIGHT_PANEL_DEFAULT_SIZE = '25%';
@@ -19,6 +28,7 @@ interface WorkspaceLayoutProps {
 
 export function WorkspaceLayout({ leftSidebar, mainContent }: WorkspaceLayoutProps) {
   const { leftPanelRef, handleDragging, setIsLeftOpen, isLeftOpen } = useWorkspaceLayoutContext();
+  const isDragging = useIsPanelDragging();
   const { defaultLayout, onLayoutChanged } = useDefaultLayout({
     id: 'workspace-outer',
     storage: localStorage,
@@ -29,6 +39,7 @@ export function WorkspaceLayout({ leftSidebar, mainContent }: WorkspaceLayoutPro
       id="workspace-outer"
       orientation="horizontal"
       className="h-full w-full overflow-hidden"
+      data-panel-dragging={isDragging ? 'true' : undefined}
       defaultLayout={defaultLayout}
       onLayoutChanged={onLayoutChanged}
     >
@@ -76,6 +87,7 @@ export function WorkspaceContentLayout({
 }: WorkspaceContentLayoutProps) {
   const { rightPanelRef, handleDragging, setIsRightOpen, isRightOpen } =
     useWorkspaceLayoutContext();
+  const isDragging = useIsPanelDragging();
 
   const hasRight = Boolean(rightPanel);
 
@@ -91,6 +103,7 @@ export function WorkspaceContentLayout({
         id="workspace-inner"
         orientation="horizontal"
         className="flex-1 overflow-hidden"
+        data-panel-dragging={isDragging ? 'true' : undefined}
         defaultLayout={defaultLayout}
         onLayoutChanged={onLayoutChanged}
       >

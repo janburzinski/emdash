@@ -1,65 +1,63 @@
+import {
+  FileCode as DiCoffeescript,
+  FileImage as FaFileImage,
+  FileCode as SiAngular,
+  FileCode as SiBabel,
+  FileCpp as SiCplusplus,
+  FileCss as SiCss3,
+  FileCode as SiCypress,
+  FileCode as SiDocker,
+  FileCode as SiEslint,
+  GitBranch as SiGit,
+  FileCode as SiGo,
+  FileCode as SiGraphql,
+  FileHtml as SiHtml5,
+  FileJs as SiJavascript,
+  FileCode as SiJest,
+  FileCode as SiKotlin,
+  FileCode as SiLua,
+  Database as SiMongodb,
+  FileCode as SiNextdotjs,
+  FileCode as SiNodedotjs,
+  Package as SiNpm,
+  FileCode as SiPhp,
+  Database as SiPostgresql,
+  FileCode as SiPrettier,
+  FilePy as SiPython,
+  FileJsx as SiReact,
+  Database as SiRedis,
+  FileCode as SiRuby,
+  FileRs as SiRust,
+  FileCss as SiSass,
+  BookOpen as SiStorybook,
+  FileCode as SiSvelte,
+  FileCode as SiSwift,
+  FileCss as SiTailwindcss,
+  FileTs as SiTypescript,
+  FileCode as SiVite,
+  FileVue as SiVuedotjs,
+  FileCode as SiWebpack,
+  Package as SiYarn,
+  Database as VscDatabase,
+  XCircle as VscError,
+  File as VscFile,
+  File as VscFileBinary,
+  FileCode as VscFileCode,
+  FileVideo as VscFileMedia,
+  FilePdf as VscFilePdf,
+  FileZip as VscFileZip,
+  Folder as VscFolder,
+  FolderOpen as VscFolderOpened,
+  BracketsCurly as VscJson,
+  Key as VscKey,
+  Lock as VscLock,
+  FileMd as VscMarkdown,
+  Gear as VscSettingsGear,
+  Code as VscSymbolMisc,
+  Table as VscTable,
+  Terminal as VscTerminal,
+} from '@phosphor-icons/react';
 import React, { Component, ErrorInfo, memo, ReactNode } from 'react';
-import { DiCoffeescript } from 'react-icons/di';
-import { FaFileImage } from 'react-icons/fa';
-import {
-  SiAngular,
-  SiBabel,
-  SiCplusplus,
-  SiCss3,
-  SiCypress,
-  SiDocker,
-  SiEslint,
-  SiGit,
-  SiGo,
-  SiGraphql,
-  SiHtml5,
-  SiJavascript,
-  SiJest,
-  SiKotlin,
-  SiLua,
-  SiMongodb,
-  SiNextdotjs,
-  SiNodedotjs,
-  SiNpm,
-  SiPhp,
-  SiPostgresql,
-  SiPrettier,
-  SiPython,
-  SiReact,
-  SiRedis,
-  SiRuby,
-  SiRust,
-  SiSass,
-  SiStorybook,
-  SiSvelte,
-  SiSwift,
-  SiTailwindcss,
-  SiTypescript,
-  SiVite,
-  SiVuedotjs,
-  SiWebpack,
-  SiYarn,
-} from 'react-icons/si';
-import {
-  VscDatabase,
-  VscError,
-  VscFile,
-  VscFileBinary,
-  VscFileCode,
-  VscFileMedia,
-  VscFilePdf,
-  VscFileZip,
-  VscFolder,
-  VscFolderOpened,
-  VscJson,
-  VscKey,
-  VscLock,
-  VscMarkdown,
-  VscSettingsGear,
-  VscSymbolMisc,
-  VscTable,
-  VscTerminal,
-} from 'react-icons/vsc';
 import { log } from '@renderer/utils/logger';
 
 // Icon mapping configuration
@@ -387,12 +385,7 @@ export const FileIcon = memo<FileIconProps>(
       const Icon = isExpanded ? VscFolderOpened : VscFolder;
       return (
         <IconErrorBoundary>
-          <Icon
-            {...iconProps}
-            className={`${className} text-blue-500/80`}
-            aria-label={label}
-            title={label}
-          />
+          <Icon {...iconProps} className={`${className} text-blue-500/80`} aria-label={label} />
         </IconErrorBoundary>
       );
     }
@@ -434,12 +427,7 @@ export const FileIcon = memo<FileIconProps>(
           <VscFile {...iconProps} className={`${className} text-gray-500`} aria-label={ariaLabel} />
         }
       >
-        <IconComponent
-          {...iconProps}
-          className={`${className} ${color}`}
-          aria-label={ariaLabel}
-          title={ariaLabel}
-        />
+        <IconComponent {...iconProps} className={`${className} ${color}`} aria-label={ariaLabel} />
       </IconErrorBoundary>
     );
   }

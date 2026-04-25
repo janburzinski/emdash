@@ -1,4 +1,4 @@
-import { FileQuestion } from 'lucide-react';
+import { FileText as FileQuestion } from '@phosphor-icons/react';
 import { ManagedFile } from './types';
 
 interface BinaryRendererProps {

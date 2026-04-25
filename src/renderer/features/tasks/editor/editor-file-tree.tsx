@@ -1,5 +1,10 @@
+import {
+  CaretDown as ChevronDown,
+  CaretRight as ChevronRight,
+  Folder,
+  FolderOpen,
+} from '@phosphor-icons/react';
 import { useVirtualizer } from '@tanstack/react-virtual';
-import { ChevronDown, ChevronRight, Folder, FolderOpen } from 'lucide-react';
 import { observer } from 'mobx-react-lite';
 import React, { useRef } from 'react';
 import type { FileNode } from '@shared/fs';

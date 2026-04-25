@@ -1,4 +1,4 @@
-import { ExternalLink, Globe } from 'lucide-react';
+import { ArrowSquareOut as ExternalLink, Globe } from '@phosphor-icons/react';
 import { observer } from 'mobx-react-lite';
 import { rpc } from '@renderer/lib/ipc';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@renderer/lib/ui/tooltip';

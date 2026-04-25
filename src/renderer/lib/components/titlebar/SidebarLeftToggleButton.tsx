@@ -1,4 +1,4 @@
-import { PanelLeft } from 'lucide-react';
+import { SidebarSimple as PanelLeft } from '@phosphor-icons/react';
 import React from 'react';
 import { useWorkspaceLayoutContext } from '@renderer/lib/layout/layout-provider';
 import { Button } from '@renderer/lib/ui/button';

@@ -1,4 +1,4 @@
-import { GitBranch, RefreshCw } from 'lucide-react';
+import { GitBranch, ArrowsClockwise as RefreshCw } from '@phosphor-icons/react';
 import React, { useMemo, useState } from 'react';
 import { Branch } from '@shared/git';
 import { Badge } from '@renderer/lib/ui/badge';
@@ -72,7 +72,7 @@ export function BranchSelector({
           </div>
         </ComboboxTrigger>
       )}
-      <ComboboxContent className="min-w-(--anchor-width) pb-1 border">
+      <ComboboxContent className="w-auto min-w-[min(max(var(--anchor-width),18rem),var(--available-width))] pb-1 border">
         {!remoteOnly && (
           <ToggleGroup
             value={[tab]}

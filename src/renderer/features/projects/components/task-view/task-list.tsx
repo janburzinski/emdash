@@ -1,5 +1,10 @@
+import {
+  Archive,
+  ArrowCounterClockwise as RotateCcw,
+  Trash as Trash2,
+  X,
+} from '@phosphor-icons/react';
 import { useVirtualizer } from '@tanstack/react-virtual';
-import { Archive, RotateCcw, Trash2, X } from 'lucide-react';
 import { observer } from 'mobx-react-lite';
 import { useRef } from 'react';
 import { asMounted, getProjectStore } from '@renderer/features/projects/stores/project-selectors';

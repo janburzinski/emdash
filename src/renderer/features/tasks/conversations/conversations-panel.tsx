@@ -1,5 +1,5 @@
+import { ChatCircle as MessageSquare } from '@phosphor-icons/react';
 import { useHotkey } from '@tanstack/react-hotkeys';
-import { MessageSquare } from 'lucide-react';
 import { observer } from 'mobx-react-lite';
 import { useEffect, useState } from 'react';
 import { asMounted, getProjectStore } from '@renderer/features/projects/stores/project-selectors';

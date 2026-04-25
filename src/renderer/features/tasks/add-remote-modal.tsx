@@ -1,5 +1,5 @@
+import { CaretUpDown as ChevronsUpDownIcon } from '@phosphor-icons/react';
 import { useQuery } from '@tanstack/react-query';
-import { ChevronsUpDownIcon } from 'lucide-react';
 import { useState } from 'react';
 import { getRepositoryStore } from '@renderer/features/projects/stores/project-selectors';
 import { rpc } from '@renderer/lib/ipc';

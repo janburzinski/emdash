@@ -1,4 +1,9 @@
-import { Info, Plus, RotateCcw, Trash2 } from 'lucide-react';
+import {
+  Info,
+  Plus,
+  ArrowCounterClockwise as RotateCcw,
+  Trash as Trash2,
+} from '@phosphor-icons/react';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { AGENT_PROVIDERS, type AgentProviderDefinition } from '@shared/agent-provider-registry';
 import type { ProviderCustomConfig } from '@shared/app-settings';

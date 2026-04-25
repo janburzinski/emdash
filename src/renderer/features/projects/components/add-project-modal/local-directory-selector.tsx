@@ -1,4 +1,4 @@
-import { Folder } from 'lucide-react';
+import { Folder } from '@phosphor-icons/react';
 import { useState } from 'react';
 import { rpc } from '@renderer/lib/ipc';
 import { Button } from '@renderer/lib/ui/button';

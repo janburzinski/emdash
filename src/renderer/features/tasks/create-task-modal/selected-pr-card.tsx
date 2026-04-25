@@ -1,4 +1,4 @@
-import { GitPullRequest } from 'lucide-react';
+import { GitPullRequest } from '@phosphor-icons/react';
 import type { PullRequest } from '@shared/pull-requests';
 
 interface SelectedPrCardProps {

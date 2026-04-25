@@ -1,4 +1,4 @@
-import { ArrowUp, FileSearch } from 'lucide-react';
+import { ArrowUp, FileMagnifyingGlass as FileSearch } from '@phosphor-icons/react';
 import { observer } from 'mobx-react-lite';
 import { useMemo } from 'react';
 import { useAppSettingsKey } from '@renderer/features/settings/use-app-settings-key';

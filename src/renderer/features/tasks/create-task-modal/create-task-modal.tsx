@@ -1,4 +1,4 @@
-import { ChevronRight, FolderOpen } from 'lucide-react';
+import { CaretRight as ChevronRight, FolderOpen } from '@phosphor-icons/react';
 import { observer } from 'mobx-react-lite';
 import { useCallback, useState } from 'react';
 import { getPrNumber, isForkPr, type PullRequest } from '@shared/pull-requests';

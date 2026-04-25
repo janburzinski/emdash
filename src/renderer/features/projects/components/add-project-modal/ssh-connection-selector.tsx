@@ -1,4 +1,4 @@
-import { ChevronsUpDownIcon, PlusIcon } from 'lucide-react';
+import { CaretUpDown as ChevronsUpDownIcon, Plus as PlusIcon } from '@phosphor-icons/react';
 import { observer } from 'mobx-react-lite';
 import { appState } from '@renderer/lib/stores/app-state';
 import { ComboboxTrigger, ComboboxValue } from '@renderer/lib/ui/combobox';

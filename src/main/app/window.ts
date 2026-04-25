@@ -2,11 +2,28 @@ import { join } from 'node:path';
 import { BrowserWindow } from 'electron';
 import appIcon from '@/assets/images/emdash/emdash_logo.png?asset';
 import { PRODUCT_NAME } from '@shared/app-identity';
+import { appSettingsService } from '@main/core/settings/settings-service';
 import { capture, checkAndReportDailyActiveUser } from '@main/lib/telemetry';
 import { registerExternalLinkHandlers } from '@main/utils/externalLinks';
 import { APP_ORIGIN } from './protocol';
 
 let mainWindow: BrowserWindow | null = null;
+
+export function applyGlassSidebar(window: BrowserWindow, enabled: boolean): void {
+  if (process.platform === 'darwin') {
+    window.setVibrancy(enabled ? 'sidebar' : null);
+    window.setBackgroundColor(enabled ? '#00000000' : '#ffffff');
+    return;
+  }
+  if (process.platform === 'win32') {
+    type WinWithBackgroundMaterial = BrowserWindow & {
+      setBackgroundMaterial?: (material: 'auto' | 'none' | 'mica' | 'acrylic' | 'tabbed') => void;
+    };
+    const w = window as WinWithBackgroundMaterial;
+    w.setBackgroundMaterial?.(enabled ? 'acrylic' : 'none');
+    window.setBackgroundColor(enabled ? '#00000000' : '#ffffff');
+  }
+}
 
 export function createMainWindow(): BrowserWindow {
   mainWindow = new BrowserWindow({
@@ -46,6 +63,11 @@ export function createMainWindow(): BrowserWindow {
   // Show when ready
   mainWindow.once('ready-to-show', () => {
     mainWindow?.show();
+  });
+
+  // Apply glass-sidebar vibrancy from saved settings
+  void appSettingsService.get('interface').then((iface) => {
+    if (mainWindow) applyGlassSidebar(mainWindow, iface.glassSidebar);
   });
 
   // Track window focus for telemetry

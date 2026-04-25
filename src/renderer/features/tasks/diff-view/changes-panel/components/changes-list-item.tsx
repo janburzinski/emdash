@@ -1,4 +1,10 @@
-import { SquareArrowRight, SquareDot, SquareMinus, SquarePlus, SquareX } from 'lucide-react';
+import {
+  ArrowSquareRight as SquareArrowRight,
+  Square as SquareDot,
+  MinusSquare as SquareMinus,
+  PlusSquare as SquarePlus,
+  XSquare as SquareX,
+} from '@phosphor-icons/react';
 import { ButtonHTMLAttributes, forwardRef, useMemo } from 'react';
 import { GitChange, GitChangeStatus } from '@shared/git';
 import { splitPath } from '@renderer/features/tasks/utils';

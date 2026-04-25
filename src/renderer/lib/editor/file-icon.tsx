@@ -1,4 +1,4 @@
-import { File } from 'lucide-react';
+import { File } from '@phosphor-icons/react';
 
 /** Maps a file extension (or full filename for extensionless files) to a devicon class name. */
 const EXTENSION_MAP: Record<string, string> = {

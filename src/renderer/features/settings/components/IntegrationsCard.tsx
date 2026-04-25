@@ -1,4 +1,4 @@
-import { Check, Loader2, Plus } from 'lucide-react';
+import { Check, CircleNotch as Loader2, Plus } from '@phosphor-icons/react';
 import React, { useEffect } from 'react';
 import forgejoSvg from '@/assets/images/Forgejo.svg?raw';
 import githubSvg from '@/assets/images/Github.svg?raw';

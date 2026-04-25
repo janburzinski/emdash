@@ -1,4 +1,8 @@
-import { GitMerge, GitPullRequestArrow, GitPullRequestClosed } from 'lucide-react';
+import {
+  GitMerge,
+  GitPullRequest as GitPullRequestArrow,
+  GitPullRequest as GitPullRequestClosed,
+} from '@phosphor-icons/react';
 import { ReactNode } from 'react';
 import { PullRequest } from '@shared/pull-requests';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@renderer/lib/ui/tooltip';

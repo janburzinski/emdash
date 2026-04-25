@@ -1,4 +1,4 @@
-import { ArrowUp, MessageSquare, Trash2 } from 'lucide-react';
+import { ArrowUp, ChatCircle as MessageSquare, Trash as Trash2 } from '@phosphor-icons/react';
 import { observer } from 'mobx-react-lite';
 import { useMemo, useState } from 'react';
 import type { DraftComment } from '@renderer/features/tasks/diff-view/stores/draft-comments-store';

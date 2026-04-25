@@ -1,12 +1,12 @@
-import { useForm } from '@tanstack/react-form';
 import {
-  ArrowLeftIcon,
-  CheckCircle2,
-  ChevronDown,
-  ChevronUp,
-  LoaderCircle,
+  ArrowLeft as ArrowLeftIcon,
+  CheckCircle as CheckCircle2,
+  CaretDown as ChevronDown,
+  CaretUp as ChevronUp,
+  CircleNotch as LoaderCircle,
   XCircle,
-} from 'lucide-react';
+} from '@phosphor-icons/react';
+import { useForm } from '@tanstack/react-form';
 import { useState } from 'react';
 import * as z from 'zod';
 import type { ConnectionTestResult, SshConfig } from '@shared/ssh';

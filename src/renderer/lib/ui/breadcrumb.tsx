@@ -1,6 +1,9 @@
 import { mergeProps } from '@base-ui/react/merge-props';
 import { useRender } from '@base-ui/react/use-render';
-import { ChevronRightIcon, MoreHorizontalIcon } from 'lucide-react';
+import {
+  CaretRight as ChevronRightIcon,
+  DotsThree as MoreHorizontalIcon,
+} from '@phosphor-icons/react';
 import * as React from 'react';
 import { cn } from '@renderer/utils/utils';
 

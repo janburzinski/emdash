@@ -1,4 +1,4 @@
-import { RotateCcw } from 'lucide-react';
+import { ArrowCounterClockwise as RotateCcw } from '@phosphor-icons/react';
 import { useAppSettingsKey } from '@renderer/features/settings/use-app-settings-key';
 import { Button } from '@renderer/lib/ui/button';
 import { Textarea } from '@renderer/lib/ui/textarea';

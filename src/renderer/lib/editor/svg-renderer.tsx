@@ -1,4 +1,4 @@
-import { Pencil } from 'lucide-react';
+import { PencilSimple as Pencil } from '@phosphor-icons/react';
 import { useEffect, useMemo } from 'react';
 import { useProvisionedTask } from '@renderer/features/tasks/task-view-context';
 import { modelRegistry } from '@renderer/lib/monaco/monaco-model-registry';

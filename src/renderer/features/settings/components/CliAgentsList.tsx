@@ -1,4 +1,4 @@
-import { Settings2, Sparkles } from 'lucide-react';
+import { SlidersHorizontal as Settings2, Sparkle as Sparkles } from '@phosphor-icons/react';
 import { observer } from 'mobx-react-lite';
 import React, { useMemo, useState } from 'react';
 import { AGENT_PROVIDERS } from '@shared/agent-provider-registry';
@@ -43,8 +43,7 @@ function mapDependencyStatesToCli(
   return Array.from(mergedMap.values());
 }
 
-const ICON_BUTTON =
-  'rounded-md p-1.5 text-muted-foreground transition hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background';
+const ICON_BUTTON = 'rounded-md p-1.5 text-muted-foreground transition hover:bg-muted/40';
 
 const renderAgentRow = (agent: CliAgentStatus, onSettingsClick: (id: string) => void) => {
   const logo = agentMeta[agent.id as keyof typeof agentMeta]?.icon;

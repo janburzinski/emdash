@@ -1,4 +1,11 @@
-import { Archive, Pencil, Pin, PinOff, RotateCcw, Trash2 } from 'lucide-react';
+import {
+  Archive,
+  PencilSimple as Pencil,
+  PushPin as Pin,
+  PushPinSlash as PinOff,
+  ArrowCounterClockwise as RotateCcw,
+  Trash as Trash2,
+} from '@phosphor-icons/react';
 import React from 'react';
 import {
   ContextMenu,

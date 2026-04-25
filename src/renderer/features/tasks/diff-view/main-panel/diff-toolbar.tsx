@@ -1,4 +1,4 @@
-import { AlignJustify, Columns2 } from 'lucide-react';
+import { TextAlignJustify as AlignJustify, Columns as Columns2 } from '@phosphor-icons/react';
 import { observer } from 'mobx-react-lite';
 import { useMemo } from 'react';
 import { useProvisionedTask } from '@renderer/features/tasks/task-view-context';

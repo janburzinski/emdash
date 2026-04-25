@@ -1,5 +1,5 @@
+import { CaretDown as ChevronDown } from '@phosphor-icons/react';
 import type { VariantProps } from 'class-variance-authority';
-import { ChevronDown } from 'lucide-react';
 import { useState, type ReactNode } from 'react';
 import { cn } from '@renderer/utils/utils';
 import { Button, buttonVariants } from './button';

@@ -1,4 +1,10 @@
-import { AlertCircle, CheckCircle2, Loader2, RotateCcw, X } from 'lucide-react';
+import {
+  WarningCircle as AlertCircle,
+  CheckCircle as CheckCircle2,
+  CircleNotch as Loader2,
+  ArrowCounterClockwise as RotateCcw,
+  X,
+} from '@phosphor-icons/react';
 import { observer } from 'mobx-react-lite';
 import { ReactNode, useEffect, useState } from 'react';
 import { getPrSyncStore } from '@renderer/features/projects/stores/project-selectors';

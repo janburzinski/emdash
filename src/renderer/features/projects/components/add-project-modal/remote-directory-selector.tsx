@@ -1,4 +1,9 @@
-import { ChevronUp, FileCode, Folder, Loader2 } from 'lucide-react';
+import {
+  CaretUp as ChevronUp,
+  FileCode,
+  Folder,
+  CircleNotch as Loader2,
+} from '@phosphor-icons/react';
 import { useEffect, useState } from 'react';
 import type { FileEntry } from '@shared/ssh';
 import { rpc } from '@renderer/lib/ipc';

@@ -1,4 +1,4 @@
-import { Eye, FileCode, Pencil } from 'lucide-react';
+import { Eye, FileCode, PencilSimple as Pencil } from '@phosphor-icons/react';
 import { observer } from 'mobx-react-lite';
 import { FileTabs } from '@renderer/features/tasks/editor/file-tabs';
 import { EditorViewStore } from '@renderer/features/tasks/editor/stores/editor-view-store';

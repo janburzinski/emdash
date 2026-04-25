@@ -1,4 +1,4 @@
-import { Eye, Pencil } from 'lucide-react';
+import { Eye, PencilSimple as Pencil } from '@phosphor-icons/react';
 import { observer } from 'mobx-react-lite';
 import { useCallback } from 'react';
 import { useProvisionedTask, useTaskViewContext } from '@renderer/features/tasks/task-view-context';

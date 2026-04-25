@@ -1,12 +1,12 @@
 import {
-  ChevronRight,
-  FolderClosed,
-  FolderInput,
-  Loader2,
+  CaretRight as ChevronRight,
+  Folder as FolderClosed,
+  FolderSimple as FolderInput,
+  CircleNotch as Loader2,
   Plus,
-  RotateCcw,
-  Trash2,
-} from 'lucide-react';
+  ArrowCounterClockwise as RotateCcw,
+  Trash as Trash2,
+} from '@phosphor-icons/react';
 import { observer } from 'mobx-react-lite';
 import React, { useCallback, useEffect } from 'react';
 import {

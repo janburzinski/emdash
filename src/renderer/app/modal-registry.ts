@@ -1,3 +1,4 @@
+import { CommandPaletteModal } from '@renderer/features/command-palette/command-palette-modal';
 import { IntegrationSetupModal } from '@renderer/features/integrations/integration-setup-modal';
 import { McpModal } from '@renderer/features/mcp/components/McpModal';
 import { AddProjectModal } from '@renderer/features/projects/components/add-project-modal/add-project-modal';
@@ -32,6 +33,7 @@ export function createModal<TProps, TResult>(
 export const modalRegistry = {
   taskModal: createModal(CreateTaskModal),
   addProjectModal: createModal(AddProjectModal),
+  commandPaletteModal: createModal(CommandPaletteModal, { size: 'lg' }),
   addSshConnModal: createModal(AddSshConnModal),
   githubDeviceFlowModal: createModal(GithubDeviceFlowModalOverlay, { size: 'md' }),
   confirmActionModal: createModal(ConfirmActionDialog, { size: 'xs' }),

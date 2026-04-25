@@ -1,4 +1,9 @@
-import { ChevronDown, ChevronUp, Search, X } from 'lucide-react';
+import {
+  CaretDown as ChevronDown,
+  CaretUp as ChevronUp,
+  MagnifyingGlass as Search,
+  X,
+} from '@phosphor-icons/react';
 import React, { type RefObject } from 'react';
 import { Button } from '@renderer/lib/ui/button';
 import { Input } from '@renderer/lib/ui/input';

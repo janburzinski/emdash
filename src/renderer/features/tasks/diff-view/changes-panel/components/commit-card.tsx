@@ -1,4 +1,4 @@
-import { CheckCircle, Loader2 } from 'lucide-react';
+import { CheckCircle, CircleNotch as Loader2 } from '@phosphor-icons/react';
 import { observer } from 'mobx-react-lite';
 import { useState } from 'react';
 import { useProvisionedTask } from '@renderer/features/tasks/task-view-context';

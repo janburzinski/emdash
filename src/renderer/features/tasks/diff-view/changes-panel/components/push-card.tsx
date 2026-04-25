@@ -1,4 +1,4 @@
-import { ArrowUp } from 'lucide-react';
+import { ArrowUp } from '@phosphor-icons/react';
 import { observer } from 'mobx-react-lite';
 import { selectAheadCount } from '@renderer/features/tasks/diff-view/stores/diff-selectors';
 import { useProvisionedTask } from '@renderer/features/tasks/task-view-context';

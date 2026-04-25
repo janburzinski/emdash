@@ -1,5 +1,5 @@
+import { ArrowCounterClockwise as RotateCcw, X } from '@phosphor-icons/react';
 import { formatForDisplay, useHotkeyRecorder, type Hotkey } from '@tanstack/react-hotkeys';
-import { RotateCcw, X } from 'lucide-react';
 import React, { useState } from 'react';
 import { useAppSettingsKey } from '@renderer/features/settings/use-app-settings-key';
 import { toast } from '@renderer/lib/hooks/use-toast';

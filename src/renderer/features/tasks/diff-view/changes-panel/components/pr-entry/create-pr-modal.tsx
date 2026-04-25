@@ -1,4 +1,8 @@
-import { ChevronDown, CircleAlert, GitBranch } from 'lucide-react';
+import {
+  CaretDown as ChevronDown,
+  WarningCircle as CircleAlert,
+  GitBranch,
+} from '@phosphor-icons/react';
 import { observer } from 'mobx-react-lite';
 import { useState } from 'react';
 import type { Branch } from '@shared/git';
@@ -131,11 +135,7 @@ export const CreatePrModal = observer(function CreatePrModal({
                 <div className="flex flex-col text-left text-sm gap-0.5">
                   <span className="text-foreground-passive text-xs">Base Branch</span>
                   <span className="flex items-center gap-1">
-                    <GitBranch
-                      absoluteStrokeWidth
-                      strokeWidth={2}
-                      className="size-3.5 shrink-0 text-foreground-muted"
-                    />
+                    <GitBranch className="size-3.5 shrink-0 text-foreground-muted" />
                     <ComboboxValue placeholder="Select a base branch" />
                   </span>
                 </div>

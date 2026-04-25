@@ -1,4 +1,4 @@
-import { ExternalLink } from 'lucide-react';
+import { ArrowSquareOut as ExternalLink } from '@phosphor-icons/react';
 import { observer } from 'mobx-react-lite';
 import { useState } from 'react';
 import { getPrNumber, type PullRequest } from '@shared/pull-requests';

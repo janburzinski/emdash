@@ -1,5 +1,11 @@
+import {
+  ArrowSquareOut as ExternalLink,
+  Globe,
+  PencilSimple as Pencil,
+  Plus,
+  Terminal,
+} from '@phosphor-icons/react';
 import { motion } from 'framer-motion';
-import { ExternalLink, Globe, Pencil, Plus, Terminal } from 'lucide-react';
 import React from 'react';
 import { AgentProviderId } from '@shared/agent-provider-registry';
 import type { McpCatalogEntry, McpServer } from '@shared/mcp/types';

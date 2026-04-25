@@ -1,4 +1,4 @@
-import { AlertCircle } from 'lucide-react';
+import { WarningCircle as AlertCircle } from '@phosphor-icons/react';
 import { PRODUCT_NAME } from '@shared/app-identity';
 
 export function ServerUnavailableMessage() {

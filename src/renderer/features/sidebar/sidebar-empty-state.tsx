@@ -1,4 +1,4 @@
-import { FolderOpen } from 'lucide-react';
+import { FolderOpen } from '@phosphor-icons/react';
 import React from 'react';
 import { Button } from '@renderer/lib/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@renderer/lib/ui/card';

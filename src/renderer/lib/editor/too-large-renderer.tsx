@@ -1,4 +1,4 @@
-import { FileX } from 'lucide-react';
+import { FileX } from '@phosphor-icons/react';
 import type { ManagedFile } from './types';
 
 interface TooLargeRendererProps {

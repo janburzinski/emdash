@@ -1,4 +1,4 @@
-import { ListFilter } from 'lucide-react';
+import { FunnelSimple as ListFilter } from '@phosphor-icons/react';
 import { observer } from 'mobx-react-lite';
 import { sidebarStore } from '@renderer/lib/stores/app-state';
 import { Button } from '@renderer/lib/ui/button';

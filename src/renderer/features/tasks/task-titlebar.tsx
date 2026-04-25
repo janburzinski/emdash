@@ -1,17 +1,17 @@
 import {
   ArrowDown,
   ArrowUp,
-  ChevronDown,
-  FileDiff,
+  CaretDown as ChevronDown,
+  FileText as FileDiff,
   Files,
   GitBranch,
   GitCommit,
-  ListTree,
-  MessageSquare,
-  Pin,
-  RefreshCcw,
+  TreeStructure as ListTree,
+  ChatCircle as MessageSquare,
+  PushPin as Pin,
+  ArrowsCounterClockwise as RefreshCcw,
   Terminal,
-} from 'lucide-react';
+} from '@phosphor-icons/react';
 import { observer } from 'mobx-react-lite';
 import {
   asMounted,

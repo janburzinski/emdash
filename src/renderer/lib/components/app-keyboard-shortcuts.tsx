@@ -1,6 +1,5 @@
 import { useHotkey } from '@tanstack/react-hotkeys';
 import { useAppSettingsKey } from '@renderer/features/settings/use-app-settings-key';
-import { toast } from '@renderer/lib/hooks/use-toast';
 import {
   getEffectiveHotkey,
   getHotkeyRegistration,
@@ -13,6 +12,7 @@ import {
   useWorkspaceSlots,
 } from '@renderer/lib/layout/navigation-provider';
 import { useShowModal } from '@renderer/lib/modal/modal-provider';
+import { modalStore } from '@renderer/lib/modal/modal-store';
 
 /**
  * Mounts global keyboard shortcut handlers for the entire application.
@@ -23,6 +23,7 @@ export function AppKeyboardShortcuts() {
   const { value: keyboard } = useAppSettingsKey('keyboard');
   const showNewProject = useShowModal('addProjectModal');
   const showCreateTask = useShowModal('taskModal');
+  const showCommandPalette = useShowModal('commandPaletteModal');
   const { toggleLeft, toggleRight } = useWorkspaceLayoutContext();
   const { toggleTheme } = useTheme();
   const { navigate } = useNavigate();
@@ -45,15 +46,24 @@ export function AppKeyboardShortcuts() {
         ? projectParams.projectId
         : undefined;
 
+  useHotkey(getHotkeyRegistration('commandPalette', keyboard), () => showCommandPalette({}), {
+    enabled: commandPaletteHotkey !== null,
+  });
+
   useHotkey(
-    getHotkeyRegistration('commandPalette', keyboard),
-    () => toast({ title: 'CMDK coming soon' }),
-    { enabled: commandPaletteHotkey !== null }
+    getHotkeyRegistration('settings', keyboard),
+    () => navigate(currentView === 'settings' ? 'home' : 'settings'),
+    { enabled: settingsHotkey !== null }
   );
 
-  useHotkey(getHotkeyRegistration('settings', keyboard), () => navigate('settings'), {
-    enabled: settingsHotkey !== null,
-  });
+  useHotkey(
+    'Escape',
+    () => {
+      if (modalStore.isOpen) return;
+      navigate('home');
+    },
+    { enabled: currentView === 'settings' }
+  );
 
   useHotkey(getHotkeyRegistration('toggleLeftSidebar', keyboard), () => toggleLeft(), {
     enabled: toggleLeftSidebarHotkey !== null,

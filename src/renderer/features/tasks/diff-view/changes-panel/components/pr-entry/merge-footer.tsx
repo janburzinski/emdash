@@ -1,11 +1,11 @@
 import {
-  AlertTriangle,
-  CheckCircle2,
+  Warning as AlertTriangle,
+  CheckCircle as CheckCircle2,
   GitMerge,
-  HelpCircle,
+  Question as HelpCircle,
   XCircle,
-  type LucideIcon,
-} from 'lucide-react';
+  type Icon as LucideIcon,
+} from '@phosphor-icons/react';
 import { Button } from '@renderer/lib/ui/button';
 import { SplitButton, SplitButtonAction } from '@renderer/lib/ui/split-button';
 import { cn } from '@renderer/utils/utils';

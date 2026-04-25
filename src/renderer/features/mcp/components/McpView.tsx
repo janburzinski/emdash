@@ -1,4 +1,9 @@
-import { Loader2, Plus, RefreshCw, Search } from 'lucide-react';
+import {
+  CircleNotch as Loader2,
+  Plus,
+  ArrowsClockwise as RefreshCw,
+  MagnifyingGlass as Search,
+} from '@phosphor-icons/react';
 import React, { useState } from 'react';
 import { useModalContext, useShowModal } from '@renderer/lib/modal/modal-provider';
 import { Button } from '@renderer/lib/ui/button';

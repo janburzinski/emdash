@@ -1,4 +1,4 @@
-import { GitBranch } from 'lucide-react';
+import { GitBranch } from '@phosphor-icons/react';
 import { cn } from '@renderer/utils/utils';
 
 interface BranchDisplayProps {
@@ -18,11 +18,7 @@ export function BranchDisplay({ label, branchName, className }: BranchDisplayPro
       <div className="flex flex-col text-left text-sm gap-0.5">
         <span className="text-foreground-passive text-xs">{label}</span>
         <span className="flex items-center gap-1">
-          <GitBranch
-            absoluteStrokeWidth
-            strokeWidth={2}
-            className="size-3.5 shrink-0 text-foreground-muted"
-          />
+          <GitBranch className="size-3.5 shrink-0 text-foreground-muted" />
           <span>{branchName}</span>
         </span>
       </div>

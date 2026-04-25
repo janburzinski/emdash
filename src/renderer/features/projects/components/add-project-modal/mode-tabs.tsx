@@ -1,5 +1,5 @@
 import { Tabs } from '@base-ui/react';
-import { Folder, Github, Plus } from 'lucide-react';
+import { Folder, GithubLogo as Github, Plus } from '@phosphor-icons/react';
 import { type Mode } from './add-project-modal';
 import { ButtonCard } from './button-card';
 
