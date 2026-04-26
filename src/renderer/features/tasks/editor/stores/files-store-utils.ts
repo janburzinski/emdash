@@ -86,29 +86,3 @@ export function sortedChildPaths(paths: string[], nodes: Map<string, FileNode>):
     return na.name.localeCompare(nb.name);
   });
 }
-
-// ---------------------------------------------------------------------------
-// Visible rows derivation
-// ---------------------------------------------------------------------------
-
-export function buildVisibleRows(
-  nodes: Map<string, FileNode>,
-  childIndex: Map<string | null, string[]>,
-  expandedPaths: Set<string>
-): FileNode[] {
-  const rows: FileNode[] = [];
-
-  function walk(parent: string | null) {
-    for (const path of childIndex.get(parent) ?? []) {
-      const node = nodes.get(path);
-      if (!node) continue;
-      rows.push(node);
-      if (node.type === 'directory' && expandedPaths.has(path)) {
-        walk(path);
-      }
-    }
-  }
-
-  walk(null);
-  return rows;
-}

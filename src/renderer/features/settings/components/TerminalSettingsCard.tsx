@@ -157,12 +157,12 @@ const TerminalSettingsCard: React.FC = () => {
   const hasAnyResults = filteredPopularOptions.length > 0 || filteredInstalledOptions.length > 0;
 
   return (
-    <div className="flex flex-col gap-4">
+    <>
       <SettingRow
         title="Terminal font"
         description="Choose the font family for the terminal."
         control={
-          <div className="w-[183px] flex-shrink-0">
+          <div className="w-44 flex-shrink-0">
             <Popover open={pickerOpen} onOpenChange={setPickerOpen}>
               <PopoverTrigger>
                 <Button
@@ -276,7 +276,7 @@ const TerminalSettingsCard: React.FC = () => {
           />
         }
       />
-    </div>
+    </>
   );
 };
 

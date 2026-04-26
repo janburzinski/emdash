@@ -1,4 +1,4 @@
-import { HardDrives as Server } from '@phosphor-icons/react';
+import { Plug } from '@phosphor-icons/react';
 import React from 'react';
 import { coerceRawSvgContent, prepareInlineSvgMarkup } from './mcp-icon-data';
 
@@ -27,21 +27,30 @@ function getIcon(
   return undefined;
 }
 
-const ICON_CONTAINER = 'flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-muted/40';
+type McpIconSize = 'sm' | 'md';
 
-export const McpServerIcon: React.FC<{ name: string; iconKey?: string }> = ({ name, iconKey }) => {
+const sizeClasses: Record<McpIconSize, { container: string; icon: string }> = {
+  sm: { container: 'h-5 w-5', icon: 'h-4 w-4' },
+  md: { container: 'h-6 w-6', icon: 'h-5 w-5' },
+};
+
+export const McpServerIcon: React.FC<{
+  name: string;
+  iconKey?: string;
+  size?: McpIconSize;
+}> = ({ name, iconKey, size = 'sm' }) => {
   const icon = iconKey ? getIcon(iconKey) : undefined;
+  const { container, icon: iconSize } = sizeClasses[size];
+  const wrapper = `flex ${container} shrink-0 items-center justify-center`;
 
   if (icon?.type === 'svg') {
     const processed = prepareInlineSvgMarkup(icon.data);
-    return (
-      <div className={`${ICON_CONTAINER} p-2`} dangerouslySetInnerHTML={{ __html: processed }} />
-    );
+    return <div className={wrapper} dangerouslySetInnerHTML={{ __html: processed }} />;
   }
 
   if (icon?.type === 'png') {
     return (
-      <div className={`${ICON_CONTAINER} p-2`}>
+      <div className={wrapper}>
         <img
           src={icon.url}
           alt={name}
@@ -52,8 +61,8 @@ export const McpServerIcon: React.FC<{ name: string; iconKey?: string }> = ({ na
   }
 
   return (
-    <div className={ICON_CONTAINER}>
-      <Server className="h-5 w-5 text-muted-foreground" />
+    <div className={wrapper}>
+      <Plug className={`${iconSize} text-foreground-muted`} />
     </div>
   );
 };

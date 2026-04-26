@@ -3,6 +3,33 @@ import React from 'react';
 import type { Theme } from '@shared/app-settings';
 import { useTheme } from '@renderer/lib/hooks/useTheme';
 import { captureTelemetry } from '@renderer/utils/telemetryClient';
+import { cn } from '@renderer/utils/utils';
+
+const OPTIONS: ReadonlyArray<{
+  value: Theme;
+  label: string;
+  Icon: React.ComponentType<{ className?: string }>;
+  ariaLabel: string;
+}> = [
+  {
+    value: null,
+    label: 'System',
+    Icon: Monitor,
+    ariaLabel: 'Set theme to system preference',
+  },
+  {
+    value: 'emlight',
+    label: 'Light',
+    Icon: Sun,
+    ariaLabel: 'Set theme to Emdash Light',
+  },
+  {
+    value: 'emdark',
+    label: 'Dark',
+    Icon: Moon,
+    ariaLabel: 'Set theme to Emdash Dark',
+  },
+];
 
 const ThemeCard: React.FC = () => {
   const { theme, setTheme } = useTheme();
@@ -14,49 +41,34 @@ const ThemeCard: React.FC = () => {
     setTheme(next);
   };
 
-  const buttonBase =
-    'flex min-h-24 flex-col items-center justify-center gap-2 rounded-lg border px-2 py-2.5 text-sm font-medium transition-colors sm:px-3';
-  const activeClass = 'bg-background-2';
-  const inactiveClass =
-    'border-border/60 bg-background text-foreground-muted hover:bg-background-1';
-
   return (
-    <div className="grid gap-3 text-sm">
-      <div>
-        <div className="font-medium text-foreground">Color mode</div>
-        <div className="text-foreground-muted">Choose how Emdash looks.</div>
+    <div className="flex flex-col gap-2.5 px-4 py-3">
+      <div className="flex flex-col gap-0.5">
+        <div className="text-sm text-foreground">Color mode</div>
+        <div className="text-xs text-foreground-passive">Choose how Emdash looks.</div>
       </div>
-      <div className="grid grid-cols-[repeat(auto-fit,minmax(6.5rem,1fr))] gap-2">
-        <button
-          type="button"
-          onClick={() => handleSetTheme(null)}
-          className={`${buttonBase} ${theme === null ? activeClass : inactiveClass}`}
-          aria-pressed={theme === null}
-          aria-label="Set theme to system preference"
-        >
-          <Monitor className="h-4 w-4 shrink-0" aria-hidden="true" />
-          <span className="text-centert">System</span>
-        </button>
-        <button
-          type="button"
-          onClick={() => handleSetTheme('emlight')}
-          className={`${buttonBase} ${theme === 'emlight' ? activeClass : inactiveClass}`}
-          aria-pressed={theme === 'emlight'}
-          aria-label="Set theme to Emdash Light"
-        >
-          <Sun className="h-4 w-4 shrink-0" aria-hidden="true" />
-          <span className="text-center">Emdash Light</span>
-        </button>
-        <button
-          type="button"
-          onClick={() => handleSetTheme('emdark')}
-          className={`${buttonBase} ${theme === 'emdark' ? activeClass : inactiveClass}`}
-          aria-pressed={theme === 'emdark'}
-          aria-label="Set theme to Emdash Dark"
-        >
-          <Moon className="h-4 w-4 shrink-0" aria-hidden="true" />
-          <span className="text-center">Emdash Dark</span>
-        </button>
+      <div className="grid grid-cols-3 gap-2">
+        {OPTIONS.map(({ value, label, Icon, ariaLabel }) => {
+          const isActive = theme === value;
+          return (
+            <button
+              key={label}
+              type="button"
+              onClick={() => handleSetTheme(value)}
+              aria-pressed={isActive}
+              aria-label={ariaLabel}
+              className={cn(
+                'flex flex-col items-center justify-center gap-1.5 rounded-lg border px-3 py-3 text-sm transition-colors',
+                isActive
+                  ? 'border-border bg-background-2 text-foreground'
+                  : 'border-border/60 bg-background-1/50 text-foreground-muted hover:bg-background-1'
+              )}
+            >
+              <Icon className="h-4 w-4 shrink-0" aria-hidden="true" />
+              <span>{label}</span>
+            </button>
+          );
+        })}
       </div>
     </div>
   );

@@ -281,6 +281,13 @@ export class GitService implements GitProvider {
     }
   }
 
+  async getStagedUnifiedDiff(): Promise<string> {
+    const { stdout } = await this.exec('git', ['diff', '--cached', '--no-color'], {
+      cwd: this.path,
+    });
+    return stdout;
+  }
+
   async getUnstagedChanges(): Promise<{ changes: GitChange[] }> {
     try {
       const full = await this.getFullStatus();

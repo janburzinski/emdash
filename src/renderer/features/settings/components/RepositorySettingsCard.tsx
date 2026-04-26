@@ -19,42 +19,46 @@ const RepositorySettingsCard: React.FC = () => {
   const pushOnCreate = localProject?.pushOnCreate ?? true;
   const writeAgentConfigToGitIgnore = localProject?.writeAgentConfigToGitIgnore ?? true;
 
-  const example = useMemo(() => {
-    return `${branchPrefix}/my-feature-a3f`;
-  }, [branchPrefix]);
+  const example = useMemo(() => `${branchPrefix}/my-feature-a3f`, [branchPrefix]);
 
   return (
-    <div className="grid gap-8">
-      <div className="grid gap-2">
-        <div className="flex items-center gap-2">
-          <Input
-            key={branchPrefix}
-            defaultValue={branchPrefix}
-            onBlur={(e) => {
-              const next = e.target.value.trim();
-              if (next !== branchPrefix) {
-                update({ branchPrefix: next });
-              }
-            }}
-            placeholder="Branch prefix"
-            aria-label="Branch prefix"
-            disabled={loading}
-            className="flex-1"
-          />
-          <ResetToDefaultButton
-            visible={isFieldOverridden('branchPrefix')}
-            defaultLabel="emdash"
-            onReset={() => resetField('branchPrefix')}
-            disabled={loading || saving}
-          />
-        </div>
-        <div className="text-[11px] text-muted-foreground">
-          Example: <code className="rounded bg-muted/60 px-1">{example}</code>
-        </div>
-      </div>
+    <>
+      <SettingRow
+        title="Branch prefix"
+        description={
+          <>
+            Used when creating worktree branches. Example:{' '}
+            <code className="rounded bg-muted/60 px-1 py-0.5 font-mono text-[11px]">{example}</code>
+          </>
+        }
+        control={
+          <>
+            <ResetToDefaultButton
+              visible={isFieldOverridden('branchPrefix')}
+              defaultLabel="emdash"
+              onReset={() => resetField('branchPrefix')}
+              disabled={loading || saving}
+            />
+            <Input
+              key={branchPrefix}
+              defaultValue={branchPrefix}
+              onBlur={(e) => {
+                const next = e.target.value.trim();
+                if (next !== branchPrefix) {
+                  update({ branchPrefix: next });
+                }
+              }}
+              placeholder="emdash"
+              aria-label="Branch prefix"
+              disabled={loading}
+              className="h-8 w-44"
+            />
+          </>
+        }
+      />
       <SettingRow
         title="Auto-push on create"
-        description="Push the new branch to the selected project remote and set upstream after creation."
+        description="Push the new branch to the project remote and set upstream after creation."
         control={
           <>
             <ResetToDefaultButton
@@ -92,7 +96,7 @@ const RepositorySettingsCard: React.FC = () => {
           </>
         }
       />
-    </div>
+    </>
   );
 };
 

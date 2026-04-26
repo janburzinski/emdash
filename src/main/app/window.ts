@@ -12,15 +12,17 @@ let mainWindow: BrowserWindow | null = null;
 export function applyGlassSidebar(window: BrowserWindow, enabled: boolean): void {
   if (process.platform === 'darwin') {
     window.setVibrancy(enabled ? 'sidebar' : null);
+    window.setVisualEffectState(enabled ? 'active' : 'followWindow');
     window.setBackgroundColor(enabled ? '#00000000' : '#ffffff');
     return;
   }
+
   if (process.platform === 'win32') {
     type WinWithBackgroundMaterial = BrowserWindow & {
       setBackgroundMaterial?: (material: 'auto' | 'none' | 'mica' | 'acrylic' | 'tabbed') => void;
     };
     const w = window as WinWithBackgroundMaterial;
-    w.setBackgroundMaterial?.(enabled ? 'acrylic' : 'none');
+    w.setBackgroundMaterial?.('none');
     window.setBackgroundColor(enabled ? '#00000000' : '#ffffff');
   }
 }
@@ -32,6 +34,9 @@ export function createMainWindow(): BrowserWindow {
     minWidth: 700,
     minHeight: 500,
     title: PRODUCT_NAME,
+    backgroundColor:
+      process.platform === 'darwin' || process.platform === 'win32' ? '#00000000' : undefined,
+    transparent: process.platform === 'darwin' || process.platform === 'win32',
     // In production, electron-builder injects the icon from the app bundle.
     ...(import.meta.env.DEV && { icon: appIcon }),
     webPreferences: {

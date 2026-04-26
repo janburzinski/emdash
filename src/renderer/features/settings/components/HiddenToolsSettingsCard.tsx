@@ -28,57 +28,55 @@ export default function HiddenToolsSettingsCard() {
   }, [availability, labels]);
 
   return (
-    <div className="rounded-xl border border-border/60 bg-muted/10 p-2">
-      <div className="space-y-2">
-        {sortedApps.map((app) => {
-          const isDetected = availability[app.id] ?? app.alwaysAvailable ?? false;
-          const isVisible = isDetected && !hiddenApps.includes(app.id);
-          const canToggleVisibility = isDetected;
-          const label = labels[app.id] ?? app.label;
-          const icon = icons[app.id];
-          const indicatorClass = isDetected ? 'bg-emerald-500' : 'bg-muted-foreground/50';
-          const statusLabel = isDetected ? 'Detected' : 'Not detected';
+    <div className="divide-y divide-border/60">
+      {sortedApps.map((app) => {
+        const isDetected = availability[app.id] ?? app.alwaysAvailable ?? false;
+        const isVisible = isDetected && !hiddenApps.includes(app.id);
+        const canToggleVisibility = isDetected;
+        const label = labels[app.id] ?? app.label;
+        const icon = icons[app.id];
+        const indicatorClass = isDetected ? 'bg-emerald-500' : 'bg-foreground-passive/50';
+        const statusLabel = isDetected ? 'Detected' : 'Not detected';
 
-          return (
-            <IntegrationRow
-              key={app.id}
-              logoSrc={icon}
-              name={label}
-              status={isDetected ? 'connected' : 'missing'}
-              showStatusPill={false}
-              middle={
-                <span className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <span className={`h-1.5 w-1.5 rounded-full ${indicatorClass}`} />
-                  {statusLabel}
-                </span>
-              }
-              rightExtra={
-                <TooltipProvider delay={150}>
-                  <Tooltip>
-                    <TooltipTrigger>
-                      <span>
-                        <Switch
-                          checked={isVisible}
-                          disabled={isLoading || isSaving || !canToggleVisibility}
-                          onCheckedChange={(checked) => toggle(app.id, checked)}
-                          aria-label={`${isVisible ? 'Hide' : 'Show'} ${label} in open menu`}
-                        />
-                      </span>
-                    </TooltipTrigger>
-                    <TooltipContent side="top" className="text-xs">
-                      {!isDetected
-                        ? 'Install this tool to show it in menu'
-                        : isVisible
-                          ? 'Hide from menu'
-                          : 'Show in menu'}
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              }
-            />
-          );
-        })}
-      </div>
+        return (
+          <IntegrationRow
+            key={app.id}
+            logoSrc={icon}
+            name={label}
+            status={isDetected ? 'connected' : 'missing'}
+            showStatusPill={false}
+            middle={
+              <span className="flex items-center gap-2 text-sm text-foreground-passive">
+                <span className={`h-1.5 w-1.5 rounded-full ${indicatorClass}`} />
+                {statusLabel}
+              </span>
+            }
+            rightExtra={
+              <TooltipProvider delay={150}>
+                <Tooltip>
+                  <TooltipTrigger>
+                    <span>
+                      <Switch
+                        checked={isVisible}
+                        disabled={isLoading || isSaving || !canToggleVisibility}
+                        onCheckedChange={(checked) => toggle(app.id, checked)}
+                        aria-label={`${isVisible ? 'Hide' : 'Show'} ${label} in open menu`}
+                      />
+                    </span>
+                  </TooltipTrigger>
+                  <TooltipContent side="top" className="text-xs">
+                    {!isDetected
+                      ? 'Install this tool to show it in menu'
+                      : isVisible
+                        ? 'Hide from menu'
+                        : 'Show in menu'}
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            }
+          />
+        );
+      })}
     </div>
   );
 }

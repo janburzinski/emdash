@@ -35,6 +35,13 @@ export type ViewParamsStoreContextValue = {
   viewParamsStore: Partial<{ [K in ViewId]: WrapParams<K> }>;
 };
 
+export type NavigationHistoryContextValue = {
+  goBack: () => void;
+  goForward: () => void;
+  canGoBack: boolean;
+  canGoForward: boolean;
+};
+
 export const WorkspaceNavigateContext = createContext<NavigateFnTyped | undefined>(undefined);
 export const WorkspaceSlotsContext = createContext<SlotsContextValue | undefined>(undefined);
 export const WorkspaceWrapParamsContext = createContext<WrapParamsContextValue | undefined>(
@@ -47,6 +54,9 @@ export const WorkspaceViewParamsStoreContext = createContext<
 export const WorkspaceUpdateViewParamsContext = createContext<UpdateViewParamsFn | undefined>(
   undefined
 );
+export const WorkspaceNavigationHistoryContext = createContext<
+  NavigationHistoryContextValue | undefined
+>(undefined);
 
 export function useNavigate(): { navigate: NavigateFnTyped } {
   const navigate = useContext(WorkspaceNavigateContext);
@@ -95,6 +105,14 @@ export function useParams<TId extends ViewId>(
     [updateFn, viewId]
   );
   return { params, setParams };
+}
+
+export function useNavigationHistory(): NavigationHistoryContextValue {
+  const context = useContext(WorkspaceNavigationHistoryContext);
+  if (!context) {
+    throw new Error('useNavigationHistory must be used within a WorkspaceViewProvider');
+  }
+  return context;
 }
 
 export function isCurrentView(currentView: string | null | undefined, target: string): boolean {

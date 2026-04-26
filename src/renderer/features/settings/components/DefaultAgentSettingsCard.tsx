@@ -26,9 +26,9 @@ const DefaultAgentSettingsCard: React.FC = () => {
   return (
     <SettingRow
       title="Default agent"
-      description="The agent that will be selected by default when creating a new task."
+      description="Selected by default when creating a new task."
       control={
-        <div className="w-[183px] shrink-0">
+        <div className="w-44 shrink-0">
           <AgentSelector
             value={defaultAgent}
             onChange={handleChange}

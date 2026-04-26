@@ -49,6 +49,18 @@ export const gitController = createRPCController({
     }
   },
 
+  getStagedUnifiedDiff: async (projectId: string, workspaceId: string) => {
+    try {
+      const env = resolveWorkspace(projectId, workspaceId);
+      if (!env) return err({ type: 'not_found' as const });
+      const diff = await env.git.getStagedUnifiedDiff();
+      return ok({ diff });
+    } catch (e) {
+      log.error('gitCtrl.getStagedUnifiedDiff failed', { projectId, workspaceId, error: e });
+      return err({ type: 'git_error' as const, message: String(e) });
+    }
+  },
+
   getUnstagedChanges: async (projectId: string, workspaceId: string) => {
     try {
       const env = resolveWorkspace(projectId, workspaceId);

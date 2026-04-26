@@ -4,6 +4,8 @@ import type { SettingsPageTab } from '@renderer/features/settings/components/Set
 import { useGlassSidebar } from '@renderer/lib/hooks/useGlassSidebar';
 import { rpc } from '@renderer/lib/ipc';
 import { useNavigate, useParams } from '@renderer/lib/layout/navigation-provider';
+import { MicroLabel } from '@renderer/lib/ui/label';
+import { cn } from '@renderer/utils/utils';
 import { SidebarContainer, SidebarMenu, SidebarMenuButton } from './sidebar-primitives';
 import { SidebarSpace } from './sidebar-space';
 
@@ -29,9 +31,10 @@ export const SettingsSidebar = observer(function SettingsSidebar() {
 
   return (
     <div
-      className={`flex flex-col h-full text-foreground-tertiary-muted ${
-        glass ? 'bg-background-tertiary/40 backdrop-blur-xl' : 'bg-background-tertiary'
-      }`}
+      className={cn(
+        'flex h-full flex-col text-foreground-tertiary-muted',
+        glass ? 'bg-transparent' : 'bg-background-tertiary'
+      )}
     >
       <SidebarSpace />
       <SidebarContainer className="w-full border-r-0 flex-1 min-h-0">
@@ -46,9 +49,9 @@ export const SettingsSidebar = observer(function SettingsSidebar() {
           </SidebarMenuButton>
         </SidebarMenu>
         <div className="px-5 pt-5 pb-2">
-          <span className="text-[11px] font-medium uppercase tracking-wider text-foreground-tertiary-muted">
+          <MicroLabel className="uppercase tracking-wider text-foreground-tertiary-muted">
             Settings
-          </span>
+          </MicroLabel>
         </div>
         <SidebarMenu className="px-3 pb-3 flex flex-col gap-0.5">
           {TABS.map((tab) => {

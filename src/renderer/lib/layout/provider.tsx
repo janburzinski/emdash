@@ -5,6 +5,7 @@ import {
   useCallback,
   useEffect,
   useMemo,
+  useRef,
   useState,
   useTransition,
   type ReactNode,
@@ -22,15 +23,30 @@ import { clearTelemetryTaskScope, setTelemetryTaskScope } from '@renderer/utils/
 import { captureTelemetry } from '@renderer/utils/telemetryClient';
 import {
   WorkspaceNavigateContext,
+  WorkspaceNavigationHistoryContext,
   WorkspaceSlotsContext,
   WorkspaceUpdateViewParamsContext,
   WorkspaceViewParamsStoreContext,
   WorkspaceWrapParamsContext,
   type NavigateFnTyped,
+  type NavigationHistoryContextValue,
   type SlotsContextValue,
   type UpdateViewParamsFn,
   type WrapParamsContextValue,
 } from './navigation-provider';
+
+type HistoryEntry = { viewId: ViewId; params: Record<string, unknown> };
+
+function shallowEqual(a: Record<string, unknown>, b: Record<string, unknown>): boolean {
+  if (a === b) return true;
+  const keysA = Object.keys(a);
+  const keysB = Object.keys(b);
+  if (keysA.length !== keysB.length) return false;
+  for (const key of keysA) {
+    if (a[key] !== b[key]) return false;
+  }
+  return true;
+}
 
 type ViewParamsStore = Partial<{ [K in ViewId]: WrapParams<K> }>;
 
@@ -79,12 +95,22 @@ export function WorkspaceViewProvider({ children }: { children: ReactNode }) {
   const [viewParamsStore, setViewParamsStore] = useState<ViewParamsStore>(
     () => appState.navigation.viewParamsStore as ViewParamsStore
   );
+  const [backStack, setBackStack] = useState<HistoryEntry[]>([]);
+  const [forwardStack, setForwardStack] = useState<HistoryEntry[]>([]);
+  const currentEntryRef = useRef<HistoryEntry>({
+    viewId: currentViewId,
+    params: (viewParamsStore[currentViewId] ?? {}) as Record<string, unknown>,
+  });
   const [_, startTransition] = useTransition();
 
   // Sync React state back to the MobX persistence mirror after every commit.
   // The SnapshotRegistry reaction then debounces the RPC write by 1 s.
   useEffect(() => {
     runInAction(() => appState.navigation.sync(currentViewId, viewParamsStore));
+    currentEntryRef.current = {
+      viewId: currentViewId,
+      params: (viewParamsStore[currentViewId] ?? {}) as Record<string, unknown>,
+    };
   }, [currentViewId, viewParamsStore]);
 
   useEffect(() => {
@@ -98,9 +124,40 @@ export function WorkspaceViewProvider({ children }: { children: ReactNode }) {
     syncTelemetryScope(currentViewId, viewParamsStore);
   }, [currentViewId, viewParamsStore]);
 
+  const applyHistoryEntry = useCallback((entry: HistoryEntry) => {
+    const transition = focusTracker.transition(
+      entry.viewId === 'task'
+        ? { view: entry.viewId }
+        : {
+            view: entry.viewId,
+            mainPanel: null,
+            rightPanel: null,
+            focusedRegion: null,
+          },
+      'navigation'
+    );
+    captureTelemetry(viewEvents[entry.viewId], {
+      from_view: transition?.previous.view ?? null,
+    });
+    startTransition(() => {
+      setCurrentViewId(entry.viewId);
+      setViewParamsStore((prev) => ({ ...prev, [entry.viewId]: entry.params }));
+    });
+  }, []);
+
   const navigate = useCallback(
     (...args: unknown[]) => {
       const [viewId, params] = args as [ViewId, Record<string, unknown> | undefined];
+      const current = currentEntryRef.current;
+      const nextParams =
+        params !== undefined
+          ? params
+          : ((viewParamsStore[viewId] ?? {}) as Record<string, unknown>);
+      const isSame = viewId === current.viewId && shallowEqual(current.params, nextParams);
+      if (isSame) {
+        closeModal();
+        return;
+      }
       if (viewId !== currentViewId) {
         const transition = focusTracker.transition(
           viewId === 'task'
@@ -119,6 +176,9 @@ export function WorkspaceViewProvider({ children }: { children: ReactNode }) {
         });
       }
 
+      setBackStack((prev) => [...prev, current]);
+      setForwardStack([]);
+
       startTransition(() => {
         setCurrentViewId(viewId);
         // Only overwrite stored params when the caller explicitly passes them;
@@ -129,8 +189,26 @@ export function WorkspaceViewProvider({ children }: { children: ReactNode }) {
         closeModal();
       });
     },
-    [closeModal, currentViewId]
+    [closeModal, currentViewId, viewParamsStore]
   ) as NavigateFnTyped;
+
+  const goBack = useCallback(() => {
+    if (backStack.length === 0) return;
+    const target = backStack[backStack.length - 1];
+    setBackStack((prev) => prev.slice(0, -1));
+    setForwardStack((prev) => [...prev, currentEntryRef.current]);
+    applyHistoryEntry(target);
+    closeModal();
+  }, [applyHistoryEntry, backStack, closeModal]);
+
+  const goForward = useCallback(() => {
+    if (forwardStack.length === 0) return;
+    const target = forwardStack[forwardStack.length - 1];
+    setForwardStack((prev) => prev.slice(0, -1));
+    setBackStack((prev) => [...prev, currentEntryRef.current]);
+    applyHistoryEntry(target);
+    closeModal();
+  }, [applyHistoryEntry, forwardStack, closeModal]);
 
   const updateViewParams = useCallback(
     <TId extends ViewId>(
@@ -170,17 +248,29 @@ export function WorkspaceViewProvider({ children }: { children: ReactNode }) {
 
   const viewParamsStoreValue = useMemo(() => ({ viewParamsStore }), [viewParamsStore]);
 
+  const historyValue = useMemo(
+    (): NavigationHistoryContextValue => ({
+      goBack,
+      goForward,
+      canGoBack: backStack.length > 0,
+      canGoForward: forwardStack.length > 0,
+    }),
+    [goBack, goForward, backStack.length, forwardStack.length]
+  );
+
   return (
     <WorkspaceNavigateContext.Provider value={navigate}>
-      <WorkspaceSlotsContext.Provider value={slotsValue}>
-        <WorkspaceWrapParamsContext.Provider value={wrapParamsValue}>
-          <WorkspaceViewParamsStoreContext.Provider value={viewParamsStoreValue}>
-            <WorkspaceUpdateViewParamsContext.Provider value={updateViewParams}>
-              {children}
-            </WorkspaceUpdateViewParamsContext.Provider>
-          </WorkspaceViewParamsStoreContext.Provider>
-        </WorkspaceWrapParamsContext.Provider>
-      </WorkspaceSlotsContext.Provider>
+      <WorkspaceNavigationHistoryContext.Provider value={historyValue}>
+        <WorkspaceSlotsContext.Provider value={slotsValue}>
+          <WorkspaceWrapParamsContext.Provider value={wrapParamsValue}>
+            <WorkspaceViewParamsStoreContext.Provider value={viewParamsStoreValue}>
+              <WorkspaceUpdateViewParamsContext.Provider value={updateViewParams}>
+                {children}
+              </WorkspaceUpdateViewParamsContext.Provider>
+            </WorkspaceViewParamsStoreContext.Provider>
+          </WorkspaceWrapParamsContext.Provider>
+        </WorkspaceSlotsContext.Provider>
+      </WorkspaceNavigationHistoryContext.Provider>
     </WorkspaceNavigateContext.Provider>
   );
 }

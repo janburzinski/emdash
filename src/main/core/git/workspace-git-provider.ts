@@ -24,6 +24,8 @@ export interface WorkspaceGitProvider {
     totalAdded: number;
     totalDeleted: number;
   }>;
+  /** Unified diff of staged changes (output of `git diff --cached`). */
+  getStagedUnifiedDiff(): Promise<string>;
   getUnstagedChanges(): Promise<{ changes: GitChange[] }>;
   getCurrentBranch(): Promise<string | null>;
   /** Release persistent git resources (e.g. cat-file --batch). */

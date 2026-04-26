@@ -6,16 +6,20 @@ import { Textarea } from '@renderer/lib/ui/textarea';
 export function ReviewPromptResetButton() {
   const { value, defaults, reset, isLoading, isSaving } = useAppSettingsKey('reviewPrompt');
   const canReset = (value ?? '') !== (defaults ?? '');
-  const isVisible = !(isLoading || isSaving || !canReset);
+
+  if (!canReset || isLoading || isSaving) {
+    return <span aria-hidden="true" className="h-7 w-7 shrink-0" />;
+  }
 
   return (
     <Button
       variant="ghost"
-      size="sm"
+      size="icon"
+      className="h-7 w-7 text-foreground-muted hover:text-foreground"
       onClick={() => reset()}
-      disabled={!isVisible || isLoading || !canReset}
+      aria-label="Reset review prompt to default"
     >
-      <RotateCcw />
+      <RotateCcw className="h-3.5 w-3.5" />
     </Button>
   );
 }
@@ -34,7 +38,7 @@ export function ReviewPromptSettingsCard() {
           update(next);
         }
       }}
-      className="min-h-36 px-3 py-2.5 text-[14px] leading-relaxed"
+      className="min-h-32 px-3 py-2.5 text-sm leading-relaxed"
       disabled={isLoading || isSaving}
     />
   );

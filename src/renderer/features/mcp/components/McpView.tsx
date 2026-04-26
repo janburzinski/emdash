@@ -8,6 +8,7 @@ import React, { useState } from 'react';
 import { useModalContext, useShowModal } from '@renderer/lib/modal/modal-provider';
 import { Button } from '@renderer/lib/ui/button';
 import { Input } from '@renderer/lib/ui/input';
+import { Separator } from '@renderer/lib/ui/separator';
 import { McpCard } from './McpCard';
 import type { McpModalMode } from './McpModal';
 import { useMcps } from './useMcps';
@@ -49,7 +50,6 @@ export const McpView: React.FC = () => {
     });
   };
 
-  // Filter
   const lowerSearch = search.toLowerCase();
   const installedNames = new Set(installed.map((s) => s.name));
   const filteredInstalled = installed.filter(
@@ -66,93 +66,110 @@ export const McpView: React.FC = () => {
   if (isLoading) {
     return (
       <div className="flex h-full items-center justify-center bg-background text-foreground">
-        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+        <Loader2 className="h-6 w-6 animate-spin text-foreground-muted" />
       </div>
     );
   }
 
   return (
-    <div className="flex h-full flex-col overflow-y-auto bg-background text-foreground">
-      <div className="mx-auto w-full max-w-3xl px-8 py-8">
-        {/* Header */}
-        <div className="mb-6">
-          <h1 className="text-lg font-semibold">MCP</h1>
-          <p className="mt-1 text-xs text-muted-foreground">
-            Connect your agents with external data sources and tools
-          </p>
-        </div>
-
-        {/* Toolbar */}
-        <div className="mb-6 flex items-center gap-2">
-          <div className="relative flex-1">
-            <Search className="absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search servers..."
-              className="pl-9"
-            />
-          </div>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={refresh}
-            disabled={isRefreshing}
-            aria-label="Refresh providers"
-          >
-            <RefreshCw
-              className={`h-4 w-4 text-muted-foreground ${isRefreshing ? 'animate-spin' : ''}`}
-            />
-          </Button>
-          <Button variant="outline" size="sm" onClick={() => openModal({ type: 'add-custom' })}>
-            <Plus className="mr-1.5 h-3.5 w-3.5" />
-            Custom MCP
-          </Button>
-        </div>
-
-        {/* Installed */}
-        {filteredInstalled.length > 0 && (
-          <div className="mb-6">
-            <h2 className="mb-3 text-xs font-medium tracking-wide text-muted-foreground">Added</h2>
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              {filteredInstalled.map((server) => (
-                <McpCard
-                  key={server.name}
-                  server={server}
-                  catalogEntry={catalog.find((c) => c.key === server.name)}
-                  onEdit={(s) => openModal({ type: 'edit', server: s })}
-                />
-              ))}
+    <div className="flex h-full min-h-0 w-full flex-1 flex-col overflow-hidden bg-background text-foreground">
+      <div className="min-h-0 min-w-0 flex-1 overflow-x-hidden overflow-y-auto">
+        <div className="mx-auto w-full max-w-3xl space-y-8 px-10 py-10">
+          <div className="flex flex-col gap-6">
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex flex-col gap-1">
+                <h2 className="text-xl">MCP</h2>
+                <p className="text-sm text-foreground-muted">
+                  Connect agents to external data and tools via the{' '}
+                  <a
+                    href="https://modelcontextprotocol.io"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-foreground underline decoration-foreground-muted/40 underline-offset-2 hover:decoration-foreground"
+                  >
+                    Model Context Protocol
+                  </a>
+                  .
+                </p>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => openModal({ type: 'add-custom' })}
+                className="shrink-0"
+              >
+                <Plus className="mr-1.5 h-3.5 w-3.5" />
+                Custom MCP
+              </Button>
             </div>
+            <Separator />
           </div>
-        )}
 
-        {/* Recommended */}
-        {filteredCatalog.length > 0 && (
-          <div className="mb-6">
-            <h2 className="mb-3 text-xs font-medium tracking-wide text-muted-foreground">
-              Recommended
-            </h2>
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              {filteredCatalog.map((entry) => (
-                <McpCard
-                  key={entry.key}
-                  catalogEntry={entry}
-                  onEdit={() => {}}
-                  onAdd={(e) => openModal({ type: 'add-catalog', entry: e })}
-                />
-              ))}
+          <div className="flex items-center gap-2">
+            <div className="relative flex-1">
+              <Search className="absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-foreground-muted" />
+              <Input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search servers..."
+                className="pl-9"
+              />
             </div>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={refresh}
+              disabled={isRefreshing}
+              aria-label="Refresh providers"
+            >
+              <RefreshCw
+                className={`h-4 w-4 text-foreground-muted ${isRefreshing ? 'animate-spin' : ''}`}
+              />
+            </Button>
           </div>
-        )}
 
-        {filteredInstalled.length === 0 && filteredCatalog.length === 0 && (
-          <div className="py-12 text-center">
-            <p className="text-sm text-muted-foreground">
+          {filteredInstalled.length > 0 && (
+            <section className="flex flex-col gap-2">
+              <h3 className="px-2 text-xs font-medium uppercase tracking-wider text-foreground-muted">
+                Added
+              </h3>
+              <div className="flex flex-col">
+                {filteredInstalled.map((server) => (
+                  <McpCard
+                    key={server.name}
+                    server={server}
+                    catalogEntry={catalog.find((c) => c.key === server.name)}
+                    onEdit={(s) => openModal({ type: 'edit', server: s })}
+                  />
+                ))}
+              </div>
+            </section>
+          )}
+
+          {filteredCatalog.length > 0 && (
+            <section className="flex flex-col gap-2">
+              <h3 className="px-2 text-xs font-medium uppercase tracking-wider text-foreground-muted">
+                Catalog
+              </h3>
+              <div className="flex flex-col">
+                {filteredCatalog.map((entry) => (
+                  <McpCard
+                    key={entry.key}
+                    catalogEntry={entry}
+                    onEdit={() => {}}
+                    onAdd={(e) => openModal({ type: 'add-catalog', entry: e })}
+                  />
+                ))}
+              </div>
+            </section>
+          )}
+
+          {filteredInstalled.length === 0 && filteredCatalog.length === 0 && (
+            <p className="px-2 text-sm text-foreground-muted">
               {search ? 'No servers match your search.' : 'No servers available.'}
             </p>
-          </div>
-        )}
+          )}
+        </div>
       </div>
     </div>
   );

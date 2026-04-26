@@ -1,4 +1,5 @@
 import { observer } from 'mobx-react-lite';
+import { nameWithOwnerFromUrl } from '@shared/pull-requests';
 import { getPrSyncStore } from '@renderer/features/projects/stores/project-selectors';
 import { rpc } from '@renderer/lib/ipc';
 import { useShowModal } from '@renderer/lib/modal/modal-provider';
@@ -19,13 +20,33 @@ export const PullRequestsSection = observer(function PullRequestsSection({
   const { pr } = provisioned.workspace;
   const repositoryUrl = provisioned.repositoryStore.repositoryUrl;
   const taskBranch = provisioned.taskBranch;
+  const defaultBranchName = provisioned.repositoryStore.defaultBranchName;
   const { pullRequests, currentPr } = pr;
   const showCreatePrModal = useShowModal('createPrModal');
+  const showCommitModal = useShowModal('commitModal');
 
   const hasOpenPr = pullRequests.some((p) => p.status === 'open');
   const isRefreshing = repositoryUrl
     ? (getPrSyncStore(projectId)?.isSyncing(repositoryUrl) ?? false)
     : false;
+
+  const openCreatePrModal = (draft: boolean) => {
+    if (!taskBranch) return;
+    showCreatePrModal({
+      nameWithOwner: repositoryUrl ?? '',
+      branchName: taskBranch,
+      draft,
+      workspaceId: provisioned.workspaceId,
+      onSuccess: () => {},
+    });
+  };
+
+  const openManualPrPage = () => {
+    if (!repositoryUrl || !taskBranch) return;
+    const slug = nameWithOwnerFromUrl(repositoryUrl);
+    const url = `https://github.com/${slug}/compare/${encodeURIComponent(defaultBranchName)}...${encodeURIComponent(taskBranch)}?expand=1`;
+    void rpc.app.openExternal(url);
+  };
 
   return (
     <>
@@ -34,17 +55,15 @@ export const PullRequestsSection = observer(function PullRequestsSection({
         collapsed={collapsed}
         onToggleCollapsed={onToggleCollapsed}
         hasOpenPr={hasOpenPr}
-        onCreatePr={
-          taskBranch
-            ? () =>
-                showCreatePrModal({
-                  nameWithOwner: repositoryUrl ?? '',
-                  branchName: taskBranch,
-                  draft: false,
-                  workspaceId: provisioned.workspaceId,
-                  onSuccess: () => {},
-                })
-            : undefined
+        onCreatePr={taskBranch ? () => openCreatePrModal(false) : undefined}
+        onCreateDraftPr={taskBranch ? () => openCreatePrModal(true) : undefined}
+        onCreatePrManually={taskBranch && repositoryUrl ? openManualPrPage : undefined}
+        onCommit={() =>
+          showCommitModal({
+            projectId,
+            workspaceId: provisioned.workspaceId,
+            onSuccess: () => {},
+          })
         }
         onRefresh={() => {
           void rpc.pullRequests.syncPullRequests(projectId);

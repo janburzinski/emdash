@@ -2,7 +2,6 @@ import React from 'react';
 import { PRODUCT_NAME } from '@shared/app-identity';
 import { useTelemetryConsent } from '@renderer/lib/hooks/useTelemetryConsent';
 import { rpc } from '@renderer/lib/ipc';
-import { Button } from '@renderer/lib/ui/button';
 import { Switch } from '@renderer/lib/ui/switch';
 import { SettingRow } from './SettingRow';
 
@@ -12,29 +11,19 @@ const TelemetryCard: React.FC = () => {
 
   return (
     <SettingRow
-      title="Privacy & Telemetry"
+      title="Anonymous telemetry"
       description={
-        <div>
-          <p>Help improve {PRODUCT_NAME} by sending anonymous usage data.</p>
-          <p>
-            <span>See </span>
-            <Button
-              type="button"
-              variant="link"
-              size="sm"
-              className="group inline-flex h-auto items-center gap-1 px-0 text-sm font-normal text-muted-foreground hover:text-foreground hover:no-underline"
-              onClick={() => rpc.app.openExternal('https://docs.emdash.sh/telemetry')}
-            >
-              <span className="transition-colors group-hover:text-foreground">
-                Telemetry information
-              </span>
-              <span className="text-sm text-muted-foreground transition-colors group-hover:text-foreground">
-                ↗
-              </span>
-            </Button>
-            <span> for details.</span>
-          </p>
-        </div>
+        <span>
+          Help improve {PRODUCT_NAME} by sending anonymous usage data.{' '}
+          <button
+            type="button"
+            className="inline-flex items-center gap-0.5 text-foreground-muted underline-offset-2 hover:text-foreground hover:underline"
+            onClick={() => rpc.app.openExternal('https://docs.emdash.sh/telemetry')}
+          >
+            Learn more
+            <span aria-hidden>↗</span>
+          </button>
+        </span>
       }
       control={
         <div className="flex flex-col items-end gap-1">
@@ -50,9 +39,7 @@ const TelemetryCard: React.FC = () => {
             aria-label="Enable anonymous telemetry"
           />
           {!hasKeyAndHost && (
-            <span className="text-[10px] text-muted-foreground">
-              Inactive in this build (no PostHog keys)
-            </span>
+            <span className="text-[10px] text-foreground-passive">Inactive in this build</span>
           )}
         </div>
       }

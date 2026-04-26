@@ -5,7 +5,9 @@ import { AddProjectModal } from '@renderer/features/projects/components/add-proj
 import { CreateSkillModal } from '@renderer/features/skills/components/CreateSkillModal';
 import { AddRemoteModal } from '@renderer/features/tasks/add-remote-modal';
 import { CreateConversationModal } from '@renderer/features/tasks/conversations/create-conversation-modal';
+import { ReviewModal } from '@renderer/features/tasks/conversations/review-modal';
 import { CreateTaskModal } from '@renderer/features/tasks/create-task-modal/create-task-modal';
+import { CommitModal } from '@renderer/features/tasks/diff-view/changes-panel/components/commit-modal';
 import { CreatePrModal } from '@renderer/features/tasks/diff-view/changes-panel/components/pr-entry/create-pr-modal';
 import { ConflictDialog } from '@renderer/features/tasks/editor/conflict-dialog';
 import { RenameTaskModal } from '@renderer/features/tasks/rename-task-modal';
@@ -38,11 +40,13 @@ export const modalRegistry = {
   githubDeviceFlowModal: createModal(GithubDeviceFlowModalOverlay, { size: 'md' }),
   confirmActionModal: createModal(ConfirmActionDialog, { size: 'xs' }),
   createConversationModal: createModal(CreateConversationModal),
+  reviewModal: createModal(ReviewModal, { size: 'md' }),
   feedbackModal: createModal(FeedbackModal),
   mcpServerModal: createModal(McpModal),
   createSkillModal: createModal(CreateSkillModal),
   conflictDialog: createModal(ConflictDialog, { size: 'sm' }),
   createPrModal: createModal(CreatePrModal, { size: 'md' }),
+  commitModal: createModal(CommitModal, { size: 'md' }),
   renameTaskModal: createModal(RenameTaskModal, { size: 'xs' }),
   integrationSetupModal: createModal(IntegrationSetupModal, { size: 'md' }),
   addRemoteModal: createModal(AddRemoteModal),

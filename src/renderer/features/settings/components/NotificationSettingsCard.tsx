@@ -21,10 +21,12 @@ const NotificationSettingsCard: React.FC = () => {
     resetField,
   } = useAppSettingsKey('notifications');
 
+  const enabled = notifications?.enabled ?? true;
+
   return (
-    <div className="flex flex-col gap-4">
+    <>
       <SettingRow
-        title="Notifications"
+        title="Enable notifications"
         description="Get notified when agents need your attention."
         control={
           <>
@@ -35,7 +37,7 @@ const NotificationSettingsCard: React.FC = () => {
               disabled={loading}
             />
             <Switch
-              checked={notifications?.enabled ?? true}
+              checked={enabled}
               disabled={loading}
               onCheckedChange={(next) => update({ enabled: next })}
             />
@@ -44,8 +46,8 @@ const NotificationSettingsCard: React.FC = () => {
       />
       <div
         className={cn(
-          'flex flex-col gap-3',
-          !notifications?.enabled && 'pointer-events-none opacity-33'
+          '[&>*+*]:border-t [&>*+*]:border-border/60',
+          !enabled && 'pointer-events-none opacity-40'
         )}
       >
         <SettingRow
@@ -67,7 +69,6 @@ const NotificationSettingsCard: React.FC = () => {
             </>
           }
         />
-
         <SettingRow
           title="Sound timing"
           description="When to play sounds."
@@ -83,7 +84,7 @@ const NotificationSettingsCard: React.FC = () => {
                 value={notifications?.soundFocusMode ?? 'always'}
                 onValueChange={(next) => update({ soundFocusMode: next as 'always' | 'unfocused' })}
               >
-                <SelectTrigger className="w-auto shrink-0 gap-2 [&>span]:line-clamp-none">
+                <SelectTrigger className="h-8 w-auto shrink-0 gap-2 [&>span]:line-clamp-none">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent className="min-w-max">
@@ -94,10 +95,9 @@ const NotificationSettingsCard: React.FC = () => {
             </>
           }
         />
-
         <SettingRow
-          title="OS notifications"
-          description="Show system banners when agents need attention or finish (while Emdash is unfocused)."
+          title="System banners"
+          description="Show OS notifications when Emdash is unfocused."
           control={
             <>
               <ResetToDefaultButton
@@ -115,7 +115,7 @@ const NotificationSettingsCard: React.FC = () => {
           }
         />
       </div>
-    </div>
+    </>
   );
 };
 

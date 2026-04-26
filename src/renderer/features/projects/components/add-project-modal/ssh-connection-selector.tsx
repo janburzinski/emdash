@@ -44,7 +44,10 @@ export const SshConnectionSelector = observer(function SshConnectionSelector({
       trigger={
         <ComboboxTrigger
           render={
-            <button className="flex h-9 w-full min-w-0 items-center justify-between rounded-md border border-border px-2.5 py-1 text-left text-sm outline-none">
+            <button
+              type="button"
+              className="flex h-9 w-full min-w-0 items-center justify-between rounded-md border border-border px-2.5 py-1 text-left text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+            >
               <ComboboxValue
                 placeholder={<p className="text-muted-foreground">Select or add a connection</p>}
               />

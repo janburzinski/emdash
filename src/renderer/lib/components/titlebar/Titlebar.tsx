@@ -13,7 +13,7 @@ export function Titlebar({ leftSlot, rightSlot }: { leftSlot?: ReactNode; rightS
   return (
     <header
       className={cn(
-        'flex h-10 shrink-0 items-center bg-background-secondary pr-2 [-webkit-app-region:drag] dark:bg-background',
+        'flex h-10 shrink-0 items-center border-b border-border bg-background-secondary pr-2 [-webkit-app-region:drag] dark:bg-background',
         !isLeftOpen && 'pl-28'
       )}
     >

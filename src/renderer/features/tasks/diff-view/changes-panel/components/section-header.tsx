@@ -1,5 +1,6 @@
 import {
   CaretDown as ChevronDown,
+  GitCommit,
   Plus,
   ArrowsClockwise as RefreshCw,
 } from '@phosphor-icons/react';
@@ -7,6 +8,7 @@ import { SelectionState } from '@renderer/features/tasks/diff-view/stores/change
 import { Badge } from '@renderer/lib/ui/badge';
 import { Button } from '@renderer/lib/ui/button';
 import { Checkbox } from '@renderer/lib/ui/checkbox';
+import { SplitButton, type SplitButtonAction } from '@renderer/lib/ui/split-button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@renderer/lib/ui/tooltip';
 import { cn } from '@renderer/utils/utils';
 
@@ -64,6 +66,9 @@ export function PullRequestSectionHeader({
   onToggleCollapsed,
   hasOpenPr,
   onCreatePr,
+  onCreateDraftPr,
+  onCreatePrManually,
+  onCommit,
   onRefresh,
   isRefreshing,
 }: {
@@ -72,9 +77,31 @@ export function PullRequestSectionHeader({
   onToggleCollapsed?: () => void;
   hasOpenPr: boolean;
   onCreatePr?: () => void;
+  onCreateDraftPr?: () => void;
+  onCreatePrManually?: () => void;
+  onCommit?: () => void;
   onRefresh?: () => void;
   isRefreshing?: boolean;
 }) {
+  const prActions: SplitButtonAction[] = [
+    {
+      value: 'create-pr',
+      label: 'Create PR',
+      action: () => onCreatePr?.(),
+    },
+    {
+      value: 'create-draft-pr',
+      label: 'Create draft PR',
+      action: () => onCreateDraftPr?.(),
+    },
+    {
+      value: 'create-pr-manually',
+      label: 'Create PR manually',
+      description: 'Open the GitHub compare page in your browser',
+      action: () => onCreatePrManually?.(),
+    },
+  ];
+
   return (
     <div className="shrink-0 flex items-center justify-between px-2.5 h-10">
       <div className="flex items-center gap-2 justify-between w-full min-w-0">
@@ -95,17 +122,23 @@ export function PullRequestSectionHeader({
           </span>
         </button>
         <div className="flex items-center gap-1.5">
-          <Tooltip>
-            <TooltipTrigger>
-              <Button variant="outline" size="xs" onClick={onCreatePr} disabled={hasOpenPr}>
-                <Plus className="size-3" />
-                Create PR
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>
-              {hasOpenPr ? 'A pull request is already open' : 'Create a pull request'}
-            </TooltipContent>
-          </Tooltip>
+          {onCommit && (
+            <Tooltip>
+              <TooltipTrigger>
+                <Button variant="outline" size="icon-xs" onClick={onCommit}>
+                  <GitCommit className="size-3" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Commit (AI-generated message via Codex)</TooltipContent>
+            </Tooltip>
+          )}
+          <SplitButton
+            variant="outline"
+            size="xs"
+            actions={prActions}
+            disabled={hasOpenPr}
+            icon={<Plus className="size-3" />}
+          />
           <Tooltip>
             <TooltipTrigger>
               <Button variant="outline" size="icon-xs" onClick={onRefresh} disabled={isRefreshing}>

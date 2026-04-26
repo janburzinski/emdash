@@ -121,16 +121,15 @@ export const CliAgentsList: React.FC = observer(() => {
   }, [agentStatuses]);
 
   return (
-    <div className="space-y-3">
-      <div className="space-y-2">
+    <>
+      <div className="divide-y divide-border/60">
         {sortedAgents.map((agent) => renderAgentRow(agent, setCustomModalAgentId))}
       </div>
-
       <CustomCommandModal
         isOpen={customModalAgentId !== null}
         onClose={() => setCustomModalAgentId(null)}
         providerId={customModalAgentId ?? ''}
       />
-    </div>
+    </>
   );
 });

@@ -5,6 +5,7 @@ import { LeftSidebar } from '@renderer/features/sidebar/left-sidebar';
 import { SettingsSidebar } from '@renderer/features/sidebar/settings-sidebar';
 import { AppKeyboardShortcuts } from '@renderer/lib/components/app-keyboard-shortcuts';
 import { useGlassSidebar } from '@renderer/lib/hooks/useGlassSidebar';
+import { useNavigationGestures } from '@renderer/lib/hooks/useNavigationGestures';
 import { useTheme } from '@renderer/lib/hooks/useTheme';
 import {
   useViewLayoutOverride,
@@ -14,27 +15,35 @@ import {
 import { WorkspaceContentLayout, WorkspaceLayout } from '@renderer/lib/layout/workspace-layout';
 import { ModalRenderer } from '@renderer/lib/modal/modal-renderer';
 import { Toaster } from '@renderer/lib/ui/toaster';
+import { cn } from '@renderer/utils/utils';
 
 export function Workspace() {
   useTheme();
+  useNavigationGestures();
   const { WrapView, currentView } = useWorkspaceSlots();
   const { wrapParams } = useWorkspaceWrapParams();
   const isSettings = currentView === 'settings';
   const glass = useGlassSidebar();
-  const sidebarBg = glass ? 'bg-transparent' : 'bg-background-tertiary';
+
   useLayoutEffect(() => {
-    document.documentElement.classList.toggle('glass-sidebar', glass);
+    document.documentElement.classList.toggle('glass-sidebar-enabled', glass);
     return () => {
-      document.documentElement.classList.remove('glass-sidebar');
+      document.documentElement.classList.remove('glass-sidebar-enabled');
     };
   }, [glass]);
+
   return (
     <>
       <AppKeyboardShortcuts />
       <div className="relative h-full w-full">
         <WorkspaceLayout
           leftSidebar={
-            <div className={`relative h-full w-full overflow-hidden ${sidebarBg}`}>
+            <div
+              className={cn(
+                'relative h-full w-full overflow-hidden',
+                glass ? 'glass-sidebar-shell' : 'bg-background-tertiary'
+              )}
+            >
               <motion.div
                 initial={false}
                 animate={{
@@ -43,7 +52,10 @@ export function Workspace() {
                   opacity: isSettings ? 0 : 1,
                 }}
                 transition={{ duration: 0.42, ease: [0.22, 1, 0.36, 1] }}
-                className="absolute inset-0 will-change-transform"
+                className={cn(
+                  'absolute inset-0 will-change-transform',
+                  isSettings && 'pointer-events-none'
+                )}
                 aria-hidden={isSettings}
               >
                 <LeftSidebar />
@@ -56,7 +68,10 @@ export function Workspace() {
                   opacity: isSettings ? 1 : 0,
                 }}
                 transition={{ duration: 0.42, ease: [0.22, 1, 0.36, 1] }}
-                className="absolute inset-0 will-change-transform"
+                className={cn(
+                  'absolute inset-0 will-change-transform',
+                  !isSettings && 'pointer-events-none'
+                )}
                 aria-hidden={!isSettings}
               >
                 <SettingsSidebar />

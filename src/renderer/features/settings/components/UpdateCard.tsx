@@ -34,95 +34,78 @@ export const UpdateCard = observer(function UpdateCard(): React.JSX.Element {
   );
 
   return (
-    <div className="grid gap-3">
-      <SettingRow
-        title={versionTitle}
-        description={renderStatusMessage()}
-        control={
-          <div className="flex items-center gap-2">
-            {update.state.status !== 'downloaded' && update.state.status !== 'installing' && (
-              <Button
-                type="button"
-                variant="outline"
-                size="icon"
-                className="h-8 w-8"
-                onClick={() => update.check()}
-                disabled={update.state.status === 'checking'}
-                aria-label="Check for updates"
-              >
-                <RefreshCw
-                  className={`h-3 w-3 ${update.state.status === 'checking' ? 'animate-spin' : ''}`}
-                />
-              </Button>
-            )}
-            {renderAction()}
-          </div>
-        }
-      />
-
+    <SettingRow
+      title={versionTitle}
+      description={renderStatusMessage()}
+      control={
+        <div className="flex items-center gap-1.5">
+          {update.state.status !== 'downloaded' && update.state.status !== 'installing' && (
+            <Button
+              type="button"
+              variant="outline"
+              size="icon"
+              className="h-8 w-8"
+              onClick={() => update.check()}
+              disabled={update.state.status === 'checking'}
+              aria-label="Check for updates"
+            >
+              <RefreshCw
+                className={`h-3 w-3 ${update.state.status === 'checking' ? 'animate-spin' : ''}`}
+              />
+            </Button>
+          )}
+          {renderAction()}
+        </div>
+      }
+    >
       {update.state.status === 'downloading' && downloadProgress && (
-        <div className="space-y-2">
-          <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
+        <div className="space-y-1.5 pt-1">
+          <div className="h-1 w-full overflow-hidden rounded-full bg-muted">
             <div
               className="h-full bg-primary transition-all duration-300 ease-out"
               style={{ width: `${downloadProgress.percent || 0}%` }}
             />
           </div>
           {hasByteProgress && (
-            <p className="text-xs text-muted-foreground">
+            <p className="text-[11px] text-foreground-passive">
               {formatBytes(downloadProgress.transferred || 0)} /{' '}
               {formatBytes(downloadProgress.total || 0)}
             </p>
           )}
         </div>
       )}
-    </div>
+    </SettingRow>
   );
 
   function renderStatusMessage() {
     switch (update.state.status) {
       case 'checking':
         return (
-          <p className="flex items-center gap-1 text-sm text-muted-foreground">
+          <span className="flex items-center gap-1">
             <Loader2 className="h-3 w-3 animate-spin" />
-            Checking for updates...
-          </p>
+            Checking for updates…
+          </span>
         );
-
       case 'available':
-        if (update.state.info?.version) {
-          return (
-            <p className="text-sm text-muted-foreground">
-              Version {update.state.info.version} is available
-            </p>
-          );
-        }
-        return <p className="text-sm text-muted-foreground">An update is available</p>;
-
+        return update.state.info?.version
+          ? `Version ${update.state.info.version} is available`
+          : 'An update is available';
       case 'downloading':
-        return (
-          <p className="text-sm text-muted-foreground">
-            Downloading update{update.progressLabel ? ` (${update.progressLabel})` : '...'}
-          </p>
-        );
-
+        return `Downloading update${update.progressLabel ? ` (${update.progressLabel})` : '…'}`;
       case 'downloaded':
         return (
-          <p className="flex items-center gap-1 text-sm text-green-600 dark:text-green-500">
+          <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-500">
             <CheckCircle2 className="h-3 w-3" />
             Update ready. Restart {PRODUCT_NAME} to use the new version.
-          </p>
+          </span>
         );
-
       case 'installing':
         return (
-          <p className="flex items-center gap-1 text-sm text-muted-foreground">
+          <span className="flex items-center gap-1">
             <Loader2 className="h-3 w-3 animate-spin" />
-            Installing update. {PRODUCT_NAME} will close and restart automatically — this may take a
-            few seconds.
-          </p>
+            Installing update. {PRODUCT_NAME} will close and restart automatically.
+          </span>
         );
-
       case 'error':
         return (
           <Badge
@@ -130,16 +113,15 @@ export const UpdateCard = observer(function UpdateCard(): React.JSX.Element {
             className="border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-400"
           >
             <AlertCircle className="h-3 w-3" />
-            Update temporarily unavailable — please try again later
+            Update temporarily unavailable
           </Badge>
         );
-
       default:
         return (
-          <p className="flex items-center gap-1 text-sm text-muted-foreground">
-            <CheckCircle2 className="h-3 w-3 text-green-600 dark:text-green-500" />
-            You're up to date.{' '}
-          </p>
+          <span className="flex items-center gap-1">
+            <CheckCircle2 className="h-3 w-3 text-emerald-600 dark:text-emerald-500" />
+            You're up to date.
+          </span>
         );
     }
   }
@@ -148,46 +130,32 @@ export const UpdateCard = observer(function UpdateCard(): React.JSX.Element {
     switch (update.state.status) {
       case 'available':
         return (
-          <Button
-            size="sm"
-            variant="default"
-            onClick={() => update.download()}
-            className="h-7 text-xs"
-          >
+          <Button size="sm" variant="default" onClick={() => update.download()} className="h-8">
             <Download className="mr-1.5 h-3 w-3" />
             Download
           </Button>
         );
-
       case 'downloading':
         return (
-          <Button size="sm" variant="outline" disabled className="h-7 text-xs">
+          <Button size="sm" variant="outline" disabled className="h-8">
             <Loader2 className="mr-1.5 h-3 w-3 animate-spin" />
             Downloading
           </Button>
         );
-
       case 'downloaded':
         return (
-          <Button
-            size="sm"
-            variant="default"
-            onClick={() => update.install()}
-            className="h-7 text-xs"
-          >
+          <Button size="sm" variant="default" onClick={() => update.install()} className="h-8">
             <RefreshCw className="mr-1.5 h-3 w-3" />
             Restart
           </Button>
         );
-
       case 'installing':
         return (
-          <Button size="sm" variant="outline" disabled className="h-7 text-xs">
+          <Button size="sm" variant="outline" disabled className="h-8">
             <Loader2 className="mr-1.5 h-3 w-3 animate-spin" />
             Installing
           </Button>
         );
-
       default:
         return null;
     }

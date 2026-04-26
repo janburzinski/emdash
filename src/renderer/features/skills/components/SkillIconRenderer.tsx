@@ -1,3 +1,4 @@
+import { PuzzlePiece, Sparkle } from '@phosphor-icons/react';
 import React, { useState } from 'react';
 import type { CatalogSkill } from '@shared/skills/types';
 import { useTheme } from '@renderer/lib/hooks/useTheme';
@@ -5,9 +6,9 @@ import { resolveSkillIcon } from './skillIcons';
 
 type SkillIconSize = 'sm' | 'md';
 
-const sizeClasses: Record<SkillIconSize, { container: string; padding: string; text: string }> = {
-  sm: { container: 'h-10 w-10', padding: 'p-2', text: 'text-sm' },
-  md: { container: 'h-12 w-12', padding: 'p-2.5', text: 'text-base' },
+const sizeClasses: Record<SkillIconSize, { container: string; icon: string }> = {
+  sm: { container: 'h-5 w-5', icon: 'h-4 w-4' },
+  md: { container: 'h-6 w-6', icon: 'h-5 w-5' },
 };
 
 function processSvg(raw: string, fillColor: string): string {
@@ -26,32 +27,23 @@ const SkillIconRenderer: React.FC<SkillIconRendererProps> = ({ skill, size = 'sm
   const { effectiveTheme } = useTheme();
   const isDark = effectiveTheme === 'emdark';
 
-  const { container, padding, text } = sizeClasses[size];
-  const letter = skill.displayName.charAt(0).toUpperCase();
+  const { container, icon } = sizeClasses[size];
+  const wrapperClass = `flex ${container} shrink-0 items-center justify-center`;
 
-  // 1. Bundled SVG
   const svg = resolveSkillIcon(skill.id, skill.source);
   if (svg) {
     const html = processSvg(svg, isDark ? '#ffffff' : '#000000');
-    return (
-      <div
-        className={`flex ${container} shrink-0 items-center justify-center rounded-xl bg-muted/40 ${padding}`}
-        dangerouslySetInnerHTML={{ __html: html }}
-      />
-    );
+    return <div className={wrapperClass} dangerouslySetInnerHTML={{ __html: html }} />;
   }
 
-  // 2. Remote iconUrl
   if (skill.iconUrl && !imgError) {
     const filter = isDark ? 'brightness(0) invert(1)' : 'brightness(0)';
     return (
-      <div
-        className={`flex ${container} shrink-0 items-center justify-center overflow-hidden rounded-xl bg-muted/40 p-1.5`}
-      >
+      <div className={wrapperClass}>
         <img
           src={skill.iconUrl}
           alt=""
-          className="h-full w-full rounded-lg object-contain"
+          className="h-full w-full object-contain"
           style={{ filter }}
           onError={() => setImgError(true)}
           loading="lazy"
@@ -60,12 +52,10 @@ const SkillIconRenderer: React.FC<SkillIconRendererProps> = ({ skill, size = 'sm
     );
   }
 
-  // 3. Letter fallback
+  const FallbackIcon = skill.source === 'local' ? PuzzlePiece : Sparkle;
   return (
-    <div
-      className={`flex ${container} shrink-0 items-center justify-center rounded-xl bg-muted/40 ${text} font-semibold text-foreground/60`}
-    >
-      {letter}
+    <div className={wrapperClass}>
+      <FallbackIcon className={`${icon} text-foreground-muted`} />
     </div>
   );
 };

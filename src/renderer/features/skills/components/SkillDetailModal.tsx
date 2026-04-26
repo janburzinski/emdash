@@ -13,6 +13,7 @@ import {
   DialogTitle,
 } from '@renderer/lib/ui/dialog';
 import { MarkdownRenderer } from '@renderer/lib/ui/markdown-renderer';
+import { getSkillSourceMeta } from './skill-source';
 import SkillIconRenderer from './SkillIconRenderer';
 
 interface SkillDetailModalProps {
@@ -65,6 +66,7 @@ const SkillDetailModal: React.FC<SkillDetailModalProps> = ({
   if (!skill) return null;
 
   const body = skill.skillMdContent ? parseFrontmatter(skill.skillMdContent).body.trim() : '';
+  const sourceMeta = getSkillSourceMeta(skill.source);
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && !isProcessing && onClose()}>
@@ -76,20 +78,10 @@ const SkillDetailModal: React.FC<SkillDetailModalProps> = ({
               <DialogTitle className="text-base font-sans normal-case tracking-normal text-foreground">
                 {skill.displayName}
               </DialogTitle>
-              {skill.source !== 'local' && (
+              {sourceMeta && (
                 <div className="mt-0.5 flex items-center gap-1.5 text-xs text-muted-foreground">
-                  <img
-                    src={
-                      skill.source === 'openai'
-                        ? 'https://github.com/openai.png'
-                        : 'https://github.com/anthropics.png'
-                    }
-                    alt=""
-                    className="h-4 w-4 rounded-sm"
-                  />
-                  <span>
-                    From {skill.source === 'openai' ? 'OpenAI' : 'Anthropic'} skill library
-                  </span>
+                  <img src={sourceMeta.logoUrl} alt="" className="h-4 w-4 rounded-sm" />
+                  <span>From {sourceMeta.label} skill library</span>
                 </div>
               )}
             </div>

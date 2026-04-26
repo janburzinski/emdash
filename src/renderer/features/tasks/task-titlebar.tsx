@@ -5,12 +5,9 @@ import {
   FileText as FileDiff,
   Files,
   GitBranch,
-  GitCommit,
-  TreeStructure as ListTree,
   ChatCircle as MessageSquare,
   PushPin as Pin,
   ArrowsCounterClockwise as RefreshCcw,
-  Terminal,
 } from '@phosphor-icons/react';
 import { observer } from 'mobx-react-lite';
 import {
@@ -25,7 +22,6 @@ import {
   taskViewKind,
 } from '@renderer/features/tasks/stores/task-selectors';
 import { useProvisionedTask, useTaskViewContext } from '@renderer/features/tasks/task-view-context';
-import { RightPanelView } from '@renderer/features/tasks/types';
 import { OpenInMenu } from '@renderer/lib/components/titlebar/open-in-menu';
 import { Titlebar } from '@renderer/lib/components/titlebar/Titlebar';
 import { useDelayedBoolean } from '@renderer/lib/hooks/use-delay-boolean';
@@ -92,7 +88,7 @@ const ActiveTaskTitlebar = observer(function ActiveTaskTitlebar({
   const taskPayload = getRegisteredTaskData(projectId, taskId)!;
   const provisionedTask = useProvisionedTask();
   const { taskView } = provisionedTask;
-  const { view, rightPanelView } = taskView;
+  const { view } = taskView;
   const { openAgentsView, openEditorView, openDiffView, isPending } = useTaskViewNavigation();
   const delayedIsPending = useDelayedBoolean(isPending, 200);
   useTaskViewShortcuts();
@@ -129,26 +125,25 @@ const ActiveTaskTitlebar = observer(function ActiveTaskTitlebar({
               </span>
               <ChevronDown className="size-3.5 shrink-0" />
             </PopoverTrigger>
-            <PopoverContent align="start" className="w-96 p-4 flex flex-col gap-2">
-              <div className="flex flex-col gap-1 w-full">
-                <MicroLabel className="text-foreground-passive items-center flex">Task</MicroLabel>
-                <span className="text-sm tracking-tight">{taskDisplayName(taskStore)}</span>
-              </div>
-              <OpenInMenu path={provisionedTask.path} />
-              <div className="flex flex-col gap-1 border border-border rounded-md p-2">
-                <span className="flex items-center gap-1 text-foreground-muted">
-                  <GitBranch className="size-3.5" />
-                  <span>{provisionedTask.workspace.git.branchName}</span>
-                </span>
-                {taskPayload.sourceBranch && (
-                  <span className="flex items-center gap-2 text-foreground-passive">
-                    Created from
-                    <span className="flex items-center gap-1 text-foreground-muted">
-                      <GitBranch className="size-3.5" /> {taskPayload.sourceBranch.branch}
+            <PopoverContent align="start" className="w-72 p-0 gap-0 overflow-hidden">
+              <div className="flex flex-col gap-2.5 px-3.5 pt-3 pb-3">
+                <div className="flex min-w-0 flex-col gap-0.5">
+                  <span className="flex min-w-0 items-center gap-2 text-sm">
+                    <GitBranch className="size-3.5 shrink-0 text-foreground-passive" />
+                    <span className="truncate text-foreground">
+                      {provisionedTask.workspace.git.branchName}
                     </span>
                   </span>
-                )}
-                <div className="flex items-center gap-1 w-full">
+                  {taskPayload.sourceBranch && (
+                    <span className="pl-[22px] truncate text-xs text-foreground-passive">
+                      from{' '}
+                      <span className="text-foreground-muted">
+                        {taskPayload.sourceBranch.branch}
+                      </span>
+                    </span>
+                  )}
+                </div>
+                <div className="flex items-center gap-1">
                   {hasUpstream ? (
                     <>
                       <Tooltip>
@@ -161,11 +156,11 @@ const ActiveTaskTitlebar = observer(function ActiveTaskTitlebar({
                             onClick={() => fetch()}
                           >
                             <RefreshCcw className="size-3" />
-                            {isFetching ? 'Fetching...' : 'Fetch'}
+                            {isFetching ? 'Fetching…' : 'Fetch'}
                           </Button>
                         </TooltipTrigger>
                         <TooltipContent>
-                          {isFetching ? 'Fetching...' : 'Fetch changes'}
+                          {isFetching ? 'Fetching…' : 'Fetch changes'}
                         </TooltipContent>
                       </Tooltip>
                       <Tooltip>
@@ -179,7 +174,7 @@ const ActiveTaskTitlebar = observer(function ActiveTaskTitlebar({
                           >
                             <ArrowDown className="size-3" />
                             {isPulling ? (
-                              'Pulling...'
+                              'Pulling…'
                             ) : (
                               <span className="flex items-center gap-1">
                                 Pull
@@ -192,7 +187,7 @@ const ActiveTaskTitlebar = observer(function ActiveTaskTitlebar({
                         </TooltipTrigger>
                         <TooltipContent>
                           {isPulling
-                            ? 'Pulling...'
+                            ? 'Pulling…'
                             : behindCount === 0
                               ? 'Nothing to pull'
                               : 'Pull changes'}
@@ -209,7 +204,7 @@ const ActiveTaskTitlebar = observer(function ActiveTaskTitlebar({
                           >
                             <ArrowUp className="size-3" />
                             {isPushing ? (
-                              'Pushing...'
+                              'Pushing…'
                             ) : (
                               <span className="flex items-center gap-1">
                                 Push
@@ -222,7 +217,7 @@ const ActiveTaskTitlebar = observer(function ActiveTaskTitlebar({
                         </TooltipTrigger>
                         <TooltipContent>
                           {isPushing
-                            ? 'Pushing...'
+                            ? 'Pushing…'
                             : aheadCount === 0
                               ? 'Nothing to push'
                               : 'Push changes'}
@@ -240,25 +235,35 @@ const ActiveTaskTitlebar = observer(function ActiveTaskTitlebar({
                           onClick={() => publish()}
                         >
                           <ArrowUp className="size-3" />
-                          {isPublishing ? 'Publishing...' : 'Publish'}
+                          {isPublishing ? 'Publishing…' : 'Publish'}
                         </Button>
                       </TooltipTrigger>
                       <TooltipContent>
-                        {isPublishing ? 'Publishing...' : 'Publish branch'}
+                        {isPublishing ? 'Publishing…' : 'Publish branch'}
                       </TooltipContent>
                     </Tooltip>
                   )}
                 </div>
               </div>
-              <IssueSelector
-                value={taskPayload.linkedIssue ?? null}
-                onValueChange={(issue) => {
-                  taskStore.updateLinkedIssue(issue ?? undefined);
-                }}
-                projectId={projectId}
-                nameWithOwner={provisionedTask.repositoryStore.repositoryUrl ?? ''}
-                projectPath={provisionedTask.path}
-              />
+
+              {isRemoteProject && (
+                <div className="border-t border-border px-3.5 py-3">
+                  <OpenInMenu path={provisionedTask.path} />
+                </div>
+              )}
+
+              <div className="flex flex-col gap-1.5 border-t border-border px-3.5 py-3">
+                <MicroLabel className="text-foreground-passive">Linked issue</MicroLabel>
+                <IssueSelector
+                  value={taskPayload.linkedIssue ?? null}
+                  onValueChange={(issue) => {
+                    taskStore.updateLinkedIssue(issue ?? undefined);
+                  }}
+                  projectId={projectId}
+                  nameWithOwner={provisionedTask.repositoryStore.repositoryUrl ?? ''}
+                  projectPath={provisionedTask.path}
+                />
+              </div>
             </PopoverContent>
           </Popover>
           <button
@@ -330,41 +335,6 @@ const ActiveTaskTitlebar = observer(function ActiveTaskTitlebar({
                   <ShortcutHint settingsKey="taskViewEditor" />
                 </div>
               </TooltipContent>
-            </Tooltip>
-          </ToggleGroup>
-          <ToggleGroup
-            disabled={delayedIsPending}
-            variant="outline"
-            value={[rightPanelView]}
-            size="sm"
-            onValueChange={([value]) => {
-              if (!value) return;
-              taskView.setRightPanelView(value as RightPanelView);
-            }}
-          >
-            <Tooltip>
-              <TooltipTrigger>
-                <ToggleGroupItem value="changes" size="sm">
-                  <GitCommit className="size-3.5" />
-                </ToggleGroupItem>
-              </TooltipTrigger>
-              <TooltipContent>Git changes</TooltipContent>
-            </Tooltip>
-            <Tooltip>
-              <TooltipTrigger>
-                <ToggleGroupItem value="terminals" size="sm">
-                  <Terminal className="size-3.5" />
-                </ToggleGroupItem>
-              </TooltipTrigger>
-              <TooltipContent>Terminals</TooltipContent>
-            </Tooltip>
-            <Tooltip>
-              <TooltipTrigger>
-                <ToggleGroupItem value="files" size="sm">
-                  <ListTree className="size-3.5" />
-                </ToggleGroupItem>
-              </TooltipTrigger>
-              <TooltipContent>File explorer</TooltipContent>
             </Tooltip>
           </ToggleGroup>
         </div>

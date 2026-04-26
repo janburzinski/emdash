@@ -151,18 +151,18 @@ const IntegrationsCard: React.FC = () => {
 
   return (
     <div
-      className="grid gap-3"
-      style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))' }}
+      className="grid gap-2.5"
+      style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))' }}
     >
       {integrations.map((integration) => (
         <div key={integration.id} className="flex h-full min-h-0">
-          <div className="flex w-full items-center gap-4 rounded-lg border border-muted bg-muted/20 p-4">
-            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-muted/50">
+          <div className="flex w-full items-center gap-3.5 rounded-xl border border-border/60 bg-muted/10 p-3.5">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-muted/40">
               <SvgLogo raw={integration.logoSvg} />
             </div>
-            <div className="flex flex-1 flex-col gap-0.5">
-              <h3 className="text-sm font-medium text-foreground">{integration.name}</h3>
-              <p className="text-sm text-muted-foreground">{integration.description}</p>
+            <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+              <h3 className="truncate text-sm text-foreground">{integration.name}</h3>
+              <p className="truncate text-xs text-foreground-passive">{integration.description}</p>
             </div>
             {integration.connected ? (
               integration.disabledTooltip ? (

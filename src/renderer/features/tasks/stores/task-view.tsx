@@ -30,8 +30,8 @@ export class TaskViewStore {
   readonly diffView: DiffViewStore;
 
   constructor(resources: TaskViewResources, savedSnapshot?: TaskViewSnapshot) {
-    this.view = (savedSnapshot?.view as MainPanelView) ?? 'agents';
-    this.rightPanelView = (savedSnapshot?.rightPanelView as RightPanelView) ?? 'changes';
+    this.view = normalizeMainPanelView(savedSnapshot?.view);
+    this.rightPanelView = normalizeRightPanelView(savedSnapshot?.rightPanelView);
     this.focusedRegion = savedSnapshot?.focusedRegion ?? 'main';
 
     this.conversationTabs = new ConversationTabViewStore(resources.conversations);
@@ -99,4 +99,16 @@ export class TaskViewStore {
     this.editorView.dispose();
     this.diffView.dispose();
   }
+}
+
+function normalizeMainPanelView(value: string | null | undefined): MainPanelView {
+  if (value === 'agents' || value === 'editor' || value === 'diff') {
+    return value;
+  }
+  return 'agents';
+}
+
+function normalizeRightPanelView(value: string | null | undefined): RightPanelView {
+  if (value === 'changes' || value === 'files' || value === 'terminals') return value;
+  return 'changes';
 }

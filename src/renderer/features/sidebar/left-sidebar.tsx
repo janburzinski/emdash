@@ -25,6 +25,7 @@ import {
   DropdownMenuTrigger,
 } from '@renderer/lib/ui/dropdown-menu';
 import { ShortcutHint } from '@renderer/lib/ui/shortcut-hint';
+import { cn } from '@renderer/utils/utils';
 import { SidebarPinnedTaskList } from './pinned-task-list';
 import { ProjectsGroupLabel } from './projects-group-label';
 import {
@@ -49,9 +50,10 @@ export const LeftSidebar: React.FC = observer(function LeftSidebar() {
 
   return (
     <div
-      className={`flex flex-col h-full text-foreground-tertiary-muted ${
-        glass ? 'bg-background-tertiary/40 backdrop-blur-xl' : 'bg-background-tertiary'
-      }`}
+      className={cn(
+        'flex h-full flex-col text-foreground-tertiary-muted',
+        glass ? 'bg-transparent' : 'bg-background-tertiary'
+      )}
     >
       <SidebarSpace />
       <SidebarContainer className="w-full border-r-0 flex-1 min-h-0">

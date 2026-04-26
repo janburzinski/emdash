@@ -30,6 +30,7 @@ export function PickExistingPanel({
         <FieldLabel>Directory</FieldLabel>
         {strategy === 'local' ? (
           <LocalDirectorySelector
+            autoFocus
             path={state.path}
             onPathChange={state.handlePathChange}
             title="Select a local project"
@@ -46,7 +47,7 @@ export function PickExistingPanel({
       <Field>
         <FieldLabel>Name</FieldLabel>
         <Input
-          placeholder="Enter a project name"
+          placeholder="Auto-filled from directory"
           value={state.name}
           onChange={(e) => state.handleNameChange(e.target.value)}
         />
@@ -106,7 +107,10 @@ export function CreateNewPanel({
             trigger={
               <ComboboxTrigger
                 render={
-                  <button className="flex h-9 w-full min-w-0 items-center justify-between rounded-md border border-border px-2.5 py-1 text-left text-sm outline-none">
+                  <button
+                    type="button"
+                    className="flex h-9 w-full min-w-0 items-center justify-between rounded-md border border-border px-2.5 py-1 text-left text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+                  >
                     <ComboboxValue />
                     <ChevronsUpDownIcon className="size-4 shrink-0 text-muted-foreground" />
                   </button>

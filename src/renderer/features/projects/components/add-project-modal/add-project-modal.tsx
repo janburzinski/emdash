@@ -19,9 +19,9 @@ import {
 } from '@renderer/lib/ui/dialog';
 import { Field, FieldLabel } from '@renderer/lib/ui/field';
 import { ModalLayout } from '@renderer/lib/ui/modal-layout';
-import { ToggleGroup, ToggleGroupItem } from '@renderer/lib/ui/toggle-group';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@renderer/lib/ui/tooltip';
 import { log } from '@renderer/utils/logger';
+import { cn } from '@renderer/utils/utils';
 import { ClonePanel, CreateNewPanel, PickExistingPanel } from './content';
 import { useCloneMode, useNewMode, usePickMode } from './modes';
 
@@ -202,6 +202,12 @@ export const AddProjectModal = observer(function AddProjectModal({
     navigate('project', { projectId: id });
   };
 
+  const onFormSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!canCreate) return;
+    void handleSubmit();
+  };
+
   return (
     <ModalLayout
       header={
@@ -211,87 +217,144 @@ export const AddProjectModal = observer(function AddProjectModal({
       }
       footer={
         <DialogFooter>
-          <ConfirmButton type="button" onClick={() => void handleSubmit()} disabled={!canCreate}>
+          <ConfirmButton type="submit" form="add-project-form" disabled={!canCreate}>
             Create
           </ConfirmButton>
         </DialogFooter>
       }
     >
-      <DialogContentArea className="gap-4">
-        <div className="flex items-center gap-2">
-          <ToggleGroup
-            className="w-full flex-1"
-            value={[mode]}
-            onValueChange={([value]) => {
-              if (value) setMode(value as Mode);
-            }}
-          >
-            <ToggleGroupItem value="pick" className="flex-1">
+      <form id="add-project-form" onSubmit={onFormSubmit}>
+        <div className="flex items-center justify-between border-b border-border px-6">
+          <div className="flex items-center gap-1">
+            <UnderlineTab active={mode === 'pick'} onClick={() => setMode('pick')}>
               Pick
-            </ToggleGroupItem>
-            <ToggleGroupItem value="new" className="flex-1">
+            </UnderlineTab>
+            <UnderlineTab active={mode === 'new'} onClick={() => setMode('new')}>
               New
-            </ToggleGroupItem>
-            <ToggleGroupItem value="clone" className="flex-1">
+            </UnderlineTab>
+            <UnderlineTab active={mode === 'clone'} onClick={() => setMode('clone')}>
               Clone
-            </ToggleGroupItem>
-          </ToggleGroup>
-          <ToggleGroup
-            value={[strategy]}
-            onValueChange={([value]) => {
-              if (value) setStrategy(value as Strategy);
-            }}
-            size="sm"
-          >
+            </UnderlineTab>
+          </div>
+          <div className="flex items-center gap-0.5">
             <Tooltip>
-              <TooltipTrigger>
-                <ToggleGroupItem value="local" aria-label="Local" className="rounded-l-md">
-                  <Home className="size-3.5" />
-                </ToggleGroupItem>
-              </TooltipTrigger>
+              <TooltipTrigger
+                render={
+                  <SourceIconButton
+                    active={strategy === 'local'}
+                    onClick={() => setStrategy('local')}
+                    aria-label="Local"
+                  >
+                    <Home className="size-3.5" />
+                  </SourceIconButton>
+                }
+              />
               <TooltipContent>Local</TooltipContent>
             </Tooltip>
             <Tooltip>
-              <TooltipTrigger>
-                <ToggleGroupItem value="ssh" aria-label="SSH" className="rounded-r-md">
-                  <Server className="size-3.5" />
-                </ToggleGroupItem>
-              </TooltipTrigger>
+              <TooltipTrigger
+                render={
+                  <SourceIconButton
+                    active={strategy === 'ssh'}
+                    onClick={() => setStrategy('ssh')}
+                    aria-label="SSH"
+                  >
+                    <Server className="size-3.5" />
+                  </SourceIconButton>
+                }
+              />
               <TooltipContent>SSH</TooltipContent>
             </Tooltip>
-          </ToggleGroup>
+          </div>
         </div>
-        {strategy === 'ssh' && !showGithubAuthDisclaimer && (
-          <Field>
-            <FieldLabel>SSH Connection</FieldLabel>
-            <SshConnectionSelector
+
+        <DialogContentArea className="gap-4 pt-5">
+          {strategy === 'ssh' && !showGithubAuthDisclaimer && (
+            <Field>
+              <FieldLabel>SSH Connection</FieldLabel>
+              <SshConnectionSelector
+                connectionId={selectedConnectionId}
+                onConnectionIdChange={setConnectionId}
+                onAddConnection={handleAddConnection}
+              />
+            </Field>
+          )}
+          {mode === 'pick' && (
+            <PickExistingPanel
+              strategy={strategy}
               connectionId={selectedConnectionId}
-              onConnectionIdChange={setConnectionId}
-              onAddConnection={handleAddConnection}
+              state={pickState}
+              showInitializeGitPrompt={requiresGitInitialization}
             />
-          </Field>
-        )}
-        {mode === 'pick' && (
-          <PickExistingPanel
-            strategy={strategy}
-            connectionId={selectedConnectionId}
-            state={pickState}
-            showInitializeGitPrompt={requiresGitInitialization}
-          />
-        )}
-        {mode === 'new' && (
-          <CreateNewPanel
-            strategy={strategy}
-            connectionId={selectedConnectionId}
-            state={newState}
-            showGithubAuthDisclaimer={showGithubAuthDisclaimer}
-            onOpenAccountSettings={() => navigate('settings', { tab: 'account' })}
-          />
-        )}
-        {mode === 'clone' && (
-          <ClonePanel strategy={strategy} connectionId={selectedConnectionId} state={cloneState} />
-        )}
-      </DialogContentArea>
+          )}
+          {mode === 'new' && (
+            <CreateNewPanel
+              strategy={strategy}
+              connectionId={selectedConnectionId}
+              state={newState}
+              showGithubAuthDisclaimer={showGithubAuthDisclaimer}
+              onOpenAccountSettings={() => navigate('settings', { tab: 'account' })}
+            />
+          )}
+          {mode === 'clone' && (
+            <ClonePanel
+              strategy={strategy}
+              connectionId={selectedConnectionId}
+              state={cloneState}
+            />
+          )}
+        </DialogContentArea>
+      </form>
     </ModalLayout>
   );
 });
+
+function UnderlineTab({
+  active,
+  onClick,
+  children,
+}: {
+  active: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={active}
+      className={cn(
+        'relative -mb-px px-3 py-2.5 text-sm outline-none transition-colors',
+        'focus-visible:text-foreground',
+        active
+          ? 'text-foreground after:absolute after:inset-x-3 after:bottom-0 after:h-px after:bg-foreground'
+          : 'text-foreground-muted hover:text-foreground'
+      )}
+    >
+      {children}
+    </button>
+  );
+}
+
+const SourceIconButton = ({
+  active,
+  onClick,
+  children,
+  ...props
+}: React.ButtonHTMLAttributes<HTMLButtonElement> & { active: boolean }) => (
+  <button
+    type="button"
+    onClick={onClick}
+    aria-pressed={active}
+    className={cn(
+      'flex size-7 items-center justify-center rounded-md outline-none transition-colors',
+      'focus-visible:ring-2 focus-visible:ring-ring/50',
+      active
+        ? 'bg-muted text-foreground'
+        : 'text-foreground-tertiary-muted hover:bg-muted/40 hover:text-foreground-muted'
+    )}
+    {...props}
+  >
+    {children}
+  </button>
+);

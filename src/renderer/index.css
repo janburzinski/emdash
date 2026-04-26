@@ -444,10 +444,10 @@
     @apply bg-background text-foreground;
   }
 
-  html.glass-sidebar,
-  html.glass-sidebar body,
-  html.glass-sidebar #root {
-    background-color: transparent;
+  html.glass-sidebar-enabled,
+  html.glass-sidebar-enabled body,
+  html.glass-sidebar-enabled #root {
+    background: transparent;
   }
 
   ::selection {
@@ -504,6 +504,48 @@
 }
 
 @layer components {
+  .editor-file-tree {
+    --trees-bg-override: transparent;
+    --trees-fg-override: var(--foreground);
+    --trees-fg-muted-override: var(--foreground-muted);
+    --trees-bg-muted-override: var(--background-1);
+    --trees-selected-bg-override: var(--background-2);
+    --trees-selected-fg-override: var(--foreground);
+    --trees-selected-focused-border-color-override: transparent;
+    --trees-border-color-override: var(--border);
+    --trees-border-radius-override: var(--radius-sm);
+    --trees-indent-guide-bg-override: color-mix(in srgb, var(--border) 60%, transparent);
+    --trees-focus-ring-color-override: var(--border-primary);
+    --trees-focus-ring-width-override: 1px;
+    --trees-focus-ring-offset-override: -1px;
+    --trees-font-family-override: var(--font-sans);
+    --trees-font-size-override: 13px;
+    --trees-font-weight-regular-override: 450;
+    --trees-font-weight-semibold-override: 550;
+    --trees-search-bg-override: var(--background-1);
+    --trees-search-fg-override: var(--foreground);
+    --trees-input-bg-override: var(--background-1);
+    --trees-scrollbar-thumb-override: var(--border);
+    --trees-status-added-override: var(--foreground-diff-added);
+    --trees-status-modified-override: var(--foreground-diff-modified);
+    --trees-status-deleted-override: var(--foreground-diff-deleted);
+    --trees-status-renamed-override: var(--foreground-diff-modified);
+    --trees-status-untracked-override: var(--foreground-muted);
+    --trees-status-ignored-override: var(--foreground-passive);
+  }
+
+  .glass-sidebar-shell {
+    background: color-mix(in srgb, var(--background-tertiary) 30%, transparent);
+    border-right: 1px solid color-mix(in srgb, var(--border) 40%, transparent);
+  }
+
+  .emdark .glass-sidebar-shell,
+  .dark .glass-sidebar-shell,
+  .dark-black .glass-sidebar-shell {
+    background: color-mix(in srgb, var(--background-tertiary) 25%, transparent);
+    border-right-color: color-mix(in srgb, var(--border) 40%, transparent);
+  }
+
   .logo-shimmer-container {
     position: relative;
     display: inline-block;
