@@ -17,6 +17,13 @@
                 : 'emlight';
           document.documentElement.classList.add(effective);
         } catch (_) {}
+        try {
+          var aaRaw = localStorage.getItem('emdash-antialiasing');
+          var aa = aaRaw === null ? true : JSON.parse(aaRaw);
+          if (aa) document.documentElement.classList.add('antialiased');
+        } catch (_) {
+          document.documentElement.classList.add('antialiased');
+        }
       })();
     </script>
   </head>

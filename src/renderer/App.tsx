@@ -9,6 +9,7 @@ import { useLegacyPortStatus } from './lib/hooks/useLegacyPort';
 import { WorkspaceLayoutContextProvider } from './lib/layout/layout-provider';
 import { WorkspaceViewProvider } from './lib/layout/provider';
 import { ModalProvider } from './lib/modal/modal-provider';
+import { AntialiasingProvider } from './lib/providers/antialiasing-provider';
 import { GithubContextProvider } from './lib/providers/github-context-provider';
 import { ThemeProvider } from './lib/providers/theme-provider';
 import { TerminalPoolProvider } from './lib/pty/pty-pool-provider';
@@ -81,7 +82,9 @@ function AppContent() {
               <IntegrationsProvider>
                 <WorkspaceViewProvider>
                   <RightSidebarProvider>
-                    <ThemeProvider>{renderContent()}</ThemeProvider>
+                    <ThemeProvider>
+                      <AntialiasingProvider>{renderContent()}</AntialiasingProvider>
+                    </ThemeProvider>
                   </RightSidebarProvider>
                 </WorkspaceViewProvider>
               </IntegrationsProvider>

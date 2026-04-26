@@ -333,6 +333,17 @@
     @apply bg-background text-foreground;
   }
 
+  html.antialiased {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+  html:not(.antialiased) {
+    -webkit-font-smoothing: auto;
+    -moz-osx-font-smoothing: auto;
+    text-rendering: auto;
+  }
+
   ::selection {
     background-color: color-mix(in srgb, var(--selection) 35%, transparent);
     color: var(--selection-foreground);

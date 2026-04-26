@@ -4,6 +4,7 @@ import { rpc } from '@renderer/lib/ipc';
 import { Separator } from '@renderer/lib/ui/separator';
 import { cn } from '@renderer/utils/utils';
 import { AccountTab } from './AccountTab';
+import AntialiasingCard from './AntialiasingCard';
 import { CliAgentsList } from './CliAgentsList';
 import DefaultAgentSettingsCard from './DefaultAgentSettingsCard';
 import HiddenToolsSettingsCard from './HiddenToolsSettingsCard';
@@ -123,6 +124,7 @@ export function SettingsPage({
       description: 'Customize the appearance and behavior of the app.',
       sections: [
         { component: <ThemeCard /> },
+        { component: <AntialiasingCard /> },
         { component: <TerminalSettingsCard /> },
         { title: 'Keyboard shortcuts', component: <KeyboardSettingsCard /> },
         {
