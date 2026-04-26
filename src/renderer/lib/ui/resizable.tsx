@@ -1,11 +1,18 @@
-import { useRef } from 'react';
+import { useRef, useSyncExternalStore } from 'react';
 import * as ResizablePrimitive from 'react-resizable-panels';
+import { panelDragStore } from '@renderer/lib/layout/panel-drag-store';
 import { cn } from '@renderer/utils/utils';
 
 function ResizablePanelGroup({ className, ...props }: ResizablePrimitive.GroupProps) {
+  const isDragging = useSyncExternalStore(
+    panelDragStore.subscribe,
+    panelDragStore.getDraggingSnapshot,
+    panelDragStore.getDraggingSnapshot
+  );
   return (
     <ResizablePrimitive.Group
       data-slot="resizable-panel-group"
+      data-dragging={isDragging ? 'true' : 'false'}
       className={cn('flex h-full w-full aria-[orientation=vertical]:flex-col', className)}
       {...props}
     />

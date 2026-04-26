@@ -387,6 +387,39 @@
 }
 
 @layer components {
+  /* Smooth panel collapse/expand for react-resizable-panels.
+     The library applies sizing via inline `flex-grow` on [data-panel].
+     Animate it only when the group is not actively dragging — during drag we
+     want the panel to follow the pointer 1:1. */
+  [data-slot='resizable-panel-group'][data-dragging='false'] > [data-panel] {
+    transition: flex-grow 220ms cubic-bezier(0.32, 0.72, 0, 1);
+    will-change: flex-grow;
+  }
+
+  /* Reduce reflow during the collapse animation: keep content clipped to the
+     animated width instead of overflowing into adjacent panels. */
+  [data-slot='resizable-panel-group'] > [data-panel] {
+    min-width: 0;
+    min-height: 0;
+  }
+
+  /* Smooth handle hide/show alongside the panel collapse. The class still
+     toggles between `flex` and `hidden`; we just fade in/out. */
+  [data-slot='resizable-handle'] {
+    transition:
+      opacity 180ms ease-out,
+      background-color 180ms ease-out;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    [data-slot='resizable-panel-group'][data-dragging='false'] > [data-panel] {
+      transition: none;
+    }
+    [data-slot='resizable-handle'] {
+      transition: none;
+    }
+  }
+
   .logo-shimmer-container {
     position: relative;
     display: inline-block;

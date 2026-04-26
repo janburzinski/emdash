@@ -11,6 +11,12 @@ import {
 import { usePanelRef, type PanelImperativeHandle } from 'react-resizable-panels';
 import { panelDragStore } from './panel-drag-store';
 
+// Matches the CSS `flex-grow` transition on [data-panel] in index.css plus a
+// small buffer for the final layout frame. While the animation runs we
+// piggy-back on panelDragStore so xterm's ResizeObserver suppresses fits
+// (otherwise terminals flicker as they re-fit on every animation frame).
+const COLLAPSE_ANIMATION_MS = 260;
+
 export interface WorkspaceLayoutContextValue {
   isLeftOpen: boolean;
   isRightOpen: boolean;
@@ -34,6 +40,7 @@ export function useWorkspaceLayoutService() {
   const [isRightOpen, setIsRightOpen] = useState(true);
 
   const draggingRef = useRef({ left: false, right: false });
+  const animationTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const handleDragging = useCallback((side: 'left' | 'right', dragging: boolean) => {
     if (draggingRef.current[side] === dragging) return;
@@ -47,23 +54,41 @@ export function useWorkspaceLayoutService() {
 
   useEffect(() => {
     const dragging = draggingRef.current;
+    const animationTimer = animationTimerRef;
     return () => {
+      if (animationTimer.current) {
+        clearTimeout(animationTimer.current);
+        animationTimer.current = null;
+      }
       if (dragging.left || dragging.right) {
         panelDragStore.setDragging(false);
       }
+      panelDragStore.setAnimating(false);
     };
   }, []);
 
   const setCollapsed = useCallback(
     (side: 'left' | 'right', collapsed: boolean) => {
       const panel = side === 'left' ? leftPanelRef.current : rightPanelRef.current;
-      if (panel) {
-        if (collapsed) {
-          panel.collapse();
-        } else {
-          panel.expand();
-        }
+      if (!panel) return;
+
+      // Mark the toggle as "animating" so the PTY ResizeObserver suppresses
+      // per-frame fits during the CSS flex-grow transition. This does NOT
+      // disable the transition itself — that's gated on real pointer drags
+      // only via getDraggingSnapshot in resizable.tsx.
+      panelDragStore.setAnimating(true);
+
+      if (collapsed) {
+        panel.collapse();
+      } else {
+        panel.expand();
       }
+
+      if (animationTimerRef.current) clearTimeout(animationTimerRef.current);
+      animationTimerRef.current = setTimeout(() => {
+        animationTimerRef.current = null;
+        panelDragStore.setAnimating(false);
+      }, COLLAPSE_ANIMATION_MS);
     },
     [leftPanelRef, rightPanelRef]
   );

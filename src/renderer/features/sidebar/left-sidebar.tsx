@@ -31,7 +31,7 @@ export const LeftSidebar: React.FC = observer(function LeftSidebar() {
   const showFeedbackModal = useShowModal('feedbackModal');
 
   return (
-    <div className="flex flex-col h-full bg-background-tertiary text-foreground-tertiary-muted">
+    <div className="flex flex-col h-full min-w-0 overflow-hidden bg-background-tertiary text-foreground-tertiary-muted">
       <SidebarSpace />
       <SidebarContainer className="w-full border-r-0 flex-1 min-h-0">
         <SidebarContent className="flex flex-col">
