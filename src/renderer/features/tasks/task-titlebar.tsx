@@ -65,11 +65,11 @@ const PendingTaskTitlebar = observer(function PendingTaskTitlebar({
   return (
     <Titlebar
       leftSlot={
-        <div className="flex items-center gap-1 px-2 text-sm text-foreground-muted">
-          <span className="flex items-center gap-1">
-            <span className="text-sm text-foreground-passive">{projectName}</span>
-            <span className="text-sm text-foreground-passive">/</span>
-            {name}
+        <div className="flex min-w-0 items-center gap-1 px-2 text-sm text-foreground-muted">
+          <span className="flex min-w-0 items-center gap-1 truncate">
+            <span className="truncate text-sm text-foreground-passive">{projectName}</span>
+            <span className="shrink-0 text-sm text-foreground-passive">/</span>
+            <span className="truncate">{name}</span>
           </span>
         </div>
       }
@@ -115,13 +115,13 @@ const ActiveTaskTitlebar = observer(function ActiveTaskTitlebar({
   return (
     <Titlebar
       leftSlot={
-        <div className="flex items-center gap-1 px-2">
+        <div className="flex min-w-0 items-center gap-1 px-2">
           <Popover>
-            <PopoverTrigger className="flex items-center gap-1 text-sm text-foreground-muted hover:text-foreground">
-              <span className="flex items-center gap-1">
-                <span className="text-sm text-foreground-passive">{projectName}</span>
-                <span className="text-sm text-foreground-passive">/</span>
-                {taskDisplayName(taskStore)}
+            <PopoverTrigger className="flex min-w-0 items-center gap-1 text-sm text-foreground-muted hover:text-foreground">
+              <span className="flex min-w-0 items-center gap-1 truncate">
+                <span className="truncate text-sm text-foreground-passive">{projectName}</span>
+                <span className="shrink-0 text-sm text-foreground-passive">/</span>
+                <span className="truncate">{taskDisplayName(taskStore)}</span>
               </span>
               <ChevronDown className="size-3.5 shrink-0" />
             </PopoverTrigger>

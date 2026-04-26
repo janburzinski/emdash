@@ -8,7 +8,7 @@ import {
   Trash as Trash2,
 } from '@phosphor-icons/react';
 import { observer } from 'mobx-react-lite';
-import React, { useCallback, useEffect } from 'react';
+import React from 'react';
 import {
   isUnregisteredProject,
   UnregisteredProject,
@@ -16,7 +16,6 @@ import {
 import {
   getProjectManagerStore,
   getProjectStore,
-  getRepositoryStore,
   projectViewKind,
 } from '@renderer/features/projects/stores/project-selectors';
 import {
@@ -58,12 +57,6 @@ export const SidebarProjectItem = observer(function SidebarProjectItem({
 
   const project = getProjectStore(projectId);
 
-  const prefetchRepository = useCallback(() => {
-    const repo = getRepositoryStore(projectId);
-    void repo?.localData.load();
-    void repo?.remoteData.load();
-  }, [projectId]);
-
   const currentProjectId =
     currentView === 'task'
       ? taskParams.projectId
@@ -73,10 +66,6 @@ export const SidebarProjectItem = observer(function SidebarProjectItem({
   const currentTaskId = currentView === 'task' ? taskParams.taskId : null;
 
   const isProjectActive = currentProjectId === projectId && !currentTaskId;
-
-  useEffect(() => {
-    if (isProjectActive) prefetchRepository();
-  }, [isProjectActive, prefetchRepository]);
 
   const isExpanded = sidebarStore.expandedProjectIds.has(projectId);
 
@@ -168,7 +157,6 @@ export const SidebarProjectItem = observer(function SidebarProjectItem({
           <SidebarItemMiniButton
             type="button"
             className={'opacity-0 group-hover/row:opacity-100 transition-opacity duration-150'}
-            onPointerEnter={() => prefetchRepository()}
             onClick={(e) => {
               e.stopPropagation();
               showCreateTaskModal({ projectId });

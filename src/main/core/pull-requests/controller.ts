@@ -1,5 +1,5 @@
 import { createRPCController } from '@shared/ipc/rpc';
-import type { ListPrOptions, PullRequestFile } from '@shared/pull-requests';
+import type { ListPrOptions, PullRequest, PullRequestFile } from '@shared/pull-requests';
 import { log } from '@main/lib/logger';
 import { capture } from '@main/lib/telemetry';
 import { prQueryService } from './pr-query-service';
@@ -30,6 +30,23 @@ export const pullRequestController = createRPCController({
       return {
         success: false as const,
         error: error instanceof Error ? error.message : 'Unable to get filter options',
+      };
+    }
+  },
+
+  getPullRequestsByTaskBranches: async (projectId: string, taskBranches: string[]) => {
+    try {
+      const grouped = await prQueryService.getPullRequestsByTaskBranches(projectId, taskBranches);
+      const entries: { taskBranch: string; prs: PullRequest[] }[] = Array.from(
+        grouped,
+        ([taskBranch, prs]) => ({ taskBranch, prs })
+      );
+      return { success: true as const, entries };
+    } catch (error) {
+      log.error('Failed to batch-load pull requests for task branches:', error);
+      return {
+        success: false as const,
+        error: error instanceof Error ? error.message : 'Unable to batch-load task pull requests',
       };
     }
   },

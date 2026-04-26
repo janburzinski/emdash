@@ -13,16 +13,16 @@ export function Titlebar({ leftSlot, rightSlot }: { leftSlot?: ReactNode; rightS
   return (
     <header
       className={cn(
-        'flex h-10 shrink-0 items-center border-b border-border bg-background-secondary pr-2 [-webkit-app-region:drag] dark:bg-background',
-        !isLeftOpen && 'pl-28'
+        'flex h-10 shrink-0 items-center border-b border-border bg-background-secondary pr-2 transition-[padding-left] duration-200 ease-out [-webkit-app-region:drag] dark:bg-background',
+        !isLeftOpen && 'pl-40'
       )}
     >
-      <div className="pointer-events-auto flex w-full items-center gap-1">
-        <div className="flex w-full items-center justify-between">
-          <div className="flex items-center justify-start [-webkit-app-region:no-drag]">
+      <div className="pointer-events-auto flex min-w-0 w-full items-center gap-1">
+        <div className="flex min-w-0 w-full items-center justify-between gap-2">
+          <div className="flex min-w-0 items-center justify-start [-webkit-app-region:no-drag]">
             {leftSlot}
           </div>
-          <div className="flex items-center justify-end [-webkit-app-region:no-drag]">
+          <div className="flex shrink-0 items-center justify-end [-webkit-app-region:no-drag]">
             {rightSlot}
             <Tooltip>
               <TooltipTrigger>

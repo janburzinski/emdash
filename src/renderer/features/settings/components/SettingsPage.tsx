@@ -2,7 +2,6 @@ import React from 'react';
 import { AccountTab } from './AccountTab';
 import { CliAgentsList } from './CliAgentsList';
 import DefaultAgentSettingsCard from './DefaultAgentSettingsCard';
-import { FeedbackCard } from './FeedbackCard';
 import { GlassSidebarRow } from './GlassSidebarRow';
 import HiddenToolsSettingsCard from './HiddenToolsSettingsCard';
 import IntegrationsCard from './IntegrationsCard';
@@ -51,7 +50,6 @@ const TAB_CONTENT: Record<Exclude<SettingsPageTab, 'docs'>, SettingsTabContent> 
         <SettingsCard title="Updates">
           <UpdateCard />
         </SettingsCard>
-        <FeedbackCard />
       </>
     ),
   },

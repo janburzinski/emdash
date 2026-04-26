@@ -535,15 +535,17 @@
   }
 
   .glass-sidebar-shell {
-    background: color-mix(in srgb, var(--background-tertiary) 30%, transparent);
-    border-right: 1px solid color-mix(in srgb, var(--border) 40%, transparent);
+    background: color-mix(in srgb, var(--background-tertiary) 40%, transparent);
+    backdrop-filter: blur(20px) saturate(140%);
+    -webkit-backdrop-filter: blur(20px) saturate(140%);
+    border-right: 1px solid color-mix(in srgb, var(--border) 50%, transparent);
   }
 
   .emdark .glass-sidebar-shell,
   .dark .glass-sidebar-shell,
   .dark-black .glass-sidebar-shell {
-    background: color-mix(in srgb, var(--background-tertiary) 25%, transparent);
-    border-right-color: color-mix(in srgb, var(--border) 40%, transparent);
+    background: color-mix(in srgb, var(--background-tertiary) 38%, transparent);
+    border-right-color: color-mix(in srgb, var(--border) 45%, transparent);
   }
 
   .logo-shimmer-container {

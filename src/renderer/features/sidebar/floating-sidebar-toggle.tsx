@@ -38,7 +38,7 @@ export function FloatingSidebarToggle() {
             aria-label="Go back"
             className="pointer-events-auto [-webkit-app-region:no-drag] ml-1 size-7 text-foreground-muted hover:bg-background-1 hover:text-foreground disabled:opacity-40"
           >
-            <CaretLeft className="size-4" />
+            <CaretLeft className="size-3.5" />
           </Button>
         </TooltipTrigger>
         <TooltipContent>Back</TooltipContent>
@@ -52,9 +52,9 @@ export function FloatingSidebarToggle() {
             disabled={!canGoForward}
             onClick={goForward}
             aria-label="Go forward"
-            className="pointer-events-auto [-webkit-app-region:no-drag] size-7 text-foreground-muted hover:bg-background-1 hover:text-foreground disabled:opacity-40"
+            className="pointer-events-auto [-webkit-app-region:no-drag] ml-1 size-7 text-foreground-muted hover:bg-background-1 hover:text-foreground disabled:opacity-40"
           >
-            <CaretRight className="size-4" />
+            <CaretRight className="size-3.5" />
           </Button>
         </TooltipTrigger>
         <TooltipContent>Forward</TooltipContent>

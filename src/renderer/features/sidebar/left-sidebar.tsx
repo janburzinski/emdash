@@ -1,9 +1,9 @@
 import {
+  ChatCircleDots,
   CaretDown as ChevronDown,
   FolderPlus,
   Gauge,
   SignOut as LogOut,
-  ChatCircleDots as MessageSquarePlus,
   Plug,
   PuzzlePiece as Puzzle,
   Gear as Settings,
@@ -44,6 +44,7 @@ export const LeftSidebar: React.FC = observer(function LeftSidebar() {
   const { currentView } = useWorkspaceSlots();
 
   const showAddProjectModal = useShowModal('addProjectModal');
+  const showFeedbackModal = useShowModal('feedbackModal');
 
   const [usageOpen, setUsageOpen] = useState(false);
   const glass = useGlassSidebar();
@@ -64,7 +65,7 @@ export const LeftSidebar: React.FC = observer(function LeftSidebar() {
             aria-label="New Chat"
             className="w-full justify-start"
           >
-            <MessageSquarePlus className="h-5 w-5 sm:h-4 sm:w-4" />
+            <ChatCircleDots className="h-5 w-5 sm:h-4 sm:w-4" />
             New Chat
           </SidebarMenuButton>
           <SidebarMenuButton
@@ -175,6 +176,10 @@ export const LeftSidebar: React.FC = observer(function LeftSidebar() {
                   </motion.div>
                 )}
               </AnimatePresence>
+              <DropdownMenuItem onClick={() => showFeedbackModal({})}>
+                <ChatCircleDots className="size-4" />
+                <span>Feedback</span>
+              </DropdownMenuItem>
               <DropdownMenuItem onClick={() => navigate('settings')}>
                 <LogOut className="size-4" />
                 <span>Log out</span>

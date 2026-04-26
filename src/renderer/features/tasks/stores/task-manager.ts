@@ -121,33 +121,42 @@ export class TaskManagerStore {
       if (progress.status !== 'done') return;
       const repoUrl = this._repository.repositoryUrl;
       if (!repoUrl || progress.remoteUrl !== repoUrl) return;
-      for (const [, store] of this.tasks) {
-        if (isRegistered(store)) {
-          void this._reloadPrsForTask(store);
-        }
-      }
+      void this._reloadPrsForActiveBranches();
     });
 
     this._disposeRepositoryReaction = reaction(
       () => this._repository.repositoryUrl,
       () => {
-        for (const [, store] of this.tasks) {
-          if (isRegistered(store)) {
-            void this._reloadPrsForTask(store);
-          }
-        }
+        void this._reloadPrsForActiveBranches();
       }
     );
   }
 
-  private async _reloadPrsForTask(store: TaskStore): Promise<void> {
-    if (!isRegistered(store)) return;
-    const result = await rpc.pullRequests.getPullRequestsForTask(this.projectId, store.data.id);
+  private async _reloadPrsForActiveBranches(): Promise<void> {
+    const storesByBranch = new Map<string, TaskStore[]>();
+    for (const [, store] of this.tasks) {
+      if (!isRegistered(store)) continue;
+      const branch = (store.data as Task).taskBranch;
+      if (!branch) continue;
+      const list = storesByBranch.get(branch) ?? [];
+      list.push(store);
+      storesByBranch.set(branch, list);
+    }
+    if (storesByBranch.size === 0) return;
+
+    const result = await rpc.pullRequests.getPullRequestsByTaskBranches(this.projectId, [
+      ...storesByBranch.keys(),
+    ]);
     if (!result.success) return;
-    const prs = result.prs ?? [];
+
+    const prsByBranch = new Map(result.entries.map((e) => [e.taskBranch, e.prs]));
+
     runInAction(() => {
-      if (isRegistered(store)) {
-        (store.data as Task).prs = prs;
+      for (const [branch, stores] of storesByBranch) {
+        const prs = prsByBranch.get(branch) ?? [];
+        for (const store of stores) {
+          if (isRegistered(store)) (store.data as Task).prs = prs;
+        }
       }
     });
   }
@@ -162,11 +171,6 @@ export class TaskManagerStore {
               this.tasks.set(t.id, createUnprovisionedTask(t));
             }
           });
-          const reloadPromises = tasks.flatMap((t) => {
-            const store = this.tasks.get(t.id);
-            return store && isRegistered(store) ? [this._reloadPrsForTask(store)] : [];
-          });
-          void Promise.all(reloadPromises);
         })
         .catch((e) => {
           console.error('Error loading tasks', e);

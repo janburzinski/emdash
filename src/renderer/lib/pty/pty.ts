@@ -7,7 +7,7 @@ import { cssVar } from '@renderer/utils/cssVars';
 import { log } from '@renderer/utils/logger';
 import { ensureXtermHost } from './xterm-host';
 
-const SCROLLBACK_LINES = 100_000;
+const SCROLLBACK_LINES = 10_000;
 
 // ── Theme helpers ─────────────────────────────────────────────────────────────
 

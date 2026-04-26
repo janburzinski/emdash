@@ -1,5 +1,6 @@
 import {
   ChatCircle,
+  ChatCircleDots,
   FolderPlus,
   Gear,
   GitBranch,
@@ -49,6 +50,7 @@ export const CommandPaletteModal = observer(function CommandPaletteModal({
   const { navigate } = useNavigate();
   const showCreateTask = useShowModal('taskModal');
   const showAddProject = useShowModal('addProjectModal');
+  const showFeedback = useShowModal('feedbackModal');
 
   const { currentView } = useWorkspaceSlots();
   const { params: taskParams } = useParams('task');
@@ -153,6 +155,15 @@ export const CommandPaletteModal = observer(function CommandPaletteModal({
             <CommandShortcut>
               <ShortcutHint settingsKey="settings" />
             </CommandShortcut>
+          </CommandItem>
+
+          <CommandItem
+            value="open-feedback"
+            keywords={['feedback', 'support', 'bug', 'request', 'settings']}
+            onSelect={run(() => showFeedback({}))}
+          >
+            <ChatCircleDots />
+            <span>Feedback</span>
           </CommandItem>
         </CommandGroup>
 

@@ -13,7 +13,7 @@ function useIsPanelDragging() {
   );
 }
 
-const LEFT_PANEL_DEFAULT_SIZE = '20%';
+const LEFT_PANEL_DEFAULT_SIZE = '24%';
 const RIGHT_PANEL_DEFAULT_SIZE = '25%';
 const LEFT_SIDEBAR_MIN_SIZE = '16%';
 const LEFT_SIDEBAR_MAX_SIZE = '30%';
@@ -46,9 +46,9 @@ export function WorkspaceLayout({ leftSidebar, mainContent }: WorkspaceLayoutPro
       <ResizablePanel
         id="workspace-left"
         panelRef={leftPanelRef}
-        defaultSize={`${LEFT_PANEL_DEFAULT_SIZE}%`}
-        minSize={`${LEFT_SIDEBAR_MIN_SIZE}%`}
-        maxSize={`${LEFT_SIDEBAR_MAX_SIZE}%`}
+        defaultSize={LEFT_PANEL_DEFAULT_SIZE}
+        minSize={LEFT_SIDEBAR_MIN_SIZE}
+        maxSize={LEFT_SIDEBAR_MAX_SIZE}
         collapsedSize="0%"
         onResize={() => setIsLeftOpen(!leftPanelRef.current?.isCollapsed())}
         collapsible

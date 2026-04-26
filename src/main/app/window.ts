@@ -11,7 +11,7 @@ let mainWindow: BrowserWindow | null = null;
 
 export function applyGlassSidebar(window: BrowserWindow, enabled: boolean): void {
   if (process.platform === 'darwin') {
-    window.setVibrancy(enabled ? 'sidebar' : null);
+    window.setVibrancy(enabled ? 'under-window' : null);
     window.setVisualEffectState(enabled ? 'active' : 'followWindow');
     window.setBackgroundColor(enabled ? '#00000000' : '#ffffff');
     return;

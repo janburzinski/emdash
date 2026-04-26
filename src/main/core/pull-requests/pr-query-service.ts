@@ -166,13 +166,42 @@ export class PrQueryService {
     taskBranch: string,
     repositoryUrl: string
   ): Promise<PullRequest[]> {
+    return this._fetchPrsForBranches(repositoryUrl, [taskBranch]);
+  }
+
+  async getPullRequestsByTaskBranches(
+    projectId: string,
+    taskBranches: string[]
+  ): Promise<Map<string, PullRequest[]>> {
+    if (taskBranches.length === 0) return new Map();
+
+    const capability = await this.getProjectRemoteInfo(projectId);
+    if (capability.status !== 'ready') return new Map();
+
+    const prs = await this._fetchPrsForBranches(capability.repositoryUrl, taskBranches);
+    const byBranch = new Map<string, PullRequest[]>();
+    for (const pr of prs) {
+      const list = byBranch.get(pr.headRefName) ?? [];
+      list.push(pr);
+      byBranch.set(pr.headRefName, list);
+    }
+    return byBranch;
+  }
+
+  private async _fetchPrsForBranches(
+    repositoryUrl: string,
+    branches: string[]
+  ): Promise<PullRequest[]> {
+    if (branches.length === 0) return [];
     const rows = await db
       .select()
       .from(pullRequests)
       .where(
-        and(eq(pullRequests.headRefName, taskBranch), eq(pullRequests.repositoryUrl, repositoryUrl))
+        and(
+          eq(pullRequests.repositoryUrl, repositoryUrl),
+          inArray(pullRequests.headRefName, branches)
+        )
       );
-
     return fetchRelated(rows);
   }
 
