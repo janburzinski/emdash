@@ -188,6 +188,7 @@ export const EditorProvider = observer(function EditorProvider({
           showConflictModal({
             filePath: tab.path,
             onSuccess: async (accept) => {
+              if (typeof accept !== 'boolean') return;
               await editorView.resolveConflict(accept);
             },
           });

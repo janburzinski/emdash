@@ -62,7 +62,8 @@ export class TerminalTabViewStore
           if (!this.activeTabId && this.tabOrder.length > 0) {
             this.activeTabId = this.tabOrder[0];
           }
-        })
+        }),
+        { fireImmediately: true }
       )
     );
   }

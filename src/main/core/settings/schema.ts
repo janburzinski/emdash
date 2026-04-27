@@ -65,6 +65,9 @@ export const keyboardSettingsSchema = z
       tabClose: z.string().nullable().optional(),
       newConversation: z.string().nullable().optional(),
       newTerminal: z.string().nullable().optional(),
+      splitTileRight: z.string().nullable().optional(),
+      splitTileDown: z.string().nullable().optional(),
+      closeSplitTile: z.string().nullable().optional(),
       confirm: z.string().nullable().optional(),
     })
   )

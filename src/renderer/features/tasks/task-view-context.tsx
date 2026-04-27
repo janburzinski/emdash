@@ -12,6 +12,18 @@ import { ViewLayoutOverrideContext } from '@renderer/lib/layout/navigation-provi
 
 const ProvisionedTaskContext = createContext<ProvisionedTask | null>(null);
 
+export function ProvisionedTaskValueProvider({
+  value,
+  children,
+}: {
+  value: ProvisionedTask;
+  children: ReactNode;
+}) {
+  return (
+    <ProvisionedTaskContext.Provider value={value}>{children}</ProvisionedTaskContext.Provider>
+  );
+}
+
 export const ProvisionedTaskProvider = observer(function ProvisionedTaskProvider({
   projectId,
   taskId,

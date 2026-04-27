@@ -79,12 +79,21 @@ export const AddProjectModal = observer(function AddProjectModal({
 
   const handleAddConnection = () => {
     showSshConnModal({
-      onSuccess: ({ connectionId: newId }) =>
+      onSuccess: (result) => {
+        const newId =
+          typeof result === 'object' &&
+          result !== null &&
+          'connectionId' in result &&
+          typeof result.connectionId === 'string'
+            ? result.connectionId
+            : undefined;
+
         showAddProjectModal({
           strategy: 'ssh',
           mode,
           connectionId: newId,
-        }),
+        });
+      },
       onClose: () =>
         showAddProjectModal({
           strategy: 'ssh',

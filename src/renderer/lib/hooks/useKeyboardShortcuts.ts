@@ -140,6 +140,25 @@ export const APP_SHORTCUTS = defineShortcuts({
     description: 'Create a new conversation in the current task',
     category: 'Task View',
   },
+  splitTileRight: {
+    defaultHotkey: 'Mod+D',
+    label: 'Split Tile Right',
+    description: 'Add a new tile to the right of the active tile',
+    category: 'Task View',
+  },
+  splitTileDown: {
+    defaultHotkey: 'Mod+Shift+D',
+    label: 'Split Tile Down',
+    description: 'Add a new tile below the active tile',
+    category: 'Task View',
+  },
+  closeSplitTile: {
+    defaultHotkey: 'Mod+W',
+    label: 'Close Tile',
+    description:
+      'Close the focused split tile. Falls through to closing a conversation tab when the tile has any.',
+    category: 'Task View',
+  },
   newTerminal: {
     defaultHotkey: 'Mod+Shift+T',
     label: 'New Terminal',

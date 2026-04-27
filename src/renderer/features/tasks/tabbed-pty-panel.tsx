@@ -1,5 +1,6 @@
 import { observer } from 'mobx-react-lite';
 import React, { useEffect, useMemo, useRef } from 'react';
+import { useSplitDragHandle } from '@renderer/features/tasks/split-drag-handle-context';
 import { PaneSizingProvider } from '@renderer/lib/pty/pane-sizing-context';
 import { PtyPane } from '@renderer/lib/pty/pty-pane';
 import { PtySession } from '@renderer/lib/pty/pty-session';
@@ -45,6 +46,7 @@ export const TabbedPtyPanel = observer(function TabbedPtyPanel<TEntity>({
     [tabs, getSession]
   );
 
+  const splitDragHandle = useSplitDragHandle();
   const activeSession = activeTab ? getSession(activeTab) : null;
   const activeSessionId = activeSession?.sessionId ?? null;
   const activeOnEnterPress = activeTab && onEnterPress ? () => onEnterPress(activeTab) : undefined;
@@ -108,7 +110,14 @@ export const TabbedPtyPanel = observer(function TabbedPtyPanel<TEntity>({
         }
       }}
     >
-      <div className="shrink-0">{tabBar}</div>
+      <div
+        ref={splitDragHandle?.setActivatorNodeRef}
+        className={cn('shrink-0', splitDragHandle && 'cursor-grab active:cursor-grabbing')}
+        {...splitDragHandle?.attributes}
+        {...splitDragHandle?.listeners}
+      >
+        {tabBar}
+      </div>
       <PaneSizingProvider paneId={paneId} sessionIds={allSessionIds}>
         {tabs.length === 0 ? (
           emptyState

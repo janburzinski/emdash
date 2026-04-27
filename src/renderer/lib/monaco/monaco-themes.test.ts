@@ -21,7 +21,11 @@ describe('defineMonacoThemes', () => {
   beforeEach(() => {
     canvasCallCount = 0;
 
-    vi.spyOn(document, 'createElement').mockImplementation((tag: string) => {
+    const createElementSpy = vi.spyOn(document, 'createElement') as unknown as {
+      mockImplementation: (fn: (tag: string) => HTMLElement) => void;
+    };
+
+    createElementSpy.mockImplementation((tag: string) => {
       if (tag === 'canvas') {
         canvasCallCount++;
         // Alternate: odd canvas calls return a "dark" pixel, even return a "light" pixel.

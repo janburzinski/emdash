@@ -8,6 +8,7 @@ import { CreateTaskModal } from '@renderer/features/tasks/create-task-modal/crea
 import { CreatePrModal } from '@renderer/features/tasks/diff-view/changes-panel/components/pr-entry/create-pr-modal';
 import { ConflictDialog } from '@renderer/features/tasks/editor/conflict-dialog';
 import { RenameTaskModal } from '@renderer/features/tasks/rename-task-modal';
+import { SplitTaskPickerModal } from '@renderer/features/tasks/split-task-picker-modal';
 import { AddSshConnModal } from '@renderer/lib/components/add-ssh-conn-modal';
 import { ChangeProjectConnectionModal } from '@renderer/lib/components/change-project-connection-modal';
 import { ConfirmActionDialog } from '@renderer/lib/components/confirm-action-dialog';
@@ -44,6 +45,7 @@ export const modalRegistry = {
   conflictDialog: createModal(ConflictDialog, { size: 'sm' }),
   createPrModal: createModal(CreatePrModal, { size: 'md' }),
   renameTaskModal: createModal(RenameTaskModal, { size: 'xs' }),
+  splitTaskPickerModal: createModal(SplitTaskPickerModal, { size: 'sm' }),
   integrationSetupModal: createModal(IntegrationSetupModal, { size: 'md' }),
   addRemoteModal: createModal(AddRemoteModal),
 } satisfies Record<string, ModalRegistryEntry>;

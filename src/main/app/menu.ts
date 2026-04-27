@@ -2,8 +2,11 @@ import { app, Menu, shell } from 'electron';
 import {
   menuCheckForUpdatesChannel,
   menuCloseTabChannel,
+  menuCloseTileChannel,
   menuOpenSettingsChannel,
   menuRedoChannel,
+  menuSplitTileDownChannel,
+  menuSplitTileRightChannel,
   menuUndoChannel,
 } from '@shared/events/appEvents';
 import { EMDASH_DOCS_URL, EMDASH_RELEASES_URL } from '@shared/urls';
@@ -109,6 +112,22 @@ export function setupApplicationMenu(): void {
         { role: 'zoomOut' as const },
         { type: 'separator' as const },
         { role: 'togglefullscreen' as const },
+        { type: 'separator' as const },
+        {
+          label: 'Split Tile Right',
+          accelerator: 'CmdOrCtrl+D',
+          click: () => events.emit(menuSplitTileRightChannel, undefined),
+        },
+        {
+          label: 'Split Tile Down',
+          accelerator: 'Shift+CmdOrCtrl+D',
+          click: () => events.emit(menuSplitTileDownChannel, undefined),
+        },
+        {
+          label: 'Close Tile',
+          accelerator: 'Shift+CmdOrCtrl+W',
+          click: () => events.emit(menuCloseTileChannel, undefined),
+        },
       ],
     },
     // Window menu

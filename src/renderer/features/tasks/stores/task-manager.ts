@@ -385,8 +385,12 @@ export class TaskManagerStore {
     const task = this.tasks.get(taskId);
     if (!task) return;
 
+    const project = getProjectManagerStore().projects.get(this.projectId);
+    const splitLayout = project?.mountedProject?.splitLayout;
+
     runInAction(() => {
       this.tasks.delete(taskId);
+      splitLayout?.clearTaskFromLeaves(taskId);
     });
 
     try {

@@ -1,5 +1,6 @@
 import { Loader2, Plus, RefreshCw, Search } from 'lucide-react';
 import React, { useState } from 'react';
+import type { McpServer } from '@shared/mcp/types';
 import { useModalContext, useShowModal } from '@renderer/lib/modal/modal-provider';
 import { Button } from '@renderer/lib/ui/button';
 import { Input } from '@renderer/lib/ui/input';
@@ -39,7 +40,7 @@ export const McpView: React.FC = () => {
     showModal('mcpServerModal', {
       mode,
       providers,
-      onSave: (server) => saveServer(server, source),
+      onSave: (server: McpServer) => saveServer(server, source),
       onRemove: handleRemoveRequest,
     });
   };

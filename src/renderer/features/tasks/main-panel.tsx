@@ -11,7 +11,21 @@ import { ConversationsPanel } from './conversations/conversations-panel';
 import { DiffView } from './diff-view/main-panel/diff-view';
 import { EditorMainPanel } from './editor/editor-main-panel';
 
-export const TaskMainPanel = observer(function TaskMainPanel() {
+export const TaskMainPanel = observer(function TaskMainPanel({
+  allowEditor = true,
+  allowShortcuts = true,
+  conversationPaneId = 'conversations',
+  blockedConversationIds,
+  conversationId,
+  onConversationCreated,
+}: {
+  allowEditor?: boolean;
+  allowShortcuts?: boolean;
+  conversationPaneId?: string;
+  blockedConversationIds?: readonly string[];
+  conversationId?: string | null;
+  onConversationCreated?: (conversationId: string) => void;
+}) {
   const { projectId, taskId } = useTaskViewContext();
   const taskStore = getTaskStore(projectId, taskId);
   const kind = taskViewKind(taskStore, projectId);
@@ -86,20 +100,51 @@ export const TaskMainPanel = observer(function TaskMainPanel() {
     return null;
   }
 
-  return <ReadyTaskMainPanel />;
+  return (
+    <ReadyTaskMainPanel
+      allowEditor={allowEditor}
+      allowShortcuts={allowShortcuts}
+      conversationPaneId={conversationPaneId}
+      blockedConversationIds={blockedConversationIds}
+      conversationId={conversationId}
+      onConversationCreated={onConversationCreated}
+    />
+  );
 });
 
-const ReadyTaskMainPanel = observer(function ReadyTaskMainPanel() {
+const ReadyTaskMainPanel = observer(function ReadyTaskMainPanel({
+  allowEditor,
+  allowShortcuts,
+  conversationPaneId,
+  blockedConversationIds,
+  conversationId,
+  onConversationCreated,
+}: {
+  allowEditor: boolean;
+  allowShortcuts: boolean;
+  conversationPaneId: string;
+  blockedConversationIds?: readonly string[];
+  conversationId?: string | null;
+  onConversationCreated?: (conversationId: string) => void;
+}) {
   const { taskView } = useProvisionedTask();
 
   return (
     <>
       <Activity mode={taskView.view === 'agents' ? 'visible' : 'hidden'}>
-        <ConversationsPanel />
+        <ConversationsPanel
+          allowShortcuts={allowShortcuts}
+          paneId={conversationPaneId}
+          blockedConversationIds={blockedConversationIds}
+          conversationId={conversationId}
+          onConversationCreated={onConversationCreated}
+        />
       </Activity>
-      <Activity mode={taskView.view === 'editor' ? 'visible' : 'hidden'}>
-        <EditorMainPanel />
-      </Activity>
+      {allowEditor && (
+        <Activity mode={taskView.view === 'editor' ? 'visible' : 'hidden'}>
+          <EditorMainPanel />
+        </Activity>
+      )}
       <Activity mode={taskView.view === 'diff' ? 'visible' : 'hidden'}>
         <DiffView />
       </Activity>

@@ -55,6 +55,38 @@ export type ProjectViewSnapshot = {
   taskViewTab: 'active' | 'archived';
 };
 
+export type SplitOrientation = 'horizontal' | 'vertical';
+
+export type SplitLeafSnapshot = {
+  kind: 'leaf';
+  id: string;
+  taskId: string | null;
+  conversationId?: string | null;
+};
+
+export type SplitGroupSnapshot = {
+  kind: 'split';
+  id: string;
+  orientation: SplitOrientation;
+  /** Length must equal `children.length`; values sum to 100. */
+  sizes: number[];
+  children: SplitNodeSnapshot[];
+};
+
+export type SplitNodeSnapshot = SplitLeafSnapshot | SplitGroupSnapshot;
+
+export type ProjectSplitTabSnapshot = {
+  root: SplitNodeSnapshot;
+  activeLeafId: string;
+};
+
+export type ProjectSplitSnapshot = ProjectSplitTabSnapshot & {
+  /** Active task tab whose split tree is currently rendered. */
+  activeTaskId?: string | null;
+  /** Split trees keyed by task id. Older snapshots only have root/activeLeafId. */
+  layoutsByTaskId?: Record<string, ProjectSplitTabSnapshot>;
+};
+
 export type NavigationSnapshot = {
   currentViewId: string;
   viewParams: Record<string, unknown>;

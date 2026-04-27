@@ -1,7 +1,7 @@
 import { useHotkey } from '@tanstack/react-hotkeys';
 import { MessageSquare } from 'lucide-react';
 import { observer } from 'mobx-react-lite';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { asMounted, getProjectStore } from '@renderer/features/projects/stores/project-selectors';
 import { useAppSettingsKey } from '@renderer/features/settings/use-app-settings-key';
 import { useIsActiveTask } from '@renderer/features/tasks/hooks/use-is-active-task';
@@ -20,10 +20,37 @@ import { ContextBar } from './context-bar';
 import { ConversationStore } from './conversation-manager';
 import { ConversationsTabs } from './conversation-tabs';
 
-export const ConversationsPanel = observer(function ConversationsPanel() {
+export const ConversationsPanel = observer(function ConversationsPanel({
+  allowShortcuts = true,
+  paneId = 'conversations',
+  conversationId,
+  onConversationCreated,
+}: {
+  allowShortcuts?: boolean;
+  paneId?: string;
+  blockedConversationIds?: readonly string[];
+  conversationId?: string | null;
+  onConversationCreated?: (conversationId: string) => void;
+}) {
   const { projectId, taskId } = useTaskViewContext();
   const provisioned = useProvisionedTask();
-  const conversationTabs = provisioned.taskView.conversationTabs;
+  const baseConversationTabs = provisioned.taskView.conversationTabs;
+  const conversationTabs = useMemo(() => {
+    if (!conversationId) return baseConversationTabs;
+    const scoped = Object.create(baseConversationTabs) as typeof baseConversationTabs;
+    Object.defineProperties(scoped, {
+      tabs: {
+        get: () => baseConversationTabs.tabs.filter((tab) => tab.data.id === conversationId),
+      },
+      activeTab: {
+        get: () => baseConversationTabs.tabs.find((tab) => tab.data.id === conversationId),
+      },
+      activeTabId: { get: () => conversationId },
+      setActiveTab: { value: () => {} },
+      setVisible: { value: () => {} },
+    });
+    return scoped;
+  }, [baseConversationTabs, conversationId]);
   const showCreateConversationModal = useShowModal('createConversationModal');
   const { value: keyboard } = useAppSettingsKey('keyboard');
   const isActive = useIsActiveTask(taskId);
@@ -34,30 +61,31 @@ export const ConversationsPanel = observer(function ConversationsPanel() {
     mountedProject?.data.type === 'ssh' ? mountedProject.data.connectionId : undefined;
   const newConversationHotkey = getEffectiveHotkey('newConversation', keyboard);
 
-  const autoFocus = isActive && provisioned.taskView.focusedRegion === 'main';
-
+  const autoFocus = allowShortcuts && isActive && provisioned.taskView.focusedRegion === 'main';
   const handleCreate = () =>
     showCreateConversationModal({
       connectionId: remoteConnectionId,
       projectId,
       taskId,
-      onSuccess: ({ conversationId }) => {
+      onSuccess: (result) => {
+        const { conversationId } = result as { conversationId: string };
+        onConversationCreated?.(conversationId);
         conversationTabs.setActiveTab(conversationId);
         provisioned.taskView.setFocusedRegion('main');
       },
     });
 
-  useTabShortcuts(conversationTabs, { focused: isPanelFocused });
+  useTabShortcuts(conversationTabs, { focused: allowShortcuts && isPanelFocused });
   useHotkey(getHotkeyRegistration('newConversation', keyboard), handleCreate, {
-    enabled: newConversationHotkey !== null,
+    enabled: allowShortcuts && isActive && newConversationHotkey !== null,
   });
 
   useEffect(() => {
-    conversationTabs.setVisible(isActive);
+    conversationTabs.setVisible(allowShortcuts && isActive);
     return () => {
       conversationTabs.setVisible(false);
     };
-  }, [conversationTabs, isActive]);
+  }, [allowShortcuts, conversationTabs, isActive]);
 
   return (
     <div className="flex h-full flex-col">
@@ -69,13 +97,20 @@ export const ConversationsPanel = observer(function ConversationsPanel() {
             if (focused) provisioned.taskView.setFocusedRegion('main');
           }}
           store={conversationTabs}
-          paneId="conversations"
+          paneId={paneId}
           getSession={(s) => s.session}
           onEnterPress={shouldSetWorkingOnEnter ? (s) => s.setWorking() : undefined}
           onInterruptPress={(s) => s.clearWorking()}
           mapShiftEnterToCtrlJ
           remoteConnectionId={remoteConnectionId}
-          tabBar={<ConversationsTabs projectId={projectId} taskId={taskId} />}
+          tabBar={
+            <ConversationsTabs
+              projectId={projectId}
+              taskId={taskId}
+              conversationId={conversationId}
+              onConversationCreated={onConversationCreated}
+            />
+          }
           emptyState={
             <EmptyState
               icon={<MessageSquare className="h-5 w-5 text-muted-foreground" />}
@@ -89,7 +124,7 @@ export const ConversationsPanel = observer(function ConversationsPanel() {
                   className="flex items-center gap-2"
                 >
                   Create conversation
-                  <ShortcutHint settingsKey="newConversation" />
+                  {allowShortcuts && <ShortcutHint settingsKey="newConversation" />}
                 </Button>
               }
             />

@@ -1,5 +1,6 @@
 import { Plus } from 'lucide-react';
 import { observer } from 'mobx-react-lite';
+import { useMemo } from 'react';
 import { asMounted, getProjectStore } from '@renderer/features/projects/stores/project-selectors';
 import { AgentStatusIndicator } from '@renderer/features/tasks/components/agent-status-indicator';
 import { ConversationStore } from '@renderer/features/tasks/conversations/conversation-manager';
@@ -15,13 +16,30 @@ import { formatConversationTitleForDisplay } from './conversation-title-utils';
 export const ConversationsTabs = observer(function ConversationsTabs({
   projectId,
   taskId,
+  conversationId,
+  onConversationCreated,
 }: {
   projectId: string;
   taskId: string;
+  conversationId?: string | null;
+  onConversationCreated?: (conversationId: string) => void;
 }) {
   const provisioned = useProvisionedTask();
   const conversationMgr = provisioned.conversations;
-  const conversationTabs = provisioned.taskView.conversationTabs;
+  const baseConversationTabs = provisioned.taskView.conversationTabs;
+  const conversationTabs = useMemo(() => {
+    if (!conversationId) return baseConversationTabs;
+    const scoped = Object.create(baseConversationTabs) as typeof baseConversationTabs;
+    Object.defineProperties(scoped, {
+      tabs: {
+        get: () => baseConversationTabs.tabs.filter((tab) => tab.data.id === conversationId),
+      },
+      activeTabId: { get: () => conversationId },
+      setActiveTab: { value: () => {} },
+      reorderTabs: { value: () => {} },
+    });
+    return scoped;
+  }, [baseConversationTabs, conversationId]);
   const showCreateConversationModal = useShowModal('createConversationModal');
   const mountedProject = asMounted(getProjectStore(projectId));
   const connectionId =
@@ -62,7 +80,11 @@ export const ConversationsTabs = observer(function ConversationsTabs({
                   connectionId,
                   projectId,
                   taskId,
-                  onSuccess: ({ conversationId }) => conversationTabs.setActiveTab(conversationId),
+                  onSuccess: (result) => {
+                    const { conversationId } = result as { conversationId: string };
+                    onConversationCreated?.(conversationId);
+                    baseConversationTabs.setActiveTab(conversationId);
+                  },
                 })
               }
             >

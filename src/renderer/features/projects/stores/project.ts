@@ -1,6 +1,7 @@
 import { makeAutoObservable, observable } from 'mobx';
 import type { LocalProject, SshProject } from '@shared/projects';
-import type { ProjectViewSnapshot } from '@shared/view-state';
+import type { ProjectSplitSnapshot, ProjectViewSnapshot } from '@shared/view-state';
+import { ProjectSplitStore } from '@renderer/features/tasks/stores/project-split-store';
 import { TaskManagerStore } from '@renderer/features/tasks/stores/task-manager';
 import { snapshotRegistry } from '@renderer/lib/stores/snapshot-registry';
 import { PrSyncStore } from './pr-sync-store';
@@ -28,9 +29,11 @@ export class MountedProject {
   readonly settings: ProjectSettingsStore;
   readonly repository: RepositoryStore;
   readonly prSync: PrSyncStore;
+  readonly splitLayout: ProjectSplitStore;
   readonly data: LocalProject | SshProject;
 
   private _snapshotDisposer: (() => void) | null = null;
+  private _splitSnapshotDisposer: (() => void) | null = null;
 
   get snapshot(): ProjectViewSnapshot {
     return {
@@ -39,13 +42,18 @@ export class MountedProject {
     };
   }
 
-  constructor(data: LocalProject | SshProject, savedSnapshot?: ProjectViewSnapshot) {
+  constructor(
+    data: LocalProject | SshProject,
+    savedSnapshot?: ProjectViewSnapshot,
+    savedSplitSnapshot?: ProjectSplitSnapshot
+  ) {
     this.data = data;
     this.view = new ProjectViewStore();
     this.settings = new ProjectSettingsStore(data.id);
     this.repository = new RepositoryStore(data.id, this.settings, data.baseRef);
     this.prSync = new PrSyncStore(data.id);
     this.taskManager = new TaskManagerStore(data.id, this.repository);
+    this.splitLayout = new ProjectSplitStore(null, savedSplitSnapshot);
 
     if (savedSnapshot) this.view.restoreSnapshot(savedSnapshot);
 
@@ -55,9 +63,14 @@ export class MountedProject {
       settings: false,
       repository: false,
       prSync: false,
+      splitLayout: false,
     });
 
     this._snapshotDisposer = snapshotRegistry.register(`project:${data.id}`, () => this.snapshot);
+    this._splitSnapshotDisposer = snapshotRegistry.register(
+      `project-split:${data.id}`,
+      () => this.splitLayout.snapshot
+    );
   }
 
   dispose(): void {
@@ -66,6 +79,8 @@ export class MountedProject {
     this.settings.dispose();
     this._snapshotDisposer?.();
     this._snapshotDisposer = null;
+    this._splitSnapshotDisposer?.();
+    this._splitSnapshotDisposer = null;
   }
 }
 
@@ -102,8 +117,12 @@ export class ProjectStore {
     makeAutoObservable(this, { mountedProject: observable.ref });
   }
 
-  transitionToMounted(data: LocalProject | SshProject, savedSnapshot?: ProjectViewSnapshot): void {
-    this.mountedProject = new MountedProject(data, savedSnapshot);
+  transitionToMounted(
+    data: LocalProject | SshProject,
+    savedSnapshot?: ProjectViewSnapshot,
+    savedSplitSnapshot?: ProjectSplitSnapshot
+  ): void {
+    this.mountedProject = new MountedProject(data, savedSnapshot, savedSplitSnapshot);
     this.data = data;
     this.id = data.id;
     this.name = data.name;

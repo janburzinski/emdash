@@ -1,6 +1,7 @@
 import { observer } from 'mobx-react-lite';
 import { useEffect, type ReactNode } from 'react';
 import { ViewDefinition } from '@renderer/app/view-registry';
+import { asMounted, getProjectStore } from '@renderer/features/projects/stores/project-selectors';
 import {
   getTaskManagerStore,
   getTaskStore,
@@ -11,8 +12,8 @@ import {
   TaskViewWrapper,
 } from '@renderer/features/tasks/task-view-context';
 import { EditorProvider } from './editor/editor-provider';
-import { TaskMainPanel } from './main-panel';
 import { TaskRightSidebar } from './right-panel';
+import { SplitContainer } from './split-container';
 import { TaskTitlebar } from './task-titlebar';
 
 const TaskViewWrapperWithProviders = observer(function TaskViewWrapperWithProviders({
@@ -39,6 +40,55 @@ const TaskViewWrapperWithProviders = observer(function TaskViewWrapperWithProvid
       .catch(() => {});
   }, [kind, projectId, taskId, taskStore]);
 
+  // Split layouts are scoped per task tab. Navigating between tasks switches
+  // the active split tree instead of rebinding a project-wide tree to the route.
+  const project = asMounted(getProjectStore(projectId));
+  useEffect(() => {
+    project?.splitLayout.setActiveTask(taskId);
+  }, [project, taskId]);
+
+  useEffect(() => {
+    if (!project) return;
+    const taskMgr = getTaskManagerStore(projectId);
+    if (!taskMgr) return;
+
+    const currentStore = taskMgr.tasks.get(taskId);
+    const currentProvisioned = currentStore
+      ? 'provisionedTask' in currentStore
+        ? currentStore.provisionedTask
+        : null
+      : null;
+    if (currentProvisioned) {
+      project.splitLayout.reconcileConversations(
+        taskId,
+        Array.from(currentProvisioned.conversations.conversations.keys())
+      );
+    }
+
+    for (const leaf of project.splitLayout.leaves) {
+      const leafTaskId = leaf.taskId ?? taskId;
+      const store = taskMgr.tasks.get(leafTaskId);
+      const provisioned = store
+        ? 'provisionedTask' in store
+          ? store.provisionedTask
+          : null
+        : null;
+      if (
+        leaf.conversationId &&
+        provisioned &&
+        !provisioned.conversations.conversations.has(leaf.conversationId)
+      ) {
+        leaf.conversationId = null;
+        continue;
+      }
+
+      if (leafTaskId === taskId) continue;
+      if (taskViewKind(store, projectId) === 'idle') {
+        taskMgr.provisionTask(leafTaskId).catch(() => {});
+      }
+    }
+  }, [project, projectId, taskId]);
+
   if (kind !== 'ready') {
     return (
       <TaskViewWrapper projectId={projectId} taskId={taskId}>
@@ -61,6 +111,6 @@ const TaskViewWrapperWithProviders = observer(function TaskViewWrapperWithProvid
 export const taskView = {
   WrapView: TaskViewWrapperWithProviders,
   TitlebarSlot: TaskTitlebar,
-  MainPanel: TaskMainPanel,
+  MainPanel: SplitContainer,
   RightPanel: TaskRightSidebar,
 } satisfies ViewDefinition<{ projectId: string; taskId: string }>;

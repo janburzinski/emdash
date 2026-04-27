@@ -1,7 +1,7 @@
 import { makeObservable, observable, runInAction } from 'mobx';
 import { sshConnectionEventChannel } from '@shared/events/sshEvents';
 import { LocalProject, SshProject } from '@shared/projects';
-import type { ProjectViewSnapshot } from '@shared/view-state';
+import type { ProjectSplitSnapshot, ProjectViewSnapshot } from '@shared/view-state';
 import { events, rpc } from '@renderer/lib/ipc';
 import { appState } from '@renderer/lib/stores/app-state';
 import { captureTelemetry } from '@renderer/utils/telemetryClient';
@@ -271,8 +271,9 @@ export class ProjectManagerStore {
     const promise = Promise.all([
       rpc.projects.openProject(projectId),
       rpc.viewState.get(`project:${projectId}`),
+      rpc.viewState.get(`project-split:${projectId}`),
     ])
-      .then(async ([openResult, savedSnapshot]) => {
+      .then(async ([openResult, savedSnapshot, savedSplitSnapshot]) => {
         if (!openResult.success) {
           runInAction(() => {
             const current = this.projects.get(projectId);
@@ -297,12 +298,14 @@ export class ProjectManagerStore {
           if (current && isUnmountedProject(current)) {
             current.transitionToMounted(
               current.data,
-              savedSnapshot as ProjectViewSnapshot | undefined
+              savedSnapshot as ProjectViewSnapshot | undefined,
+              savedSplitSnapshot as ProjectSplitSnapshot | undefined
             );
           }
         });
         // Load the task list before provisioning so the tasks map is populated.
-        const taskManager = this.projects.get(projectId)?.mountedProject?.taskManager;
+        const mountedProject = this.projects.get(projectId)?.mountedProject;
+        const taskManager = mountedProject?.taskManager;
         if (taskManager) {
           await taskManager.loadTasks();
           const nav = appState.navigation;
@@ -313,8 +316,14 @@ export class ProjectManagerStore {
             nav.currentViewId === 'task' && navParams?.projectId === projectId
               ? navParams.taskId
               : undefined;
-          if (navTaskId) {
-            taskManager.provisionTask(navTaskId).catch(() => {});
+          const splitTaskIds =
+            mountedProject?.splitLayout.leaves
+              .map((leaf) => leaf.taskId)
+              .filter((taskId): taskId is string => Boolean(taskId)) ?? [];
+          const taskIdsToProvision = new Set<string>(splitTaskIds);
+          if (navTaskId) taskIdsToProvision.add(navTaskId);
+          for (const taskId of taskIdsToProvision) {
+            taskManager.provisionTask(taskId).catch(() => {});
           }
         }
       })
