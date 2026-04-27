@@ -1,10 +1,11 @@
+import { useHotkey } from '@tanstack/react-hotkeys';
 import { createContext, useCallback, useContext, type ReactNode } from 'react';
 import {
   SettingsPage,
   type SettingsPageTab,
 } from '@renderer/features/settings/components/SettingsPage';
 import { Titlebar } from '@renderer/lib/components/titlebar/Titlebar';
-import { useParams } from '@renderer/lib/layout/navigation-provider';
+import { useNavigate, useParams } from '@renderer/lib/layout/navigation-provider';
 
 const SettingsTabContext = createContext<{
   tab: SettingsPageTab;
@@ -20,12 +21,14 @@ export function SettingsViewWrapper({
   tab?: SettingsPageTab;
 }) {
   const { setParams } = useParams('settings');
+  const { navigate } = useNavigate();
   const handleTabChange = useCallback(
     (tab: SettingsPageTab) => {
       setParams({ tab });
     },
     [setParams]
   );
+  useHotkey('Escape', () => navigate('home'), { enabled: true });
   return (
     <SettingsTabContext.Provider value={{ tab, onTabChange: handleTabChange }}>
       {children}
