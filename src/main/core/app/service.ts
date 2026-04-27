@@ -1,6 +1,9 @@
 import { exec } from 'node:child_process';
+import * as fs from 'node:fs';
+import * as os from 'node:os';
+import * as path from 'node:path';
 import { eq } from 'drizzle-orm';
-import { clipboard, dialog, shell } from 'electron';
+import { clipboard, shell } from 'electron';
 import { appPasteChannel, appRedoChannel, appUndoChannel } from '@shared/events/appEvents';
 import {
   getAppById,
@@ -314,18 +317,117 @@ class AppService {
     });
   }
 
-  async openSelectDirectoryDialog(args: {
-    title: string;
-    message: string;
-  }): Promise<string | undefined> {
-    const result = await dialog.showOpenDialog(getMainWindow()!, {
-      title: args.title,
-      properties: ['openDirectory'],
-      message: args.message,
+  async browseHostDirectory(args: {
+    dirPath: string;
+    showHidden?: boolean;
+    mode?: 'directory' | 'file' | 'all';
+    extensions?: string[];
+  }): Promise<HostDirectoryListing> {
+    const { showHidden = false, mode = 'all' } = args;
+    const extensions = (args.extensions || []).map((e) =>
+      e.startsWith('.') ? e.toLowerCase() : '.' + e.toLowerCase()
+    );
+
+    const dirPath = expandHostPath(args.dirPath);
+
+    let dirents: fs.Dirent[];
+    try {
+      dirents = await fs.promises.readdir(dirPath, { withFileTypes: true });
+    } catch (err) {
+      const code = (err as NodeJS.ErrnoException).code;
+      if (code === 'ENOTDIR') throw new Error('Not a directory');
+      if (code === 'ENOENT') throw new Error('Directory does not exist');
+      if (code === 'EACCES' || code === 'EPERM') throw new Error('Permission denied');
+      throw err;
+    }
+
+    const entries = await Promise.all(
+      dirents.map(async (entry): Promise<HostDirectoryEntry | null> => {
+        const isHidden = entry.name.startsWith('.');
+        if (!showHidden && isHidden) return null;
+
+        const fullPath = path.join(dirPath, entry.name);
+        const isSymlink = entry.isSymbolicLink();
+        let isDirectory = entry.isDirectory();
+        let mtimeMs: number | undefined;
+        let size: number | undefined;
+        try {
+          const s = await fs.promises.stat(fullPath);
+          if (isSymlink) isDirectory = s.isDirectory();
+          mtimeMs = s.mtimeMs;
+          if (!isDirectory) size = s.size;
+        } catch {
+          return null;
+        }
+
+        if (mode === 'directory' && !isDirectory) return null;
+        if (!isDirectory && extensions.length > 0) {
+          const ext = path.extname(entry.name).toLowerCase();
+          if (!extensions.includes(ext)) return null;
+        }
+
+        return {
+          name: entry.name,
+          path: fullPath,
+          isDirectory,
+          isHidden,
+          isSymlink,
+          size,
+          mtimeMs,
+        };
+      })
+    );
+
+    const filtered = entries.filter((e): e is HostDirectoryEntry => e !== null);
+    filtered.sort((a, b) => {
+      if (a.isDirectory !== b.isDirectory) return a.isDirectory ? -1 : 1;
+      return a.name.localeCompare(b.name, undefined, { sensitivity: 'base' });
     });
-    if (result.canceled) return undefined;
-    return result.filePaths[0];
+
+    const parent = path.dirname(dirPath);
+    const segments: HostPathSegment[] = [];
+    let cursor = dirPath;
+    while (true) {
+      const parentPath = path.dirname(cursor);
+      const name = path.basename(cursor) || cursor;
+      segments.unshift({ name, path: cursor });
+      if (parentPath === cursor) break;
+      cursor = parentPath;
+    }
+
+    return {
+      path: dirPath,
+      parent: parent === dirPath ? null : parent,
+      segments,
+      entries: filtered,
+    };
   }
 }
+
+function expandHostPath(input: string): string {
+  let p = input;
+  if (!p || p === '~') p = os.homedir();
+  else if (p.startsWith('~/')) p = path.join(os.homedir(), p.slice(2));
+  return path.resolve(p);
+}
+
+export type HostPathSegment = { name: string; path: string };
+
+export type HostDirectoryEntry = {
+  name: string;
+  path: string;
+  isDirectory: boolean;
+  isHidden: boolean;
+  isSymlink: boolean;
+  size?: number;
+  mtimeMs?: number;
+};
+
+export type HostDirectoryListing = {
+  path: string;
+  parent: string | null;
+  segments: HostPathSegment[];
+  entries: HostDirectoryEntry[];
+};
 
 export const appService = new AppService();

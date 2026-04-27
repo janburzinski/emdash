@@ -11,6 +11,7 @@ import { RenameTaskModal } from '@renderer/features/tasks/rename-task-modal';
 import { AddSshConnModal } from '@renderer/lib/components/add-ssh-conn-modal';
 import { ConfirmActionDialog } from '@renderer/lib/components/confirm-action-dialog';
 import { FeedbackModal } from '@renderer/lib/components/feedback-modal/feedback-modal';
+import { FilePickerModal } from '@renderer/lib/components/file-picker-modal/file-picker-modal';
 import { GithubDeviceFlowModalOverlay } from '@renderer/lib/components/github-device-flow-modal';
 import { ModalComponent } from '@renderer/lib/modal/modal-provider';
 
@@ -44,4 +45,5 @@ export const modalRegistry = {
   renameTaskModal: createModal(RenameTaskModal, { size: 'xs' }),
   integrationSetupModal: createModal(IntegrationSetupModal, { size: 'md' }),
   addRemoteModal: createModal(AddRemoteModal),
+  filePickerModal: createModal(FilePickerModal, { size: 'lg' }),
 } satisfies Record<string, ModalRegistryEntry>;

@@ -4,12 +4,14 @@ import {
   CheckCircle2,
   ChevronDown,
   ChevronUp,
+  FolderOpen,
   LoaderCircle,
   XCircle,
 } from 'lucide-react';
 import { useState } from 'react';
 import * as z from 'zod';
 import type { ConnectionTestResult, SshConfig } from '@shared/ssh';
+import { useFilePicker } from '@renderer/lib/components/file-picker-modal/use-file-picker';
 import type { BaseModalProps } from '@renderer/lib/modal/modal-provider';
 import { appState } from '@renderer/lib/stores/app-state';
 import { Button } from '@renderer/lib/ui/button';
@@ -73,6 +75,7 @@ type TestState = 'idle' | 'testing' | 'success' | 'error';
 
 export function AddSshConnModal({ onSuccess, onClose }: BaseModalProps<{ connectionId: string }>) {
   const sshConnections = appState.sshConnections;
+  const { pickFile } = useFilePicker();
 
   const [testState, setTestState] = useState<TestState>('idle');
   const [testResult, setTestResult] = useState<ConnectionTestResult | null>(null);
@@ -352,15 +355,34 @@ export function AddSshConnModal({ onSuccess, onClose }: BaseModalProps<{ connect
                           return (
                             <Field data-invalid={isInvalid}>
                               <FieldLabel htmlFor={field.name}>Private Key Path</FieldLabel>
-                              <Input
-                                id={field.name}
-                                name={field.name}
-                                value={field.state.value ?? ''}
-                                onBlur={field.handleBlur}
-                                onChange={(e) => field.handleChange(e.target.value)}
-                                aria-invalid={isInvalid}
-                                placeholder="~/.ssh/id_rsa"
-                              />
+                              <div className="flex gap-2">
+                                <Input
+                                  id={field.name}
+                                  name={field.name}
+                                  value={field.state.value ?? ''}
+                                  onBlur={field.handleBlur}
+                                  onChange={(e) => field.handleChange(e.target.value)}
+                                  aria-invalid={isInvalid}
+                                  placeholder="~/.ssh/id_rsa"
+                                  className="flex-1"
+                                />
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={async () => {
+                                    const picked = await pickFile({
+                                      title: 'Select SSH Private Key',
+                                      initialPath: '~/.ssh',
+                                      showHidden: true,
+                                    });
+                                    if (picked) field.handleChange(picked);
+                                  }}
+                                >
+                                  <FolderOpen className="size-3.5" />
+                                  Browse
+                                </Button>
+                              </div>
                               {isInvalid && <FieldError errors={field.state.meta.errors} />}
                             </Field>
                           );

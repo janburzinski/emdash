@@ -1,5 +1,6 @@
 import { createRPCController } from '@shared/ipc/rpc';
 import type { OpenInAppId } from '@shared/openInApps';
+import { err, ok } from '@shared/result';
 import { capture } from '@main/lib/telemetry';
 import { appService } from './service';
 
@@ -40,8 +41,18 @@ export const appController = createRPCController({
     const { fonts, cached, error } = await appService.listInstalledFonts(args?.refresh);
     return { success: !error, fonts, cached, ...(error ? { error } : {}) };
   },
-  openSelectDirectoryDialog: (args: { title: string; message: string }) =>
-    appService.openSelectDirectoryDialog(args),
+  browseHostDirectory: async (args: {
+    dirPath: string;
+    showHidden?: boolean;
+    mode?: 'directory' | 'file' | 'all';
+    extensions?: string[];
+  }) => {
+    try {
+      return ok(await appService.browseHostDirectory(args));
+    } catch (error) {
+      return err(error instanceof Error ? error.message : String(error));
+    }
+  },
   getAppVersion: () => appService.getCachedAppVersion(),
   getElectronVersion: () => process.versions.electron,
   getPlatform: () => process.platform,

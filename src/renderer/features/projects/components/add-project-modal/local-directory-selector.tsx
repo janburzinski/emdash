@@ -1,6 +1,6 @@
 import { Folder } from 'lucide-react';
 import { useState } from 'react';
-import { rpc } from '@renderer/lib/ipc';
+import { useFilePicker } from '@renderer/lib/components/file-picker-modal/use-file-picker';
 import { Button } from '@renderer/lib/ui/button';
 import { cn } from '@renderer/utils/utils';
 
@@ -14,18 +14,15 @@ interface LocalDirectorySelectorProps {
 
 export function LocalDirectorySelector({
   title,
-  message,
   onPathChange,
   path: initialPath,
   placeholder = 'Select a directory',
 }: LocalDirectorySelectorProps) {
   const [path, setPath] = useState<string>(initialPath || '');
+  const { pickDirectory } = useFilePicker();
 
   const handleOpenFileDialog = async () => {
-    const result = await rpc.app.openSelectDirectoryDialog({
-      title,
-      message,
-    });
+    const result = await pickDirectory({ title, initialPath: path || undefined });
     if (result) {
       setPath(result);
       onPathChange(result);
