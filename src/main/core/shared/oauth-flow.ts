@@ -11,17 +11,6 @@ export interface OAuthFlowOptions {
   timeoutMs?: number;
 }
 
-/**
- * Execute a full PKCE OAuth flow:
- * 1. Generate PKCE challenge + state
- * 2. Start ephemeral loopback HTTP server
- * 3. Open browser to authorizeUrl with PKCE params
- * 4. Wait for callback with code
- * 5. Exchange code for tokens
- *
- * Returns the raw JSON response from the exchange endpoint.
- * Each caller extracts what it needs.
- */
 export async function executeOAuthFlow(
   options: OAuthFlowOptions
 ): Promise<Record<string, unknown>> {
@@ -51,9 +40,7 @@ export async function executeOAuthFlow(
   return exchangeCode(exchangeUrl, state, code, codeVerifier);
 }
 
-// ---------------------------------------------------------------------------
 // Internal helpers
-// ---------------------------------------------------------------------------
 
 interface LoopbackOptions {
   authorizeUrl: string;

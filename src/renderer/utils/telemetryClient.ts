@@ -1,7 +1,3 @@
-/**
- * Simple telemetry client for renderer process.
- * Captures events and sends them to the main process via IPC.
- */
 import type { TelemetryEvent, TelemetryProperties } from '@shared/telemetry';
 import { rpc } from '../lib/ipc';
 import { focusTracker } from './focus-tracker';

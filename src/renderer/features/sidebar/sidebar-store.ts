@@ -113,7 +113,6 @@ export class SidebarStore implements Snapshottable<SidebarSnapshot> {
     return rows;
   }
 
-  /** Flat list of pinned tasks (all mounted projects), same sort rules as project tree tasks. */
   get pinnedSidebarEntries(): { projectId: string; taskId: string }[] {
     const pairs: { projectId: string; task: TaskStore }[] = [];
     for (const project of this.projectManager.projects.values()) {
@@ -160,7 +159,6 @@ export class SidebarStore implements Snapshottable<SidebarSnapshot> {
     }
   }
 
-  /** Called on first load when no snapshot exists — expand all known projects. */
   expandAllProjects(): void {
     for (const project of this.orderedProjects) {
       const projectId = project.state === 'unregistered' ? project.id : project.data!.id;
@@ -184,7 +182,6 @@ export class SidebarStore implements Snapshottable<SidebarSnapshot> {
     this.taskSortBy = sortBy;
   }
 
-  /** Set the sort key and clear all manual task orders so the list fully re-sorts. */
   applySort(sortBy: SidebarTaskSortBy): void {
     this.taskSortBy = sortBy;
     this.taskOrderByProject = {};

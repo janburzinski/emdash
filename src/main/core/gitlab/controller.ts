@@ -10,6 +10,4 @@ export const gitlabController = createRPCController({
   },
 
   clearCredentials: async () => gitLabConnectionService.clearCredentials(),
-
-  checkConnection: async () => gitLabConnectionService.checkConnection(),
 });

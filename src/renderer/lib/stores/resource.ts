@@ -11,38 +11,20 @@ export type ResourceStrategy<T, TEventData = void> =
   | {
       kind: 'poll';
       intervalMs: number;
-      /** Pause the interval while document.hidden */
       pauseWhenHidden?: boolean;
-      /**
-       * Only run the interval while `data` has at least one MobX observer.
-       * The initial load still runs when the first observer attaches.
-       */
       demandGated?: boolean;
     }
   | {
       kind: 'event';
-      /** Subscribe to an event source; return an unsubscribe function. */
       subscribe: (handler: (event: TEventData) => void) => () => void;
-      /**
-       * What to do when an event fires:
-       *   'reload'  — call load() (with optional debounce)
-       *   function  — run a custom handler inside runInAction
-       */
       onEvent: 'reload' | ((event: TEventData, ctx: ResourceContext<T>) => void);
       debounceMs?: number;
     };
 
 export interface ResourceContext<T> {
   readonly data: T | null;
-  /** Trigger a fresh fetch (debounced/deduped). */
   reload(): void;
-  /** Replace data with a new value inside runInAction. */
   set(newData: T): void;
-  /**
-   * Mutate data in-place inside runInAction.
-   * Only safe when T contains MobX observable collections; otherwise MobX
-   * will not detect the change — use set() for plain objects/arrays.
-   */
   mutate(updater: (data: T) => void): void;
 }
 
@@ -114,7 +96,6 @@ export class Resource<T, TEventData = void> {
     }
   }
 
-  /** Fetch data, deduplicating concurrent calls. */
   async load(): Promise<void> {
     if (!this._fetch) return;
     if (this._inFlight) return this._inFlight;
@@ -145,16 +126,10 @@ export class Resource<T, TEventData = void> {
     return this._inFlight;
   }
 
-  /** Schedule a fresh load (fire-and-forget). */
   invalidate(): void {
     void this.load();
   }
 
-  /**
-   * Directly replace data without going through the fetch function.
-   * Useful for stores that manage incremental data structures (e.g. FilesStore)
-   * where the caller handles the update and needs to signal MobX observers.
-   */
   setValue(data: T): void {
     runInAction(() => {
       this.data = data;
@@ -162,11 +137,6 @@ export class Resource<T, TEventData = void> {
     });
   }
 
-  /**
-   * Activate non-demand strategies (poll without demandGated, event).
-   * Call this from the owning store's start() / activate() method.
-   * Also triggers an initial load for active strategies.
-   */
   start(): void {
     for (const strategy of this._strategies) {
       if (strategy.kind === 'poll' && !strategy.demandGated) {
@@ -179,7 +149,6 @@ export class Resource<T, TEventData = void> {
     }
   }
 
-  /** Stop all timers and unsubscribe all listeners. */
   dispose(): void {
     for (const stop of this._stopFns) stop();
     this._stopFns = [];

@@ -11,7 +11,3 @@ export interface ConversationProvider {
   destroyAll(): Promise<void>;
   detachAll(): Promise<void>;
 }
-
-export type ConversationConfig = {
-  autoApprove?: boolean;
-};

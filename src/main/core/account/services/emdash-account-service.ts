@@ -65,7 +65,6 @@ export class EmdashAccountService {
     this.sessionToken = await accountCredentialStore.get();
   }
 
-  /**  make provider optional and remove default in case emdash starts supporting more providers */
   async signIn(provider: string = 'github'): Promise<SignInResult> {
     const { baseUrl } = ACCOUNT_CONFIG.authServer;
 

@@ -11,10 +11,6 @@ export interface SpawnParams {
   cwd: string;
 }
 
-/**
- * Derive the executable, arguments, and working directory from a session config.
- * Applies shellSetup and tmux wrapping where relevant.
- */
 export function resolveSpawnParams(type: SessionType, config: SessionConfig): SpawnParams {
   const shell = process.env.SHELL ?? '/bin/sh';
 
@@ -59,13 +55,6 @@ export function resolveSpawnParams(type: SessionType, config: SessionConfig): Sp
   }
 }
 
-/**
- * Build spawn params that wrap a command in a tmux session for persistence.
- *
- * Behaviour:
- * - If a tmux session named `sessionName` already exists → attach to it.
- * - Otherwise → create a detached session running `cmd`, then attach.
- */
 export function buildTmuxParams(
   shell: string,
   sessionName: string,
@@ -88,9 +77,6 @@ export function buildTmuxParams(
   };
 }
 
-/**
- * Build a single command string for SSH remote execution.
- */
 export function resolveSshCommand(
   type: SessionType,
   config: SessionConfig,

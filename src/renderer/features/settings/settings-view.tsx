@@ -11,7 +11,6 @@ const SettingsTabContext = createContext<{
   onTabChange: (tab: SettingsPageTab) => void;
 }>({ tab: 'general', onTabChange: () => {} });
 
-/** Minimal passthrough — exists so the registry can infer WrapParams<'settings'>. */
 export function SettingsViewWrapper({
   children,
   tab = 'general',

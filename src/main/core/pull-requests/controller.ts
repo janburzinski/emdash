@@ -1,13 +1,11 @@
 import { createRPCController } from '@shared/ipc/rpc';
-import type { ListPrOptions, PullRequestFile } from '@shared/pull-requests';
+import type { ListPrOptions } from '@shared/pull-requests';
 import { log } from '@main/lib/logger';
 import { capture } from '@main/lib/telemetry';
 import { prQueryService } from './pr-query-service';
 import { prSyncEngine } from './pr-sync-engine';
 
 export const pullRequestController = createRPCController({
-  // ── DB-cached reads ────────────────────────────────────────────────────────
-
   listPullRequests: async (projectId: string, options?: ListPrOptions) => {
     try {
       const prs = await prQueryService.listPullRequests(projectId, options);
@@ -68,8 +66,6 @@ export const pullRequestController = createRPCController({
       };
     }
   },
-
-  // ── Sync triggers ──────────────────────────────────────────────────────────
 
   forceFullSyncPullRequests: async (projectId: string) => {
     try {
@@ -145,8 +141,6 @@ export const pullRequestController = createRPCController({
     return { success: true as const };
   },
 
-  // ── Mutations ──────────────────────────────────────────────────────────────
-
   createPullRequest: async (params: {
     repositoryUrl: string;
     head: string;
@@ -206,24 +200,6 @@ export const pullRequestController = createRPCController({
       return {
         success: false as const,
         error: error instanceof Error ? error.message : 'Unable to mark PR ready for review',
-      };
-    }
-  },
-
-  // ── Pass-through reads ─────────────────────────────────────────────────────
-
-  getPullRequestFiles: async (repositoryUrl: string, prNumber: number) => {
-    try {
-      const files: PullRequestFile[] = await prSyncEngine.getPullRequestFiles(
-        repositoryUrl,
-        prNumber
-      );
-      return { success: true as const, files };
-    } catch (error) {
-      log.error('Failed to get pull request files:', error);
-      return {
-        success: false as const,
-        error: error instanceof Error ? error.message : 'Unable to get pull request files',
       };
     }
   },

@@ -18,7 +18,6 @@ import { SidebarMenuRow } from './sidebar-primitives';
 interface SidebarTaskItemProps {
   taskId: string;
   projectId: string;
-  /** Pinned strip uses tighter padding than tasks nested under a project. */
   rowVariant?: 'underProject' | 'pinned';
 }
 

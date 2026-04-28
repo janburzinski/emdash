@@ -12,7 +12,6 @@ import { isRegistered, type TaskStore } from './task';
 type MergeMode = 'merge' | 'squash' | 'rebase';
 export type MergeResult = { success: true } | { success: false; error: string };
 
-/** Extract the numeric PR number from the identifier field (e.g. "#123" → 123). */
 function prNumberFromIdentifier(identifier: string | null): number | null {
   if (!identifier) return null;
   const n = Number.parseInt(identifier.replace('#', ''), 10);
@@ -150,10 +149,6 @@ export class PrStore {
     await rpc.pullRequests.markReadyForReview(pr.repositoryUrl, prNumber);
   }
 
-  /**
-   * Trigger a single PR refresh from GitHub. The updated PR will arrive via
-   * `prUpdatedChannel` and be merged into `task.data.prs` by `TaskManagerStore`.
-   */
   refresh(id: string): void {
     const pr = this.pullRequests.find((p) => p.url === id);
     if (!pr) return;

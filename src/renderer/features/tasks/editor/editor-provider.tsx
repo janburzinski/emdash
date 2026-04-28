@@ -18,10 +18,6 @@ import { useMonacoLease } from '@renderer/lib/monaco/use-monaco-lease';
 import { useIsActiveTask } from '../hooks/use-is-active-task';
 
 interface EditorContextValue {
-  /**
-   * Ref callback that appends the task's stable Monaco editor container to the
-   * given DOM element. Called by EditorMainPanel to position the editor host.
-   */
   setEditorHost: (el: HTMLElement | null) => void;
 }
 
@@ -66,20 +62,16 @@ export const EditorProvider = observer(function EditorProvider({
   // save view state before switching models.
   const prevBufUriRef = useRef<string | undefined>(undefined);
 
-  // ---------------------------------------------------------------------------
   // Theme sync — update editor theme when app theme changes.
-  // ---------------------------------------------------------------------------
   useEffect(() => {
     const m = codeEditorPool.getMonaco();
     if (m) defineMonacoThemes(m as Parameters<typeof defineMonacoThemes>[0]);
     codeEditorPool.setTheme(getMonacoTheme(effectiveTheme));
   }, [effectiveTheme]);
 
-  // ---------------------------------------------------------------------------
   // Editor setup — fires when the lease arrives. Configures the editor,
   // registers keyboard shortcuts, updates editorRef, satisfies any pending
   // focus request, and appends the container to the host.
-  // ---------------------------------------------------------------------------
   useEffect(
     () =>
       reaction(
@@ -129,13 +121,11 @@ export const EditorProvider = observer(function EditorProvider({
     []
   );
 
-  // ---------------------------------------------------------------------------
   // Model attachment — single autorun that re-evaluates whenever any of the
   // three inputs changes: lease, activeFilePath, or modelStatus.
   // Replaces the reaction+onceBufferReady pattern and the restore-effect
   // onceBufferReady. Covers: initial mount, remount, tab switching, and the
   // async model-registration race on first file open.
-  // ---------------------------------------------------------------------------
   useEffect(
     () =>
       autorun(() => {
@@ -164,19 +154,15 @@ export const EditorProvider = observer(function EditorProvider({
     []
   );
 
-  // ---------------------------------------------------------------------------
   // Restore — re-register Monaco models for persisted open tabs on mount.
   // The autorun above handles attachment once model statuses become 'ready'.
-  // ---------------------------------------------------------------------------
   useEffect(() => {
     if (!taskId) return;
     void editorView.restore();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [taskId]);
 
-  // ---------------------------------------------------------------------------
   // Conflict dialog — reaction on pendingConflictUri shows the modal.
-  // ---------------------------------------------------------------------------
   useEffect(
     () =>
       reaction(
@@ -197,11 +183,9 @@ export const EditorProvider = observer(function EditorProvider({
     []
   );
 
-  // ---------------------------------------------------------------------------
   // Focus restore — when this task becomes active and focusedRegion is 'main',
   // focus Monaco if an editable model is loaded; otherwise queue the intent so
   // it is satisfied once the lease arrives (handled in the lease reaction above).
-  // ---------------------------------------------------------------------------
   const focusedRegion = provisionedTask.taskView.focusedRegion;
   useEffect(() => {
     if (!isActive || focusedRegion !== 'main') return;
@@ -213,9 +197,7 @@ export const EditorProvider = observer(function EditorProvider({
     }
   }, [isActive, focusedRegion]);
 
-  // ---------------------------------------------------------------------------
   // setEditorHost — called by EditorMainPanel to give the editor a stable DOM node.
-  // ---------------------------------------------------------------------------
   const setEditorHost = useCallback(
     (el: HTMLElement | null) => {
       hostRef.current = el;

@@ -41,7 +41,6 @@ export type PullRequestCheck = {
   appLogoUrl: string | null;
 };
 
-/** Fully denormalised PR view used throughout the renderer. */
 export type PullRequest = {
   url: string;
   provider: string;
@@ -71,8 +70,6 @@ export type PullRequest = {
   checks: PullRequestCheck[];
 };
 
-// ── Sync progress ─────────────────────────────────────────────────────────────
-
 export type PrSyncProgress = {
   remoteUrl: string;
   kind: 'full' | 'incremental' | 'single';
@@ -81,8 +78,6 @@ export type PrSyncProgress = {
   total?: number;
   error?: string;
 };
-
-// ── Query options ─────────────────────────────────────────────────────────────
 
 export type PullRequestStatusFilter = PullRequestStatus | 'all' | 'not-open';
 
@@ -110,22 +105,6 @@ export type PrFilterOptions = {
   assignees: PullRequestUser[];
 };
 
-// ── Pass-through types ────────────────────────────────────────────────────────
-
-export interface PullRequestFile {
-  filename: string;
-  status: string;
-  additions: number;
-  deletions: number;
-  patch?: string;
-}
-
-// ── Helpers ───────────────────────────────────────────────────────────────────
-
-/**
- * Returns the open PR if one exists, otherwise the most recently created PR.
- * Use this everywhere a single "current" PR needs to be displayed.
- */
 export function selectCurrentPr(prs: PullRequest[]): PullRequest | undefined {
   if (prs.length === 0) return undefined;
   const open = prs.find((pr) => pr.status === 'open');
@@ -133,35 +112,16 @@ export function selectCurrentPr(prs: PullRequest[]): PullRequest | undefined {
   return prs.reduce((a, b) => (a.createdAt >= b.createdAt ? a : b), prs[0]);
 }
 
-/** True when the PR originates from a fork (head repo differs from base repo). */
 export function isForkPr(pr: PullRequest): boolean {
   return pr.headRepositoryUrl !== pr.repositoryUrl;
 }
 
-/**
- * Extract the numeric PR number from a `PullRequest` row.
- * The `identifier` field stores values like `"#123"`.
- */
 export function getPrNumber(pr: { identifier: string | null }): number | null {
   if (!pr.identifier) return null;
   const n = parseInt(pr.identifier.replace('#', ''), 10);
   return isNaN(n) ? null : n;
 }
 
-/**
- * Extract the GitHub `owner/repo` string from a normalised repository URL
- * (e.g. `https://github.com/owner/repo` → `"owner/repo"`).
- * Returns the URL unchanged if parsing fails.
- */
-export function nameWithOwnerFromUrl(repositoryUrl: string): string {
-  const match = /github\.com\/([^/]+\/[^/?#]+)/.exec(repositoryUrl);
-  return match ? match[1] : repositoryUrl;
-}
-
-/**
- * Extract just the owner from a repository URL.
- * (e.g. `https://github.com/owner/repo` → `"owner"`).
- */
 export function ownerFromUrl(repositoryUrl: string): string | undefined {
   const match = /github\.com\/([^/]+)/.exec(repositoryUrl);
   return match ? match[1] : undefined;

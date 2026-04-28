@@ -14,17 +14,11 @@ export class GitFetchService {
     private readonly intervalMs = DEFAULT_INTERVAL_MS
   ) {}
 
-  /** Start the background fetch loop: immediate fetch, then every `intervalMs`. */
   start(): void {
     void this._doFetch();
     this._scheduleNext();
   }
 
-  /**
-   * Trigger an immediate fetch and reset the interval timer so the next
-   * background tick is `intervalMs` from now. Concurrent callers share the
-   * same in-flight promise (deduplicated).
-   */
   async fetch(): Promise<Result<void, FetchError>> {
     this._resetTimer();
     return this._doFetch();

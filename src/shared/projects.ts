@@ -30,8 +30,6 @@ export type SshProject = {
   updatedAt: string;
 };
 
-export type Project = LocalProject | SshProject;
-
 export type OpenProjectError =
   | { type: 'path-not-found'; path: string }
   | { type: 'ssh-disconnected'; connectionId: string }

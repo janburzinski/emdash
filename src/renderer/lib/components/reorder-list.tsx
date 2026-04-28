@@ -49,5 +49,3 @@ export function ReorderList<T>({
     </Reorder.Group>
   );
 }
-
-export default ReorderList;

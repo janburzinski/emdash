@@ -22,8 +22,6 @@ import { createPiClassifier } from './pi';
 import { createQwenClassifier } from './qwen';
 import { createRovoClassifier } from './rovo';
 
-export type { ProviderClassifier, ClassificationResult } from './base';
-
 const classifierFactories: Partial<Record<AgentProviderId, () => ProviderClassifier>> = {
   amp: createAmpClassifier,
   auggie: createAuggieClassifier,

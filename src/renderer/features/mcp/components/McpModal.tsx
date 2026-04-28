@@ -320,8 +320,6 @@ export const McpModal: React.FC<McpModalProps> = ({
   );
 };
 
-// ── Helpers ────────────────────────────────────────────────────────────────
-
 function getInitialState(mode: McpModalMode) {
   if (mode.type === 'edit') {
     const s = mode.server;

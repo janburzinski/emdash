@@ -6,6 +6,5 @@ export const viewStateController = createRPCController({
     return viewStateService.save(key, snapshot);
   },
   get: (key: string): Promise<unknown> => viewStateService.get(key),
-  del: (key: string): Promise<void> => viewStateService.del(key),
   reset: (): Promise<void> => viewStateService.reset(),
 });

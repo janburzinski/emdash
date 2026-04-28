@@ -6,7 +6,6 @@ import {
   asProvisioned,
   getTaskStore,
   taskViewKind,
-  type TaskViewKind,
 } from '@renderer/features/tasks/stores/task-selectors';
 import { ViewLayoutOverrideContext } from '@renderer/lib/layout/navigation-provider';
 
@@ -30,7 +29,6 @@ export const ProvisionedTaskProvider = observer(function ProvisionedTaskProvider
   );
 });
 
-/** Non-nullable. Only call inside a ProvisionedTaskProvider subtree (kind === 'ready'). */
 export function useProvisionedTask(): ProvisionedTask {
   const ctx = useContext(ProvisionedTaskContext);
   if (!ctx) {
@@ -78,9 +76,4 @@ export function useTaskViewContext(): TaskViewContext {
     throw new Error('useTaskViewContext must be used within a TaskViewContextProvider');
   }
   return context;
-}
-
-export function useTaskViewKind(): TaskViewKind {
-  const { projectId, taskId } = useTaskViewContext();
-  return taskViewKind(getTaskStore(projectId, taskId), projectId);
 }

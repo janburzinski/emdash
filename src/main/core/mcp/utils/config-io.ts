@@ -5,8 +5,6 @@ import * as toml from 'smol-toml';
 import type { AgentMcpMeta, RawServerEntry, ServerMap } from '@shared/mcp/types';
 import { log } from '@main/lib/logger';
 
-// ── Read ───────────────────────────────────────────────────────────────────
-
 export async function readServers(meta: AgentMcpMeta): Promise<ServerMap> {
   let content: string;
   try {
@@ -55,8 +53,6 @@ function extractAtPath(obj: Record<string, unknown>, pathSegments: string[]): Se
   }
   return result;
 }
-
-// ── Write ──────────────────────────────────────────────────────────────────
 
 export async function writeServers(meta: AgentMcpMeta, servers: ServerMap): Promise<void> {
   await fs.mkdir(path.dirname(meta.configPath), { recursive: true });

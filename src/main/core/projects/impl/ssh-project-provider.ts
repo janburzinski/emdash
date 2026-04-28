@@ -514,10 +514,6 @@ export class SshProjectProvider implements ProjectProvider {
     }
   }
 
-  /**
-   * Re-spawn all terminal sessions for every active task after an SSH reconnect.
-   * Agent sessions are intentionally excluded — they must be restarted manually.
-   */
   private async rehydrateTerminals(): Promise<void> {
     await Promise.all(
       Array.from(this.terminalProviders.values()).map((provider) =>
@@ -530,10 +526,6 @@ export class SshProjectProvider implements ProjectProvider {
     );
   }
 
-  /**
-   * Upload local files into the task's working directory via SFTP and return
-   * their remote paths.
-   */
   async uploadFiles(taskId: string, localPaths: string[]): Promise<string[]> {
     const env = this.tasks.get(taskId);
     if (!env) throw new Error(`No provisioned environment for task: ${taskId}`);

@@ -46,7 +46,6 @@ interface TerminalsTabsProps {
   taskId: string;
   terminalTabView: TerminalTabViewStore | null;
   terminalMgr: TerminalManagerStore | null;
-  /** Extra content rendered in the right-side actions area (e.g. mode toggle button). */
   actions?: React.ReactNode;
 }
 
@@ -114,7 +113,6 @@ export const TerminalsTabs = observer(function TerminalsTabs({
 
 interface ScriptsTabsProps {
   lifecycleScriptsMgr: LifecycleScriptsStore | null;
-  /** Extra content rendered in the right-side actions area (e.g. mode toggle button). */
   actions?: React.ReactNode;
 }
 

@@ -1,12 +1,3 @@
-/**
- * APP_SHORTCUTS — central registry of keyboard shortcut metadata.
- *
- * `defaultHotkey` uses TanStack Hotkeys string format (e.g. 'Mod+K').
- * Defaults are resolved here in the renderer rather than in schema.ts because
- * some are platform-specific.
- *
- * All event handling is done in AppKeyboardShortcuts.tsx via useHotkey().
- */
 import type { Hotkey } from '@tanstack/react-hotkeys';
 
 export interface AppShortcutDef {
@@ -19,11 +10,6 @@ export interface AppShortcutDef {
 
 type ShortcutOverrides = Partial<Record<ShortcutSettingsKey, string | null>>;
 
-/**
- * Preserves literal key types for `keyof` inference while widening each value
- * to the full `AppShortcutDef` interface (so optional fields like
- * `hideFromSettings` are accessible on every entry without a union problem).
- */
 function defineShortcuts<T extends Record<string, AppShortcutDef>>(
   shortcuts: T
 ): Record<keyof T, AppShortcutDef> {
@@ -154,14 +140,8 @@ export const APP_SHORTCUTS = defineShortcuts({
   },
 });
 
-/** All valid shortcut keys — inferred directly from the registry, never redeclared. */
 export type ShortcutSettingsKey = keyof typeof APP_SHORTCUTS;
 
-/**
- * Returns the currently assigned hotkey for an action.
- * - `undefined` override -> falls back to default
- * - `null` override -> unassigned (disabled)
- */
 export function getEffectiveHotkey(
   key: ShortcutSettingsKey,
   custom?: ShortcutOverrides
@@ -171,10 +151,6 @@ export function getEffectiveHotkey(
   return (configured ?? APP_SHORTCUTS[key].defaultHotkey) as Hotkey;
 }
 
-/**
- * Always returns a valid hotkey string for hook registration.
- * Pair this with `getEffectiveHotkey(...) !== null` in `enabled`.
- */
 export function getHotkeyRegistration(
   key: ShortcutSettingsKey,
   custom?: ShortcutOverrides

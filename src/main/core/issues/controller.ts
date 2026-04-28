@@ -8,11 +8,6 @@ import { projectManager } from '@main/core/projects/project-manager';
 import type { IssueProvider, IssueQueryOpts, IssueSearchOpts } from './issue-provider';
 import { getAllIssueProviders, getIssueProvider } from './registry';
 
-const DEFAULT_CAPABILITIES = {
-  requiresProjectPath: false,
-  requiresNameWithOwner: false,
-} as const;
-
 const CONNECTION_CHECK_TIMEOUT_MS = 8_000;
 
 function timeoutStatus(provider: IssueProvider): ConnectionStatus {
@@ -62,19 +57,6 @@ async function withResolvedRemote<T extends IssueQueryOpts>(opts: T): Promise<T>
 }
 
 export const issueController = createRPCController({
-  checkConnection: async (provider: IssueProviderType) => {
-    const issueProvider = getIssueProvider(provider);
-    if (!issueProvider) {
-      return {
-        connected: false,
-        error: `Unknown provider: ${provider}`,
-        capabilities: DEFAULT_CAPABILITIES,
-      };
-    }
-
-    return checkProviderConnection(issueProvider);
-  },
-
   checkAllConnections: async (): Promise<ConnectionStatusMap> => {
     const providers = getAllIssueProviders();
 

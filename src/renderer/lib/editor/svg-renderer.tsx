@@ -8,10 +8,6 @@ interface SvgRendererProps {
   filePath: string;
 }
 
-/**
- * Renders an SVG file as an image.
- * A floating "Edit source" button in the top-right corner toggles to Monaco source view.
- */
 export function SvgRenderer({ filePath }: SvgRendererProps) {
   const editorView = useProvisionedTask().taskView.editorView;
 

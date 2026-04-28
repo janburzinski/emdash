@@ -1,5 +1,5 @@
 import { catalogData } from '@shared/mcp/catalog';
-import type { McpCatalogEntry, RawServerEntry } from '@shared/mcp/types';
+import type { McpCatalogEntry } from '@shared/mcp/types';
 
 export function loadCatalog(): McpCatalogEntry[] {
   return Object.entries(catalogData).map(([key, entry]) => ({
@@ -10,8 +10,4 @@ export function loadCatalog(): McpCatalogEntry[] {
     defaultConfig: entry.config,
     credentialKeys: entry.credentialKeys,
   }));
-}
-
-export function getCatalogServerConfig(key: string): RawServerEntry | undefined {
-  return catalogData[key]?.config;
 }

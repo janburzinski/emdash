@@ -36,7 +36,6 @@ export interface ActiveFile {
   /** PR head SHA for the modified side of a 'pr' group diff.
    *  When absent the diff stack falls back to HEAD_REF. */
   modifiedRef?: GitObjectRef;
-  /** Set only when group === 'pr'. Identifies the PR for store lookups. */
   prNumber?: number;
 }
 
@@ -62,7 +61,6 @@ export type NavigationSnapshot = {
 
 export type SidebarTaskSortBy = 'created-at' | 'updated-at';
 
-/** Persisted sidebar UI state; fields may be absent in older DB blobs. */
 export type SidebarSnapshot = {
   expandedProjectIds?: string[];
   projectOrder?: string[];

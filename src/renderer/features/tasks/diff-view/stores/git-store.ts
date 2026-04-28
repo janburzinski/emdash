@@ -83,9 +83,6 @@ export class GitStore {
     });
   }
 
-  /**
-   * One entry per path — combines staged + unstaged halves for paths in both (e.g. MM).
-   */
   get fileChanges(): GitChange[] {
     const m = new Map<string, { staged?: GitChange; unstaged?: GitChange }>();
     for (const c of this.stagedFileChanges) {
@@ -134,7 +131,6 @@ export class GitStore {
     return full.totalDeleted + u;
   }
 
-  /** True once the first successful load has completed. Remains true during subsequent reloads. */
   get hasData(): boolean {
     return this.fullStatus.data !== null;
   }
@@ -151,32 +147,23 @@ export class GitStore {
     return this.fullStatus.data?.currentBranch ?? null;
   }
 
-  /** True when this workspace's branch has a remote tracking ref. */
   get isBranchPublished(): boolean {
     const name = this.branchName;
     return name ? this.repositoryStore.isBranchOnRemote(name) : false;
   }
 
-  /** Commits this workspace's branch is ahead of its upstream. */
   get aheadCount(): number {
     const name = this.branchName;
     return name ? (this.repositoryStore.getBranchDivergence(name)?.ahead ?? 0) : 0;
   }
 
-  /** Commits this workspace's branch is behind its upstream. */
   get behindCount(): number {
     const name = this.branchName;
     return name ? (this.repositoryStore.getBranchDivergence(name)?.behind ?? 0) : 0;
   }
 
-  // ---------------------------------------------------------------------------
   // Lifecycle
-  // ---------------------------------------------------------------------------
 
-  /**
-   * Start watching — triggers initial load and activates event strategies.
-   * Called from WorkspaceStore.activate().
-   */
   startWatching(): void {
     this.fullStatus.start();
   }
@@ -185,14 +172,8 @@ export class GitStore {
     this.fullStatus.dispose();
   }
 
-  // ---------------------------------------------------------------------------
   // Mutation methods — optimistic update then authoritative reload
-  // ---------------------------------------------------------------------------
 
-  /**
-   * Apply an optimistic transformation to fullStatus immediately, returning the
-   * previous value so callers can roll back on error.
-   */
   private _applyOptimistic(fn: (prev: FullGitStatus) => FullGitStatus): FullGitStatus | null {
     const prev = this.fullStatus.data;
     if (prev) this.fullStatus.setValue(fn(prev));

@@ -61,11 +61,6 @@ const CORE_DEPENDENCIES: DependencyDescriptor[] = [
   },
 ];
 
-/**
- * Agents that output their version on stderr, time out during probing, or return
- * a non-zero exit code are still "available" if a path was resolved or any output
- * was produced. This mirrors the logic in ConnectionsService.resolveStatus().
- */
 function agentResolveStatus(result: ProbeResult): DependencyStatus {
   if (result.path !== null) return 'available';
   if (result.timedOut && result.stdout) return 'available';

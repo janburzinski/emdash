@@ -2,9 +2,7 @@ import type { Octokit } from '@octokit/rest';
 import { getOctokit } from './octokit-provider';
 import { splitRepo } from './utils';
 
-// ---------------------------------------------------------------------------
 // Types
-// ---------------------------------------------------------------------------
 
 export interface GitHubIssue {
   number: number;
@@ -19,19 +17,12 @@ export interface GitHubIssue {
   labels: Array<{ name: string; color: string }>;
 }
 
-export interface GitHubIssueDetail extends GitHubIssue {
-  body: string | null;
-}
-
 export interface GitHubIssueService {
   listIssues(nameWithOwner: string, limit?: number): Promise<GitHubIssue[]>;
   searchIssues(nameWithOwner: string, searchTerm: string, limit?: number): Promise<GitHubIssue[]>;
-  getIssue(nameWithOwner: string, issueNumber: number): Promise<GitHubIssueDetail | null>;
 }
 
-// ---------------------------------------------------------------------------
 // REST response shape (internal)
-// ---------------------------------------------------------------------------
 
 interface RestIssue {
   number: number;
@@ -44,13 +35,10 @@ interface RestIssue {
   user: { login: string; avatar_url: string } | null;
   assignees: Array<{ login: string; avatar_url: string }> | null;
   labels: Array<string | { name?: string; color?: string }>;
-  body?: string | null;
   pull_request?: unknown;
 }
 
-// ---------------------------------------------------------------------------
 // Implementation
-// ---------------------------------------------------------------------------
 
 export class GitHubIssueServiceImpl implements GitHubIssueService {
   constructor(private readonly getOctokit: () => Promise<Octokit>) {}
@@ -97,21 +85,6 @@ export class GitHubIssueServiceImpl implements GitHubIssueService {
     }
   }
 
-  async getIssue(nameWithOwner: string, issueNumber: number): Promise<GitHubIssueDetail | null> {
-    const { owner, repo } = splitRepo(nameWithOwner);
-    try {
-      const octokit = await this.getOctokit();
-      const { data } = await octokit.rest.issues.get({
-        owner,
-        repo,
-        issue_number: issueNumber,
-      });
-      return this.mapIssueDetail(data as unknown as RestIssue);
-    } catch {
-      return null;
-    }
-  }
-
   private mapIssue(item: RestIssue): GitHubIssue {
     return {
       number: item.number,
@@ -128,13 +101,6 @@ export class GitHubIssueServiceImpl implements GitHubIssueService {
           ? { name: l, color: '' }
           : { name: l.name ?? '', color: l.color ?? '' }
       ),
-    };
-  }
-
-  private mapIssueDetail(item: RestIssue): GitHubIssueDetail {
-    return {
-      ...this.mapIssue(item),
-      body: item.body ?? null,
     };
   }
 }

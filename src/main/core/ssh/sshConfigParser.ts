@@ -3,9 +3,6 @@ import { homedir } from 'node:os';
 import { join } from 'node:path';
 import type { SshConfigHost } from '@shared/ssh';
 
-/**
- * Strips surrounding quotes (single or double) from a value string.
- */
 function stripQuotes(value: string): string {
   if (
     (value.startsWith('"') && value.endsWith('"')) ||
@@ -16,9 +13,6 @@ function stripQuotes(value: string): string {
   return value;
 }
 
-/**
- * Expands a leading `~` or `~/` to the user's home directory.
- */
 function expandTilde(filePath: string): string {
   if (filePath === '~') {
     return homedir();
@@ -29,10 +23,6 @@ function expandTilde(filePath: string): string {
   return filePath;
 }
 
-/**
- * Parses ~/.ssh/config and returns an array of host entries.
- * Skips wildcard host patterns (containing * or ?).
- */
 export async function parseSshConfigFile(): Promise<SshConfigHost[]> {
   const configPath = join(homedir(), '.ssh', 'config');
   const content = await readFile(configPath, 'utf-8').catch(() => '');
@@ -111,13 +101,6 @@ export async function parseSshConfigFile(): Promise<SshConfigHost[]> {
   return hosts;
 }
 
-/**
- * Resolves the IdentityAgent socket path for a given hostname.
- *
- * Parses ~/.ssh/config and finds a matching host entry by checking
- * both the Host alias and the HostName value. Returns the expanded
- * IdentityAgent path if found, or undefined.
- */
 export async function resolveIdentityAgent(hostname: string): Promise<string | undefined> {
   try {
     const hosts = await parseSshConfigFile();

@@ -1,7 +1,3 @@
-/**
- * Monaco Editor configuration for TypeScript/JavaScript support
- * Configures language services to match project's tsconfig.json
- */
 import type * as monaco from 'monaco-editor';
 import { log } from '@renderer/utils/logger';
 
@@ -12,10 +8,6 @@ const DIAGNOSTICS_OPTIONS: monaco.typescript.DiagnosticsOptions = {
   noSyntaxValidation: false,
 };
 
-/**
- * Configure Monaco editor's TypeScript language services
- * @param monacoInstance - Monaco namespace
- */
 export function configureMonacoTypeScript(monacoInstance: typeof monaco): void {
   try {
     configureTypeScriptDefaults(monacoInstance);
@@ -25,9 +17,6 @@ export function configureMonacoTypeScript(monacoInstance: typeof monaco): void {
   }
 }
 
-/**
- * Configure TypeScript language defaults
- */
 function configureTypeScriptDefaults(monacoInstance: typeof monaco): void {
   const ts = monacoInstance.typescript;
 
@@ -60,9 +49,6 @@ function configureTypeScriptDefaults(monacoInstance: typeof monaco): void {
   ts.typescriptDefaults.setEagerModelSync(true);
 }
 
-/**
- * Configure JavaScript language defaults
- */
 function configureJavaScriptDefaults(monacoInstance: typeof monaco): void {
   const ts = monacoInstance.typescript;
 
@@ -79,10 +65,6 @@ function configureJavaScriptDefaults(monacoInstance: typeof monaco): void {
   ts.javascriptDefaults.setEagerModelSync(true);
 }
 
-/**
- * Configure Monaco editor instance options
- * @param editor - Monaco editor instance
- */
 export function configureMonacoEditor(editor: monaco.editor.IStandaloneCodeEditor): void {
   editor.updateOptions({
     quickSuggestions: {
@@ -105,12 +87,6 @@ export function configureMonacoEditor(editor: monaco.editor.IStandaloneCodeEdito
   });
 }
 
-/**
- * Add keyboard shortcuts to editor
- * @param editor - Monaco editor instance
- * @param monacoInstance - Monaco namespace
- * @param handlers - Keyboard shortcut handlers
- */
 export function addMonacoKeyboardShortcuts(
   editor: monaco.editor.IStandaloneCodeEditor,
   monacoInstance: typeof monaco,

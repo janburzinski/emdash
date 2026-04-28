@@ -82,22 +82,12 @@ export class PtySessionRegistry {
     return this.ptyMap.get(sessionId);
   }
 
-  /**
-   * Atomically snapshot the ring buffer and register a consumer for future
-   * IPC delivery. Returns the current ring buffer without deleting it.
-   * Safe: runs in one synchronous tick — no PTY data can arrive between
-   * snapshot and consumer registration.
-   */
   subscribe(sessionId: string): string {
     const buf = this.ringBuffers.get(sessionId) ?? '';
     this.activeConsumers.add(sessionId);
     return buf;
   }
 
-  /**
-   * Remove the consumer registration for a session.
-   * Called when the renderer disposes its FrontendPty.
-   */
   unsubscribe(sessionId: string): void {
     this.activeConsumers.delete(sessionId);
   }

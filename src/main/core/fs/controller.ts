@@ -4,12 +4,7 @@ import { createRPCController } from '@shared/ipc/rpc';
 import { err, ok } from '@shared/result';
 import { events } from '@main/lib/events';
 import { resolveWorkspace } from '../projects/utils';
-import {
-  FileSystemErrorCodes,
-  type FileWatcher,
-  type ListOptions,
-  type SearchOptions,
-} from './types';
+import { FileSystemErrorCodes, type FileWatcher, type ListOptions } from './types';
 
 // One watcher per (projectId, workspaceId) pair, shared across all consumers via labels.
 // Local: single recursive @parcel/watcher subscription — update() is a no-op.
@@ -75,37 +70,6 @@ export const filesController = createRPCController({
     }
   },
 
-  removeFile: async (projectId: string, workspaceId: string, filePath: string) => {
-    const env = resolveWorkspace(projectId, workspaceId);
-    if (!env)
-      return err({ type: 'not_found' as const, entity: 'filesystem' as const, detail: undefined });
-
-    if (!env.fs.remove) {
-      return err({
-        type: 'fs_error' as const,
-        message: 'remove not supported by this filesystem',
-      });
-    }
-
-    try {
-      const result = await env.fs.remove(filePath);
-      return ok(result);
-    } catch (e) {
-      if (
-        e instanceof Error &&
-        (e as unknown as { code?: string }).code === FileSystemErrorCodes.PERMISSION_DENIED
-      ) {
-        events.emit(planEventChannel, {
-          type: 'remove_blocked' as const,
-          root: projectId,
-          relPath: filePath,
-          message: e.message,
-        });
-      }
-      return err({ type: 'fs_error' as const, message: String(e) });
-    }
-  },
-
   readImage: async (projectId: string, workspaceId: string, filePath: string) => {
     const env = resolveWorkspace(projectId, workspaceId);
     if (!env)
@@ -120,115 +84,6 @@ export const filesController = createRPCController({
 
     try {
       const result = await env.fs.readImage(filePath);
-      return ok(result);
-    } catch (e) {
-      return err({ type: 'fs_error' as const, message: String(e) });
-    }
-  },
-
-  searchFiles: async (
-    projectId: string,
-    workspaceId: string,
-    query: string,
-    options?: SearchOptions
-  ) => {
-    const env = resolveWorkspace(projectId, workspaceId);
-    if (!env)
-      return err({ type: 'not_found' as const, entity: 'filesystem' as const, detail: undefined });
-
-    try {
-      const result = await env.fs.search(query, options);
-      return ok(result);
-    } catch (e) {
-      return err({ type: 'fs_error' as const, message: String(e) });
-    }
-  },
-
-  statFile: async (projectId: string, workspaceId: string, filePath: string) => {
-    const env = resolveWorkspace(projectId, workspaceId);
-    if (!env)
-      return err({ type: 'not_found' as const, entity: 'filesystem' as const, detail: undefined });
-
-    try {
-      const entry = await env.fs.stat(filePath);
-      return ok({ entry });
-    } catch (e) {
-      return err({ type: 'fs_error' as const, message: String(e) });
-    }
-  },
-
-  fileExists: async (projectId: string, workspaceId: string, filePath: string) => {
-    const env = resolveWorkspace(projectId, workspaceId);
-    if (!env)
-      return err({ type: 'not_found' as const, entity: 'filesystem' as const, detail: undefined });
-
-    try {
-      const exists = await env.fs.exists(filePath);
-      return ok({ exists });
-    } catch (e) {
-      return err({ type: 'fs_error' as const, message: String(e) });
-    }
-  },
-
-  getProjectConfig: async (projectId: string, workspaceId: string) => {
-    const env = resolveWorkspace(projectId, workspaceId);
-    if (!env)
-      return err({ type: 'not_found' as const, entity: 'filesystem' as const, detail: undefined });
-
-    if (!env.fs.getProjectConfig) {
-      return err({
-        type: 'fs_error' as const,
-        message: 'getProjectConfig not supported by this filesystem',
-      });
-    }
-
-    try {
-      const result = await env.fs.getProjectConfig();
-      return ok(result);
-    } catch (e) {
-      return err({ type: 'fs_error' as const, message: String(e) });
-    }
-  },
-
-  saveProjectConfig: async (projectId: string, workspaceId: string, content: string) => {
-    const env = resolveWorkspace(projectId, workspaceId);
-    if (!env)
-      return err({ type: 'not_found' as const, entity: 'filesystem' as const, detail: undefined });
-
-    if (!env.fs.saveProjectConfig) {
-      return err({
-        type: 'fs_error' as const,
-        message: 'saveProjectConfig not supported by this filesystem',
-      });
-    }
-
-    try {
-      const result = await env.fs.saveProjectConfig(content);
-      return ok(result);
-    } catch (e) {
-      return err({ type: 'fs_error' as const, message: String(e) });
-    }
-  },
-
-  saveAttachment: async (
-    projectId: string,
-    workspaceId: string,
-    srcPath: string,
-    subdir?: string
-  ) => {
-    const env = resolveWorkspace(projectId, workspaceId);
-    if (!env)
-      return err({ type: 'not_found' as const, entity: 'filesystem' as const, detail: undefined });
-
-    if (!env.fs.saveAttachment) {
-      return err({
-        type: 'fs_error' as const,
-        message: 'saveAttachment not supported by this filesystem',
-      });
-    }
-
-    try {
-      const result = await env.fs.saveAttachment(srcPath, subdir);
       return ok(result);
     } catch (e) {
       return err({ type: 'fs_error' as const, message: String(e) });

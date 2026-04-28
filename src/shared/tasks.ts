@@ -27,7 +27,6 @@ export type Task = {
   taskBranch?: string;
   createdAt: string;
   updatedAt: string;
-  /** ISO timestamp: when lifecycle status last changed (current status entered). */
   statusChangedAt: string;
   archivedAt?: string;
   lastInteractedAt?: string;
@@ -49,7 +48,6 @@ export type CreateTaskStrategy =
   | {
       kind: 'from-pull-request';
       prNumber: number;
-      /** The PR's headRefName, used as the local branch name (same as `gh pr checkout`). */
       headBranch: string;
       headRepositoryUrl: string;
       isFork: boolean;
@@ -62,13 +60,9 @@ export type CreateTaskParams = {
   id: string;
   projectId: string;
   name: string;
-  /** The branch to fork the new worktree from (not used for `from-pull-request` strategy) */
   sourceBranch: Branch;
-  /** Controls branch creation, worktree setup, and git fetch strategy */
   strategy: CreateTaskStrategy;
-  /** The issue to link to the task */
   linkedIssue?: Issue;
-  /**  */
   initialConversation?: CreateConversationParams;
   initialStatus?: TaskLifecycleStatus;
 };
@@ -93,17 +87,3 @@ export type CreateTaskSuccess = {
   task: Task;
   warning?: CreateTaskWarning;
 };
-
-export type ProvisionTaskResult = {
-  path: string;
-  workspaceId: string;
-};
-
-export function formatIssueAsPrompt(issue: Issue, initialPrompt?: string): string {
-  const parts = [`[${issue.identifier}] ${issue.title}`, issue.url, issue.description].filter(
-    Boolean
-  );
-
-  if (initialPrompt?.trim()) parts.push('', initialPrompt.trim());
-  return parts.join('\n');
-}

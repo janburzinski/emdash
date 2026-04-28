@@ -1,17 +1,9 @@
-import { formatDistanceToNow } from 'date-fns';
 import type { CheckRun, CheckRunsSummary } from './types';
 
-// ── GitHub URL helpers (renderer-side) ────────────────────────────────────────
-
-/** Returns true if the URL refers to a GitHub.com remote (SSH or HTTPS). */
 export function isGitHubUrl(url: string): boolean {
   return /github\.com/i.test(url);
 }
 
-/**
- * Normalises a GitHub remote URL to the canonical HTTPS form without `.git`.
- * e.g. `git@github.com:owner/repo.git` → `https://github.com/owner/repo`
- */
 export function normalizeGitHubUrl(url: string): string {
   // SSH format: git@github.com:owner/repo.git
   const ssh = /^git@github\.com:([^/]+\/[^/]+?)(?:\.git)?$/.exec(url);
@@ -22,7 +14,6 @@ export function normalizeGitHubUrl(url: string): string {
 
 export type CheckRunBucket = 'pass' | 'fail' | 'pending' | 'skipping' | 'cancel';
 
-/** Derive a display bucket from a check's raw status and conclusion fields. */
 export function computeCheckBucket(check: CheckRun): CheckRunBucket {
   const status = check.status?.toUpperCase() ?? '';
   const conclusion = check.conclusion?.toUpperCase() ?? null;
@@ -76,12 +67,6 @@ export function computeCheckRunsSummary(checks: CheckRun[]): CheckRunsSummary {
   }
   summary.completed = summary.total - summary.pending;
   return summary;
-}
-
-export function formatRelativeTime(dateStr: string): string {
-  const date = new Date(dateStr);
-  if (isNaN(date.getTime())) return '';
-  return formatDistanceToNow(date, { addSuffix: true });
 }
 
 export function formatCheckDuration(startedAt?: string, completedAt?: string): string | null {

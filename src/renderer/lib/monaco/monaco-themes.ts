@@ -2,12 +2,6 @@ import type { Monaco } from '@monaco-editor/react';
 
 type MonacoColors = Record<string, string>;
 
-/**
- * Converts any CSS color string (hex, hsl, color(display-p3 ...), etc.) to a
- * Monaco-compatible hex string by painting a 1×1 canvas pixel and reading back
- * the sRGB bytes. Out-of-gamut p3 values are clamped to sRGB, which is
- * imperceptible for editor chrome colors.
- */
 function cssColorToHex(cssColor: string): string {
   const canvas = document.createElement('canvas');
   canvas.width = canvas.height = 1;
@@ -19,12 +13,6 @@ function cssColorToHex(cssColor: string): string {
   return a < 255 ? `#${hex(r)}${hex(g)}${hex(b)}${hex(a)}` : `#${hex(r)}${hex(g)}${hex(b)}`;
 }
 
-/**
- * Reads all --monaco-* CSS custom properties from an element bearing the given
- * theme class, converts each value to a hex string, and returns a Monaco color
- * token map. Entries where the variable is not defined for that theme are
- * omitted.
- */
 function readMonacoVarsForTheme(cssClass: 'emlight' | 'emdark'): MonacoColors {
   const el = document.createElement('div');
   el.className = cssClass;

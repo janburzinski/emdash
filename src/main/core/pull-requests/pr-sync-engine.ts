@@ -41,18 +41,13 @@ const PR_SYNC_MAX_COUNT = 300;
 const PR_ARCHIVE_AGE_MONTHS = 6;
 
 type FullSyncCursor = {
-  /** The `updatedAt` of the last PR we have seen (pagination cursor). */
   lastUpdatedAt: string;
-  /** true once we have reached the count limit or the beginning of history. */
   done: boolean;
-  /** GraphQL page cursor from the last completed page. */
   pageCursor?: string;
 };
 
 type IncrementalSyncCursor = {
-  /** We only fetch PRs updated after this timestamp on each incremental sync. */
   lastUpdatedAt: string;
-  /** GraphQL page cursor for resuming mid-page. */
   pageCursor?: string;
   done: boolean;
 };
@@ -61,9 +56,7 @@ type PrKvSchema = {
   [key: string]: FullSyncCursor | IncrementalSyncCursor | string;
 };
 
-// ---------------------------------------------------------------------------
 // GQL node shapes
-// ---------------------------------------------------------------------------
 
 interface GqlUser {
   databaseId?: number; // absent for Mannequin actors
@@ -127,9 +120,7 @@ interface GqlStatusContextNode {
   createdAt: string;
 }
 
-// ---------------------------------------------------------------------------
 // PrSyncEngine
-// ---------------------------------------------------------------------------
 
 export class PrSyncEngine {
   private readonly kv = new KV<PrKvSchema>('pr');
@@ -143,12 +134,6 @@ export class PrSyncEngine {
 
   constructor(private readonly getOctokit: () => Promise<Octokit>) {}
 
-  // ── Public sync API ────────────────────────────────────────────────────────
-
-  /**
-   * Smart sync: resumes a full sync if one is incomplete, otherwise runs an
-   * incremental sync. Deduplicated — no-op if a sync is already in-flight.
-   */
   sync(repositoryUrl: string): void {
     const key = `sync:${repositoryUrl}`;
     if (this._inflight.has(key)) {
@@ -179,7 +164,6 @@ export class PrSyncEngine {
     this._inflight.set(key, promise);
   }
 
-  /** Cancel any in-flight sync, wipe both cursors, and start a fresh full sync. */
   forceFullSync(repositoryUrl: string): void {
     this.cancel(repositoryUrl);
     void Promise.all([
@@ -188,7 +172,6 @@ export class PrSyncEngine {
     ]).then(() => this.sync(repositoryUrl));
   }
 
-  /** Abort and discard any in-flight sync for this repository URL. */
   cancel(repositoryUrl: string): void {
     const ctrl = this._controllers.get(repositoryUrl);
     if (ctrl) {
@@ -198,7 +181,6 @@ export class PrSyncEngine {
     }
   }
 
-  /** Cancel any in-flight syncs for a project and clean up its PR rows and KV cursors. */
   async deleteProjectData(projectId: string): Promise<void> {
     log.info('PrSyncEngine: deleteProjectData', { projectId });
 
@@ -236,13 +218,6 @@ export class PrSyncEngine {
     }
   }
 
-  // ── Full sync (private implementation) ────────────────────────────────────
-
-  /**
-   * Paginate through all PRs for a repository ordered by updatedAt DESC.
-   * Saves a cursor after each page so it can be resumed on restart.
-   * Sets `done: true` once the cutoff is reached or history is exhausted.
-   */
   private async _runFullSync(repositoryUrl: string, signal: AbortSignal): Promise<void> {
     log.info('PrSyncEngine: runFullSync start', { repositoryUrl });
     const { owner, repo } = splitNormalizedUrl(repositoryUrl);
@@ -329,13 +304,6 @@ export class PrSyncEngine {
     }
   }
 
-  // ── Incremental sync (private implementation) ─────────────────────────────
-
-  /**
-   * Fetch only open PRs updated since the last incremental-sync cursor.
-   * Resumable: saves a page cursor so it can continue where it left off.
-   * Callers must ensure full sync is complete before calling this (sync() does this).
-   */
   private async _runIncrementalSync(repositoryUrl: string, signal: AbortSignal): Promise<void> {
     log.info('PrSyncEngine: runIncrementalSync started', { repositoryUrl });
 
@@ -467,9 +435,6 @@ export class PrSyncEngine {
     }
   }
 
-  // ── Single PR sync ─────────────────────────────────────────────────────────
-
-  /** Sync a single PR by number. Deduplicated — awaits any in-flight call for the same PR. */
   async syncSingle(repositoryUrl: string, prNumber: number): Promise<PullRequest | null> {
     const key = `single:${repositoryUrl}:${prNumber}`;
     if (this._singleInflight.has(key)) {
@@ -532,12 +497,6 @@ export class PrSyncEngine {
     return pr ?? null;
   }
 
-  // ── Check runs sync ────────────────────────────────────────────────────────
-
-  /**
-   * Fetch and store check runs for a PR. Deduplicated — awaits any in-flight call.
-   * Returns true if any check is still running (caller should re-invoke soon).
-   */
   async syncChecks(pullRequestUrl: string, headRefOid: string): Promise<boolean> {
     const key = `checks:${pullRequestUrl}:${headRefOid}`;
     if (this._checksInflight.has(key)) {
@@ -757,23 +716,6 @@ export class PrSyncEngine {
     this._notifyPrUpdated(assembled);
   }
 
-  // ── Users sync ─────────────────────────────────────────────────────────────
-
-  /** Sync users referenced by PRs in this repository. Runs at most once per day. */
-  async syncUsers(repositoryUrl: string): Promise<void> {
-    const tsKey = `users-synced-at:${repositoryUrl}`;
-    const lastSync = (await this.kv.get(tsKey)) as string | null;
-    if (lastSync) {
-      const age = Date.now() - new Date(lastSync).getTime();
-      if (age < 24 * 60 * 60 * 1000) return;
-    }
-    await this.kv.set(tsKey, new Date().toISOString());
-    // Users are upserted inline during _upsertBatch, so this is a no-op for now.
-    // Reserved for future use (e.g. refreshing user profile pics in bulk).
-  }
-
-  // ── Private helpers ────────────────────────────────────────────────────────
-
   private async _upsertBatch(repositoryUrl: string, nodes: GqlPrNode[]): Promise<PullRequest[]> {
     const results: PullRequest[] = [];
 
@@ -979,8 +921,6 @@ export class PrSyncEngine {
     events.emit(prSyncProgressChannel, progress);
   }
 
-  // ── Mutation helpers (for controller use) ──────────────────────────────────
-
   async createPullRequest(params: {
     repositoryUrl: string;
     head: string;
@@ -1033,35 +973,6 @@ export class PrSyncEngine {
       }`,
       { id: data.node_id }
     );
-  }
-
-  async getPullRequestFiles(
-    repositoryUrl: string,
-    prNumber: number
-  ): Promise<
-    {
-      filename: string;
-      status: string;
-      additions: number;
-      deletions: number;
-      patch?: string;
-    }[]
-  > {
-    const { owner, repo } = splitNormalizedUrl(repositoryUrl);
-    const octokit = await this.getOctokit();
-    const files = await octokit.paginate(octokit.rest.pulls.listFiles, {
-      owner,
-      repo,
-      pull_number: prNumber,
-      per_page: 100,
-    });
-    return files.map((f) => ({
-      filename: f.filename,
-      status: f.status,
-      additions: f.additions,
-      deletions: f.deletions,
-      patch: f.patch,
-    }));
   }
 
   private async _getFullSyncCursor(repositoryUrl: string): Promise<{ done: boolean } | null> {

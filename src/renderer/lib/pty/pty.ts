@@ -9,8 +9,6 @@ import { ensureXtermHost } from './xterm-host';
 
 const SCROLLBACK_LINES = 100_000;
 
-// ── Theme helpers ─────────────────────────────────────────────────────────────
-
 export interface SessionTheme {
   override?: ITerminalOptions['theme'];
 }
@@ -31,33 +29,11 @@ export function buildTheme(theme?: SessionTheme): ITerminalOptions['theme'] {
   return readXtermCssVars();
 }
 
-// ── FrontendPty ───────────────────────────────────────────────────────────────
-
-/**
- * Frontend counterpart to the main-process Pty interface.
- *
- * Owns the xterm Terminal instance for the full lifetime of the session.
- * The terminal is created synchronously during construction and opened into
- * an off-screen container. Call connect() to subscribe to the main-process
- * ring buffer and live IPC events — this writes historical output directly
- * to xterm and sets up ongoing data delivery without any renderer-side buffer.
- *
- * DOM management is handled via mount() / unmount():
- *  - mount()   → appends ownedContainer to the visible mount target
- *  - unmount() → moves ownedContainer back to the off-screen host
- *
- * Lifecycle: created and owned by PtySession (stores/pty-session.ts), one per
- * live session. Survives React component unmounts (e.g. navigating away from a
- * task), and is disposed only when the entity (terminal or conversation) is
- * explicitly deleted.
- */
 export class FrontendPty {
-  /** All live FrontendPty instances — used for app-wide operations (e.g. theme updates). */
   static readonly all = new Set<FrontendPty>();
   readonly terminal: Terminal;
   readonly ownedContainer: HTMLDivElement;
   private offData: (() => void) | null = null;
-  /** Last { cols, rows } sent to rpc.pty.resize(). Used by PaneSizingContext to skip redundant IPC calls. */
   lastSentDims: { cols: number; rows: number } | null = null;
 
   constructor(
@@ -111,15 +87,6 @@ export class FrontendPty {
     FrontendPty.all.add(this);
   }
 
-  /**
-   * Subscribe to the session: fetches the ring buffer from the main process,
-   * writes it directly to xterm, then sets up a live IPC listener for future
-   * data. Marks status as 'ready' once complete.
-   *
-   * The main process guarantees atomicity: subscribe() snapshots the ring
-   * buffer and registers the consumer in one synchronous tick, so no data
-   * can slip between the snapshot and the first live IPC event.
-   */
   async connect(): Promise<void> {
     const result = await rpc.pty.subscribe(this.sessionId);
     const historical = result.success ? result.data.buffer : '';
@@ -133,11 +100,6 @@ export class FrontendPty {
     );
   }
 
-  /**
-   * Append ownedContainer to a visible mount target.
-   * If targetDims are provided the terminal is resized BEFORE the appendChild
-   * to eliminate the flash caused by a post-mount resize.
-   */
   mount(mountTarget: HTMLElement, targetDims?: { cols: number; rows: number }): void {
     if (
       targetDims &&
@@ -156,20 +118,10 @@ export class FrontendPty {
     });
   }
 
-  /**
-   * Move ownedContainer back to the off-screen host (tab deactivated /
-   * TerminalPane unmounting).  Must be called after all ResizeObservers on
-   * the visible mount target have been disconnected.
-   */
   unmount(): void {
     ensureXtermHost().appendChild(this.ownedContainer);
   }
 
-  /**
-   * Permanently dispose this session (terminal or conversation deleted).
-   * Unsubscribes from the main process, tears down the IPC data listener,
-   * disposes the xterm Terminal, and removes the owned container from the DOM.
-   */
   dispose(): void {
     FrontendPty.all.delete(this);
     this.offData?.();
@@ -184,9 +136,6 @@ export class FrontendPty {
   }
 }
 
-// ── App-wide helpers ──────────────────────────────────────────────────────────
-
-/** Apply a theme to all live terminals. Called on app-level theme change. */
 export function applyThemeToAll(theme?: SessionTheme): void {
   const xTermTheme = buildTheme(theme);
   for (const pty of FrontendPty.all) {
@@ -194,7 +143,6 @@ export function applyThemeToAll(theme?: SessionTheme): void {
   }
 }
 
-/** Dispose all live FrontendPty instances. Called on app teardown. */
 export function disposeAllPtys(): void {
   for (const pty of [...FrontendPty.all]) {
     pty.dispose();

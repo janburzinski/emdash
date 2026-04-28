@@ -1,7 +1,5 @@
-// ---------------------------------------------------------------------------
 // Excluded directory/file names — kept in sync with DEFAULT_TREE_EXCLUDE in
 // editor-file-tree.tsx so the flat tree and renderer agree on visibility.
-// ---------------------------------------------------------------------------
 
 import { FileNode } from '@shared/fs';
 
@@ -49,9 +47,7 @@ export function isExcluded(path: string): boolean {
   return path.split('/').some((seg) => EXCLUDED_NAMES.has(seg));
 }
 
-// ---------------------------------------------------------------------------
 // Helpers for building FileNode from a raw entry path
-// ---------------------------------------------------------------------------
 
 export function makeNode(relPath: string, type: 'file' | 'directory', mtime?: Date): FileNode {
   const parts = relPath.split('/').filter(Boolean);
@@ -72,10 +68,8 @@ export function makeNode(relPath: string, type: 'file' | 'directory', mtime?: Da
   };
 }
 
-// ---------------------------------------------------------------------------
 // Sorted insertion into childIndex
 // Directories come before files; within each group, alphabetical order.
-// ---------------------------------------------------------------------------
 
 export function sortedChildPaths(paths: string[], nodes: Map<string, FileNode>): string[] {
   return [...paths].sort((a, b) => {
@@ -87,9 +81,7 @@ export function sortedChildPaths(paths: string[], nodes: Map<string, FileNode>):
   });
 }
 
-// ---------------------------------------------------------------------------
 // Visible rows derivation
-// ---------------------------------------------------------------------------
 
 export function buildVisibleRows(
   nodes: Map<string, FileNode>,

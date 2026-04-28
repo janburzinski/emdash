@@ -4,18 +4,12 @@ import * as path from 'path';
 export interface AgentSyncTarget {
   id: string;
   name: string;
-  /** Directory where the agent looks for skills/commands */
   getSkillDir: (skillId: string) => string;
-  /** Top-level config dir to check if agent is installed */
   configDir: string;
 }
 
 const home = os.homedir();
 
-/**
- * Agents that Emdash syncs skills INTO (symlinks from ~/.agentskills/).
- * Each agent has its own native directory for skills/commands.
- */
 export const agentTargets: AgentSyncTarget[] = [
   {
     id: 'claude-code',
@@ -61,11 +55,6 @@ export const agentTargets: AgentSyncTarget[] = [
   },
 ];
 
-/**
- * All global directories where agents store skills.
- * Derived from agentTargets (parent dir of each skill dir) plus shared/cross-agent paths.
- * Used to discover externally-installed skills (not installed through Emdash).
- */
 export const skillScanPaths: string[] = [
   // Auto-derive from agent targets (e.g. ~/.claude/commands, ~/.codex/skills)
   ...new Set(agentTargets.map((t) => path.dirname(t.getSkillDir('_placeholder')))),

@@ -16,15 +16,9 @@ interface MarkdownRendererProps {
   content: string;
   variant?: Variant;
   className?: string;
-  /**
-   * Optional callback for resolving non-external image src values (e.g. relative
-   * paths inside a workspace). Should return a `data:` URI string, or `null` to
-   * render a "not found" placeholder. When omitted, local images are not resolved.
-   */
   resolveImage?: (src: string) => Promise<string | null>;
 }
 
-/** Sanitize schema that also allows data: URIs on images */
 const sanitizeSchema = {
   ...defaultSchema,
   protocols: {
@@ -33,7 +27,6 @@ const sanitizeSchema = {
   },
 };
 
-/** Resolves a local image src via the provided callback and renders as a base64 data URI. */
 const ResolvedImage: React.FC<{
   src: string;
   alt: string;

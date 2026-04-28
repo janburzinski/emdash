@@ -9,22 +9,14 @@ import { syncProjectRemotes } from './project-remotes-service';
 
 const INCREMENTAL_SYNC_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
 
-/**
- * Wires sync coordinator to application lifecycle events.
- * Called from project providers at mount, unmount, provision, and config change.
- */
 export class PrSyncScheduler {
-  /** Per-project set of interval handles for light sync polling. */
   private readonly _intervals = new Map<string, ReturnType<typeof setInterval>[]>();
-  /** Per-project set of known GitHub remote URLs (for cleanup on unmount). */
   private readonly _projectRemoteUrls = new Map<string, string[]>();
 
   initialize(): void {
     projectManager.registerOnProjectOpened((id) => this.onProjectMounted(id));
     projectManager.registerOnProjectClosed((id) => this.onProjectUnmounted(id));
   }
-
-  // ── Project lifecycle ──────────────────────────────────────────────────────
 
   async onProjectMounted(projectId: string): Promise<void> {
     log.info('PrSyncScheduler: onProjectMounted', { projectId });
@@ -69,8 +61,6 @@ export class PrSyncScheduler {
     this._projectRemoteUrls.delete(projectId);
   }
 
-  // ── Task lifecycle ─────────────────────────────────────────────────────────
-
   async onTaskProvisioned(projectId: string, taskBranch: string | undefined): Promise<void> {
     if (!taskBranch) return;
 
@@ -86,8 +76,6 @@ export class PrSyncScheduler {
   async onPushCompleted(projectId: string, taskBranch: string): Promise<void> {
     return this.onTaskProvisioned(projectId, taskBranch);
   }
-
-  // ── Remote config change ───────────────────────────────────────────────────
 
   async onRemoteChanged(projectId: string): Promise<void> {
     const oldUrls = new Set(this._projectRemoteUrls.get(projectId) ?? []);
@@ -122,8 +110,6 @@ export class PrSyncScheduler {
 
     this._intervals.set(projectId, intervals);
   }
-
-  // ── Private helpers ────────────────────────────────────────────────────────
 
   private async _syncAndGetGitHubRemotes(projectId: string): Promise<string[]> {
     const project = projectManager.getProject(projectId);

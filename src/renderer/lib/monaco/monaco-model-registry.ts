@@ -6,14 +6,11 @@ import { buildMonacoModelPath } from './monacoModelPath';
 
 const BUFFER_DEBOUNCE_MS = 2000;
 
-// ---------------------------------------------------------------------------
 // Discriminated-union entry types
-// ---------------------------------------------------------------------------
 
 interface BufferModelEntry {
   type: 'buffer';
   model: monaco.editor.ITextModel;
-  /** Monaco cursor/scroll/folding state, saved between tab switches. */
   viewState: monaco.editor.ICodeEditorViewState | null;
   refs: number;
   projectId: string;
@@ -40,7 +37,6 @@ interface GitModelEntry {
   workspaceId: string;
   filePath: string;
   language: string;
-  /** The git ref — HEAD for the current commit; structured ref for PR/merge-target diffs. */
   ref: GitRef;
 }
 
@@ -48,48 +44,11 @@ type ModelEntry = BufferModelEntry | DiskModelEntry | GitModelEntry;
 export type ModelType = 'buffer' | 'disk' | 'git';
 export type ModelStatus = 'loading' | 'ready' | 'error';
 
-/**
- * Manages up to three Monaco ITextModel instances per open file using a single
- * unified map keyed by Monaco URI string.
- *
- *   buffer  (file://)  — writable; shown in the code editor; holds user edits + undo stack
- *   disk    (disk://)  — read-only mirror of the current on-disk content; updated by watcher
- *   git     (git://)   — read-only snapshot of a git ref (HEAD or arbitrary ref)
- *
- * ### Lifecycle
- *
- * **Registration** (`registerModel` / `unregisterModel`): ref-counted. Models are kept in memory
- * for 60 s after the last `unregisterModel` call, then evicted. Re-registering before the timer
- * fires cancels the eviction.
- *
- * **Invalidation**: the registry is a pure SWR cache — it does not subscribe to any events.
- * Callers must wire external invalidation bridges (see `invalidation-bridges.ts`) that translate
- * FS/git events into `invalidateModel(uri)` calls. Use `findGitUris` / `findDiskUris` to query
- * which URIs are affected by a given event.
- *
- * Binary files must be filtered by callers before registering (use `getFileKind` from fileKind.ts).
- */
 export class MonacoModelRegistry {
-  /**
-   * Unified model map. Key is the Monaco URI string (scheme encodes entry type).
-   *   file://  → BufferModelEntry
-   *   disk://  → DiskModelEntry
-   *   git://   → GitModelEntry
-   *
-   * Plain Map — Monaco ITextModel instances are imperative/mutable; not observable.
-   */
   private modelMap = new Map<string, ModelEntry>();
 
-  // ---------------------------------------------------------------------------
   // Monaco readiness — awaited before creating any ITextModel instance.
-  // ---------------------------------------------------------------------------
 
-  /**
-   * Resolves with the Monaco namespace once a pool has finished initialization.
-   * Both codeEditorPool and diffEditorPool call notifyMonacoReady() from their
-   * onInit hooks, whichever resolves first wins (the promise is idempotent after
-   * the first resolution).
-   */
   private readonly monacoReadyPromise: Promise<typeof monaco>;
   private resolveMonacoReady!: (m: typeof monaco) => void;
   private monacoResolved = false;
@@ -100,10 +59,6 @@ export class MonacoModelRegistry {
     });
   }
 
-  /**
-   * Called by MonacoPool instances after Monaco finishes loading.
-   * Safe to call multiple times — only the first call has any effect.
-   */
   notifyMonacoReady(m: typeof monaco): void {
     if (this.monacoResolved) return;
     this.monacoResolved = true;
@@ -112,70 +67,32 @@ export class MonacoModelRegistry {
 
   private reloadingFromDisk = new Set<string>();
 
-  /**
-   * URIs where the file was externally modified while the buffer had unsaved edits.
-   * The conflict dialog is deferred until the user attempts to save the file.
-   * Observable so future UI can react to conflict state if needed.
-   */
   readonly pendingConflicts = observable.set<string>();
 
   private bufferReadyCallbacks = new Map<string, Array<() => void>>();
 
-  /**
-   * In-flight fetch deduplication. Prevents duplicate RPCs when two callers
-   * register the same file concurrently before either resolves.
-   * Key: `{projectId}:{workspaceId}:{filePath}:disk` or `…:git:{ref}`
-   */
   private pendingFetches = new Map<string, Promise<string | null>>();
 
-  // ---------------------------------------------------------------------------
   // MobX reactive state
-  // ---------------------------------------------------------------------------
 
-  /**
-   * Model loading status — observable. Drives useModelStatus() in observer() components.
-   */
   readonly modelStatus = observable.map<string, ModelStatus>();
 
-  /**
-   * Set of buffer URIs (file://) that have unsaved changes relative to disk.
-   * Drives useIsDirty() in observer() components.
-   */
   readonly dirtyUris = observable.set<string>();
 
-  /**
-   * Monotonically-increasing content version for each buffer URI (file://).
-   * Incremented on every content change and set to 1 on initial buffer creation.
-   * Observable so components that read buffer text (e.g. MarkdownEditorRenderer)
-   * can subscribe reactively without polling — read this before calling getValue().
-   */
   readonly bufferVersions = observable.map<string, number>();
 
-  /**
-   * 60 s TTL timers. Started in unregisterModel when refs drop to 0.
-   * Cancelled if the model is re-registered before the timer fires.
-   */
   private evictionTimers = new Map<string, ReturnType<typeof setTimeout>>();
 
-  /** Debounce timers for crash-recovery buffer autosave, keyed by buffer URI. */
   private bufferAutosaveTimers = new Map<string, ReturnType<typeof setTimeout>>();
 
-  /** model.onDidChangeContent disposables for each registered buffer, keyed by buffer URI. */
   private bufferContentDisposables = new Map<string, { dispose(): void }>();
 
-  // ---------------------------------------------------------------------------
   // URI helpers (public)
-  // ---------------------------------------------------------------------------
 
   toDiskUri(bufferUri: string): string {
     return bufferUri.replace(/^file:\/\//, 'disk://');
   }
 
-  /**
-   * Convert a buffer URI (file://) to a git:// URI for the given ref.
-   * Ref is percent-encoded so slashes in branch names (e.g. origin/main) are safe.
-   * Example: file://workspace:abc/src/index.ts + HEAD_REF → git://workspace:abc/HEAD/src/index.ts
-   */
   toGitUri(bufferUri: string, ref: GitRef): string {
     const refStr = gitRefToString(ref);
     const withoutScheme = bufferUri.replace(/^file:\/\//, '');
@@ -186,9 +103,7 @@ export class MonacoModelRegistry {
     return `git://${root}/${encodeURIComponent(refStr)}/${filePath}`;
   }
 
-  // ---------------------------------------------------------------------------
   // Dedup fetch
-  // ---------------------------------------------------------------------------
 
   private dedupFetch(key: string, fn: () => Promise<string | null>): Promise<string | null> {
     const existing = this.pendingFetches.get(key);
@@ -198,22 +113,8 @@ export class MonacoModelRegistry {
     return p;
   }
 
-  // ---------------------------------------------------------------------------
   // Register (public API)
-  // ---------------------------------------------------------------------------
 
-  /**
-   * Register (or increment the reference count of) a model for `filePath`.
-   *
-   * - `'disk'`   — fetches disk content via RPC, creates `disk://` model.
-   * - `'git'`    — fetches git content via RPC; creates `git://` model.
-   * - `'buffer'` — seeds from the existing disk model (disk must be registered first).
-   *               Creates `file://` model, fires any queued `onceBufferReady` callbacks.
-   *
-   * Idempotent: if the model already exists, just increments ref count and returns the URI.
-   *
-   * @returns the buffer URI string (same for all three types of the same file)
-   */
   async registerModel(
     projectId: string,
     workspaceId: string,
@@ -480,19 +381,8 @@ export class MonacoModelRegistry {
     return uri;
   }
 
-  // ---------------------------------------------------------------------------
   // Unregister (public API)
-  // ---------------------------------------------------------------------------
 
-  /**
-   * Decrement the reference count for a model by its typed URI.
-   * Disposes the Monaco model and cleans up subscriptions when count reaches 0.
-   *
-   * Pass the typed URI directly:
-   *   buffer → the file:// buffer URI (same as returned by registerModel)
-   *   disk   → toDiskUri(bufferUri)
-   *   git    → toGitUri(bufferUri, ref)
-   */
   unregisterModel(uri: string): void {
     const entry = this.modelMap.get(uri);
     if (!entry) return;
@@ -540,14 +430,8 @@ export class MonacoModelRegistry {
     }
   }
 
-  // ---------------------------------------------------------------------------
   // Attach / view state
-  // ---------------------------------------------------------------------------
 
-  /**
-   * Attach the buffer model to a leased code editor.
-   * Saves view state for `previousUri` and restores it for `newUri`.
-   */
   attach(editor: monaco.editor.IStandaloneCodeEditor, newUri: string, previousUri?: string): void {
     if (previousUri && previousUri !== newUri) {
       const prev = this.modelMap.get(previousUri);
@@ -563,11 +447,6 @@ export class MonacoModelRegistry {
     }
   }
 
-  /**
-   * Register a one-shot callback that fires when the buffer model for `uri` is created.
-   * If the model already exists, fires immediately.
-   * Returns a cleanup function that cancels the pending callback.
-   */
   onceBufferReady(uri: string, cb: () => void): () => void {
     if (this.modelMap.has(uri)) {
       cb();
@@ -588,16 +467,12 @@ export class MonacoModelRegistry {
     };
   }
 
-  // ---------------------------------------------------------------------------
   // Dirty state
-  // ---------------------------------------------------------------------------
 
-  /** Returns true if the buffer has unsaved changes relative to on-disk content. */
   isDirty(uri: string): boolean {
     return this.dirtyUris.has(uri);
   }
 
-  /** Computes actual dirty state by comparing model values. Used internally to populate dirtyUris. */
   private computeIsDirtyRaw(uri: string): boolean {
     const buf = this.modelMap.get(uri);
     const disk = this.modelMap.get(this.toDiskUri(uri));
@@ -605,10 +480,6 @@ export class MonacoModelRegistry {
     return buf.model.getValue() !== disk.model.getValue();
   }
 
-  /**
-   * Mark the current buffer content as saved.
-   * Syncs the disk model to match the buffer so isDirty() returns false.
-   */
   markSaved(uri: string): void {
     const buf = this.modelMap.get(uri);
     const disk = this.modelMap.get(this.toDiskUri(uri));
@@ -620,57 +491,38 @@ export class MonacoModelRegistry {
     }
   }
 
-  // ---------------------------------------------------------------------------
   // Content access
-  // ---------------------------------------------------------------------------
 
-  /**
-   * Returns the ITextModel stored at the given typed URI, or undefined.
-   * Use toDiskUri / toGitUri to construct typed URIs for disk/git entries.
-   */
   getModelByUri(uri: string): monaco.editor.ITextModel | undefined {
     return this.modelMap.get(uri)?.model;
   }
 
-  /** Current text content of the buffer model. */
   getValue(uri: string): string | null {
     const entry = this.modelMap.get(uri);
     return entry?.type === 'buffer' ? entry.model.getValue() : null;
   }
 
-  /** Current text content of the disk model. */
   getDiskValue(uri: string): string | null {
     const entry = this.modelMap.get(this.toDiskUri(uri));
     return entry?.type === 'disk' ? entry.model.getValue() : null;
   }
 
-  /** True if a buffer model is registered for this URI. */
   hasModel(uri: string): boolean {
     return this.modelMap.get(uri)?.type === 'buffer';
   }
 
-  /** True while a programmatic disk reload is in progress (suppresses false dirty flag). */
   isReloadingFromDisk(uri: string): boolean {
     return this.reloadingFromDisk.has(uri);
   }
 
-  // ---------------------------------------------------------------------------
   // Conflict state
-  // ---------------------------------------------------------------------------
 
   hasPendingConflict(uri: string): boolean {
     return this.pendingConflicts.has(uri);
   }
 
-  // ---------------------------------------------------------------------------
   // Reload from disk (called after "Accept Incoming" in conflict dialog)
-  // ---------------------------------------------------------------------------
 
-  /**
-   * Copy disk model content into the buffer model.
-   * Sets reloadingFromDisk so the registry's onDidChangeContent listener
-   * skips treating this as a user edit.
-   */
   reloadFromDisk(uri: string): void {
     const buf = this.modelMap.get(uri);
     const disk = this.modelMap.get(this.toDiskUri(uri));
@@ -685,12 +537,6 @@ export class MonacoModelRegistry {
     this.pendingConflicts.delete(uri);
   }
 
-  /**
-   * Write the buffer content to disk, sync the disk model, and clear the
-   * crash-recovery buffer entry.
-   *
-   * @returns the saved content string on success, or `null` on failure.
-   */
   async saveFileToDisk(uri: string): Promise<string | null> {
     const buf = this.modelMap.get(uri);
     if (!buf || buf.type !== 'buffer') return null;
@@ -705,14 +551,8 @@ export class MonacoModelRegistry {
     return content;
   }
 
-  // ---------------------------------------------------------------------------
   // Manual invalidation
-  // ---------------------------------------------------------------------------
 
-  /**
-   * Re-fetch the model at `uri` from its source (disk or git). No-op for buffers.
-   * Bypasses dedup cache — always fires a fresh RPC.
-   */
   async invalidateModel(uri: string): Promise<void> {
     const entry = this.modelMap.get(uri);
     if (!entry) return;
@@ -735,15 +575,8 @@ export class MonacoModelRegistry {
     }
   }
 
-  // ---------------------------------------------------------------------------
   // Query methods — used by invalidation bridges to find affected URIs
-  // ---------------------------------------------------------------------------
 
-  /**
-   * Return all registered git:// URIs matching the given filter.
-   * Used by invalidation bridges to find which models to invalidate after an event.
-   * Any filter field left undefined is treated as a wildcard.
-   */
   findGitUris(filter: {
     workspaceId?: string;
     projectId?: string;
@@ -762,10 +595,6 @@ export class MonacoModelRegistry {
     return result;
   }
 
-  /**
-   * Return all registered disk:// URIs for the given workspace and file path.
-   * Used by the FS-event invalidation bridge.
-   */
   findDiskUris(filter: { workspaceId: string; filePath: string }): string[] {
     const result: string[] = [];
     for (const [uri, entry] of this.modelMap) {
@@ -777,9 +606,7 @@ export class MonacoModelRegistry {
     return result;
   }
 
-  // ---------------------------------------------------------------------------
   // Disk update helper (used by invalidateModel)
-  // ---------------------------------------------------------------------------
 
   private applyDiskUpdate(diskUri: string, entry: DiskModelEntry, newContent: string): void {
     const bufferUri = diskUri.replace(/^disk:\/\//, 'file://');

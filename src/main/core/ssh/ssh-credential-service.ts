@@ -27,26 +27,6 @@ export class SshCredentialService {
     }
   }
 
-  async deletePassword(connectionId: string): Promise<void> {
-    try {
-      await encryptedAppSecretsStore.deleteSecret(this.passwordSecretKey(connectionId));
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      throw new Error(`Failed to delete password for connection ${connectionId}: ${message}`);
-    }
-  }
-
-  async hasPassword(connectionId: string): Promise<boolean> {
-    try {
-      const credential = await encryptedAppSecretsStore.getSecret(
-        this.passwordSecretKey(connectionId)
-      );
-      return credential !== null;
-    } catch {
-      return false;
-    }
-  }
-
   async storePassphrase(connectionId: string, passphrase: string): Promise<void> {
     try {
       await encryptedAppSecretsStore.setSecret(this.passphraseSecretKey(connectionId), passphrase);
@@ -65,46 +45,10 @@ export class SshCredentialService {
     }
   }
 
-  async deletePassphrase(connectionId: string): Promise<void> {
-    try {
-      await encryptedAppSecretsStore.deleteSecret(this.passphraseSecretKey(connectionId));
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      throw new Error(`Failed to delete passphrase for connection ${connectionId}: ${message}`);
-    }
-  }
-
-  async hasPassphrase(connectionId: string): Promise<boolean> {
-    try {
-      const credential = await encryptedAppSecretsStore.getSecret(
-        this.passphraseSecretKey(connectionId)
-      );
-      return credential !== null;
-    } catch {
-      return false;
-    }
-  }
-
-  async storeCredentials(
-    connectionId: string,
-    credentials: { password?: string; passphrase?: string }
-  ): Promise<void> {
-    const operations: Promise<void>[] = [];
-    if (credentials.password) {
-      operations.push(this.storePassword(connectionId, credentials.password));
-    }
-    if (credentials.passphrase) {
-      operations.push(this.storePassphrase(connectionId, credentials.passphrase));
-    }
-    if (operations.length > 0) {
-      await Promise.all(operations);
-    }
-  }
-
   async deleteAllCredentials(connectionId: string): Promise<void> {
     await Promise.all([
-      this.deletePassword(connectionId).catch(() => {}),
-      this.deletePassphrase(connectionId).catch(() => {}),
+      encryptedAppSecretsStore.deleteSecret(this.passwordSecretKey(connectionId)).catch(() => {}),
+      encryptedAppSecretsStore.deleteSecret(this.passphraseSecretKey(connectionId)).catch(() => {}),
     ]);
   }
 }

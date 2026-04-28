@@ -10,7 +10,6 @@ interface AgentLogoProps {
   grayscale?: boolean;
 }
 
-/** Renders an agent logo — handles both raw SVG strings and image URLs with theme awareness. */
 const AgentLogo: React.FC<AgentLogoProps> = ({
   logo,
   alt,

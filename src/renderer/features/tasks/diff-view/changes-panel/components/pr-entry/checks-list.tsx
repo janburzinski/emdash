@@ -5,12 +5,12 @@ import type { PullRequest } from '@shared/pull-requests';
 import { useCheckRuns } from '@renderer/features/tasks/diff-view/state/use-check-runs';
 import { rpc } from '@renderer/lib/ipc';
 import { EmptyState } from '@renderer/lib/ui/empty-state';
+import type { CheckRun } from '@renderer/utils/github/types';
 import {
   computeCheckBucket,
   formatCheckDuration,
-  type CheckRun,
   type CheckRunBucket,
-} from '@renderer/utils/github';
+} from '@renderer/utils/github/utils';
 
 const bucketOrder: Record<CheckRunBucket, number> = {
   fail: 0,

@@ -9,7 +9,5 @@ export const plainController = createRPCController({
     return plainConnectionService.saveToken(token);
   },
 
-  checkConnection: async () => plainConnectionService.checkConnection(),
-
   clearToken: async () => plainConnectionService.clearToken(),
 });

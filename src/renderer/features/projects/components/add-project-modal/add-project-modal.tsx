@@ -29,24 +29,6 @@ export type Strategy = 'local' | 'ssh';
 
 export type Mode = 'pick' | 'new' | 'clone';
 
-export interface BaseModeData {
-  name: string;
-  path: string;
-  initGitRepository?: boolean;
-}
-
-export interface NewModeData extends BaseModeData {
-  repositoryName: string;
-  repositoryOwner: string;
-  repositoryVisibility: 'public' | 'private';
-}
-
-export interface CloneModeData extends BaseModeData {
-  repositoryUrl: string;
-}
-
-export type ModeData = BaseModeData | NewModeData | CloneModeData;
-
 export interface AddProjectModalProps extends BaseModalProps<void> {
   strategy?: Strategy;
   mode?: Mode;

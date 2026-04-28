@@ -10,11 +10,6 @@ export type Conversation = {
   autoApprove?: boolean;
 };
 
-export type RenameConversationParams = {
-  conversationId: string;
-  newTitle: string;
-};
-
 export type CreateConversationParams = {
   id: string;
   projectId: string;

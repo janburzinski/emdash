@@ -1,11 +1,3 @@
-/**
- * Utilities for detecting programming languages from file paths.
- */
-
-/**
- * Detect programming language from file path extension.
- * Returns a language identifier compatible with syntax highlighters (e.g., Prism).
- */
 export function getLanguageFromPath(path: string): string {
   const ext = path.split('.').pop()?.toLowerCase() || '';
   const langMap: Record<string, string> = {

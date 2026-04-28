@@ -57,9 +57,7 @@ const IS_MAC_PLATFORM =
   typeof navigator !== 'undefined' && /Mac|iPod|iPhone|iPad/.test(navigator.platform);
 
 export interface UsePtyOptions {
-  /** Deterministic PTY session ID: makePtySessionId(projectId, scopeId, leafId). */
   sessionId: string;
-  /** Pre-connected FrontendPty instance owned by the entity's PtySession store. */
   pty: FrontendPty;
   theme?: SessionTheme;
   mapShiftEnterToCtrlJ?: boolean;
@@ -76,24 +74,6 @@ export interface UseTerminalReturn {
   sendInput: (data: string, options?: { track?: boolean }) => void;
 }
 
-/**
- * React hook that manages a full xterm.js terminal instance attached to
- * `containerRef`, wired to a PTY session via the deterministic `sessionId`.
- *
- * Each session owns a persistent FrontendPty (terminal + Canvas2D renderer)
- * for its full lifetime.  On unmount the terminal's ownedContainer is
- * reparented to the off-screen xterm host rather than disposed, so scrollback
- * is preserved across tab switches.
- *
- * For sessions pre-registered via PtySessionProvider the mount is effectively
- * synchronous (no await needed).  Standalone sessions (not pre-registered)
- * are auto-registered inside an async IIFE, awaiting the historical buffer
- * fetch before mounting.
- *
- * When inside a PaneSizingProvider the terminal is pre-resized to the pane's
- * current dimensions BEFORE being appended to the visible DOM, eliminating
- * the flash caused by a post-mount resize.
- */
 export function usePty(
   options: UsePtyOptions,
   containerRef: React.RefObject<HTMLElement | null>
@@ -162,8 +142,6 @@ export function usePty(
 
   // Auto-copy on selection
   const autoCopyOnSelectionRef = useRef(false);
-
-  // ─── Helpers ───────────────────────────────────────────────────────────────
 
   const queuePtyResize = useCallback(
     (newCols: number, newRows: number) => {
@@ -293,13 +271,10 @@ export function usePty(
       .catch(() => {});
   }, [sendInput]);
 
-  // ─── Main effect: mount terminal once per sessionId ────────────────────────
-
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
 
-    // ── Compute targetDims synchronously ─────────────────────────────────────
     // Reads the previous session's terminal cell metrics before overwriting
     // termRef. PaneSizingContext dimensions are also sampled here so the
     // pre-resize happens against the live pane dimensions.
@@ -320,7 +295,6 @@ export function usePty(
       targetDims = pane.getCurrentDimensions() ?? undefined;
     }
 
-    // ── Mount ─────────────────────────────────────────────────────────────────
     // pty is pre-connected by PtySession before TerminalPane renders, so no
     // async work is needed here.
     const cleanups: (() => void)[] = [];
@@ -341,7 +315,6 @@ export function usePty(
       // rAF so it reads the live DOM and only calls term.resize() when needed.
       measureAndResize();
 
-      // ── Load settings ──────────────────────────────────────────────────────
       let customFontFamily = '';
       void (rpc.appSettings.get('terminal') as Promise<AppSettings['terminal']>).then(
         (terminalSettings) => {
@@ -353,7 +326,6 @@ export function usePty(
         }
       );
 
-      // ── DECRQM xterm.js 6.0 bug workaround ────────────────────────────────
       const terminal = frontendPty.terminal;
       try {
         const parser = (
@@ -387,7 +359,6 @@ export function usePty(
         log.warn('useTerminal: failed to register DECRQM workaround', { error: err });
       }
 
-      // ── Keyboard shortcuts ─────────────────────────────────────────────────
       terminal.attachCustomKeyEventHandler((event: KeyboardEvent) => {
         if (document.querySelector('[role="dialog"]')) return false;
 
@@ -454,7 +425,6 @@ export function usePty(
         return true;
       });
 
-      // ── Handle terminal input ──────────────────────────────────────────────
       const handleTerminalInput = (data: string) => {
         onActivityRef.current?.();
 
@@ -481,7 +451,6 @@ export function usePty(
       const inputDisposable = terminal.onData((data) => handleTerminalInput(data));
       cleanups.push(() => inputDisposable.dispose());
 
-      // ── ptyStartedRef — detect first PTY output ────────────────────────────
       // FrontendPty owns the data subscription and writes directly to the
       // terminal.  We add a lightweight IPC listener here solely to flip the
       // ptyStartedRef flag, which is used to suppress focus-reporting escape
@@ -495,7 +464,6 @@ export function usePty(
       );
       cleanups.push(offPtyData);
 
-      // ── Auto-copy on selection ─────────────────────────────────────────────
       let selectionDebounceTimer: ReturnType<typeof setTimeout> | null = null;
       const selectionDisposable = terminal.onSelectionChange(() => {
         if (!autoCopyOnSelectionRef.current) return;
@@ -510,13 +478,11 @@ export function usePty(
         if (selectionDebounceTimer) clearTimeout(selectionDebounceTimer);
       });
 
-      // ── Paste from app menu ────────────────────────────────────────────────
       const offPaste = events.on(appPasteChannel, () => {
         pasteFromClipboard();
       });
       cleanups.push(offPaste);
 
-      // ── PTY exit subscription ──────────────────────────────────────────────
       const offExit = events.on(
         ptyExitChannel,
         (info) => {
@@ -526,7 +492,6 @@ export function usePty(
       );
       cleanups.push(offExit);
 
-      // ── Font / setting change events ───────────────────────────────────────
       const handleFontChange = (e: Event) => {
         const detail = (e as CustomEvent<{ fontFamily?: string }>).detail;
         customFontFamily = detail?.fontFamily?.trim() ?? '';
@@ -544,7 +509,6 @@ export function usePty(
         () => window.removeEventListener('terminal-auto-copy-changed', handleAutoCopyChange)
       );
 
-      // ── ResizeObserver (observes the mount-target, not the owned container) ─
       // Skips measuring while a panel drag is in progress; the drag-end effect
       // below fires one measure once the drag completes.
       const resizeObserver = new ResizeObserver(() => {
@@ -554,7 +518,6 @@ export function usePty(
       cleanups.push(() => resizeObserver.disconnect());
     }
 
-    // ── Cleanup ───────────────────────────────────────────────────────────────
     return () => {
       if (pendingResizeTimerRef.current) {
         clearTimeout(pendingResizeTimerRef.current);
@@ -581,12 +544,10 @@ export function usePty(
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sessionId, pty]); // Re-run only when the session changes
 
-  // ── Theme update (after initial mount) ──────────────────────────────────────
   useEffect(() => {
     applyTheme(theme);
   }, [theme, applyTheme]);
 
-  // ── Measure once when a panel drag ends ─────────────────────────────────────
   // The ResizeObserver skips measurements during the drag; this effect fires a
   // single measurement (which resizes the terminal and notifies PTYs) when done.
   const prevIsPanelDraggingRef = useRef(isPanelDragging);

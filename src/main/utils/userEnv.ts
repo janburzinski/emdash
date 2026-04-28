@@ -4,14 +4,6 @@ import os from 'node:os';
 import path from 'node:path';
 import { log } from '@main/lib/logger';
 
-/**
- * Keys that must never be overwritten from the shell env capture.
- *
- * - AppImage runtime vars would corrupt child-process environments when
- *   running from a Linux AppImage bundle.
- * - Electron-specific vars must retain the values Electron set at boot.
- * - NODE_ENV is set by the build toolchain and must not be overridden.
- */
 const PRESERVE_KEYS = new Set([
   // AppImage
   'APPDIR',
@@ -80,15 +72,6 @@ export function ensureUserBinDirsInPath(candidates: string[] = USER_BIN_DIRS): s
   return additions;
 }
 
-/**
- * Spawns `$SHELL -ilc 'env'` with a 5 s timeout. On any error (timeout,
- * missing shell, restricted environment) the function logs a warning and
- * returns — the app continues with whatever `process.env` already contains.
- *
- * After this call returns, all subsequent consumers that inherit `process.env`
- * (execFile, PTY env builders, dependency prober, etc.) automatically see the
- * full PATH, SSH_AUTH_SOCK, and other variables the user's shell init sets.
- */
 export async function resolveUserEnv(): Promise<void> {
   if (process.platform === 'win32') {
     // Windows PATH is managed differently; no login-shell capture needed.
@@ -137,10 +120,6 @@ export async function resolveUserEnv(): Promise<void> {
   }
 }
 
-/**
- * Parses a remote `env` command output into a key→value map.
- * Exported for use by the SSH connection manager.
- */
 export function parseRemoteEnvOutput(raw: string): Record<string, string> {
   return parseEnvOutput(raw);
 }

@@ -37,25 +37,3 @@ export function registerActiveCodeEditor(editor: monaco.editor.ICodeEditor | nul
     }
   };
 }
-
-export function performActiveEditorUndo(): boolean {
-  const editor = activeEditor;
-  if (!editor || !isEditorFocused(editor)) return false;
-  try {
-    editor.trigger('menu', 'undo', null);
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-export function performActiveEditorRedo(): boolean {
-  const editor = activeEditor;
-  if (!editor || !isEditorFocused(editor)) return false;
-  try {
-    editor.trigger('menu', 'redo', null);
-    return true;
-  } catch {
-    return false;
-  }
-}

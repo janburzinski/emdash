@@ -4,7 +4,6 @@ import React, { useEffect, useMemo, useState } from 'react';
 type RelativeTimeProps = {
   value: string | number | Date;
   className?: string;
-  /** Renders an abbreviated form (e.g. "3d", "5mo") with a tooltip showing the full text. */
   compact?: boolean;
   ago?: boolean;
 };

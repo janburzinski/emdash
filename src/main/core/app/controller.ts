@@ -13,14 +13,6 @@ export const appController = createRPCController({
       return { success: false, error: error instanceof Error ? error.message : String(error) };
     }
   },
-  clipboardWriteText: async (text: string) => {
-    try {
-      appService.clipboardWriteText(text);
-      return { success: true };
-    } catch (error) {
-      return { success: false, error: error instanceof Error ? error.message : String(error) };
-    }
-  },
   openIn: async (args: {
     app: OpenInAppId;
     path: string;
@@ -43,6 +35,5 @@ export const appController = createRPCController({
   openSelectDirectoryDialog: (args: { title: string; message: string }) =>
     appService.openSelectDirectoryDialog(args),
   getAppVersion: () => appService.getCachedAppVersion(),
-  getElectronVersion: () => process.versions.electron,
   getPlatform: () => process.platform,
 });

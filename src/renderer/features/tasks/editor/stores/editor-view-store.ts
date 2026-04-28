@@ -19,13 +19,8 @@ export class EditorViewStore implements Snapshottable<EditorViewSnapshot> {
   activeTabId: string | null = null;
   isSaving = false;
 
-  /**
-   * Set to the buffer URI of a file that has a conflict pending resolution.
-   * EditorProvider watches this via a MobX reaction and shows the conflict modal.
-   */
   pendingConflictUri: string | null = null;
 
-  /** Persisted navigation state for the file tree sidebar. */
   expandedPaths = observable.set<string>();
 
   constructor(
@@ -55,9 +50,7 @@ export class EditorViewStore implements Snapshottable<EditorViewSnapshot> {
     return this.tabs.find((t) => t.isPreview);
   }
 
-  // ---------------------------------------------------------------------------
   // Snapshottable
-  // ---------------------------------------------------------------------------
 
   get snapshot(): EditorViewSnapshot {
     return {
@@ -77,9 +70,7 @@ export class EditorViewStore implements Snapshottable<EditorViewSnapshot> {
     }
   }
 
-  // ---------------------------------------------------------------------------
   // Tab view interface
-  // ---------------------------------------------------------------------------
 
   setActiveTab(tabId: string): void {
     this.activeTabId = tabId;
@@ -114,14 +105,8 @@ export class EditorViewStore implements Snapshottable<EditorViewSnapshot> {
     if (this.activeTabId) this.removeTab(this.activeTabId);
   }
 
-  // ---------------------------------------------------------------------------
   // File opening
-  // ---------------------------------------------------------------------------
 
-  /**
-   * Opens a file as a stable tab (double-click / explicit open).
-   * If the file is already open as a preview, promotes it to stable.
-   */
   openFile(filePath: string): void {
     const existing = this._tabs.find((t) => t.path === filePath);
     if (existing) {
@@ -135,12 +120,6 @@ export class EditorViewStore implements Snapshottable<EditorViewSnapshot> {
     void this._registerModels(filePath);
   }
 
-  /**
-   * Opens a file as an unstable preview tab (single-click).
-   * If a clean preview tab already exists, mutates it in place so that the
-   * same tabId stays in the list — React sees an update, not a remove+add, so
-   * there is no flash of two tabs.
-   */
   openFilePreview(filePath: string): void {
     const existing = this._tabs.find((t) => t.path === filePath);
     if (existing) {
@@ -176,9 +155,7 @@ export class EditorViewStore implements Snapshottable<EditorViewSnapshot> {
     void this._registerModels(filePath);
   }
 
-  // ---------------------------------------------------------------------------
   // Tab management
-  // ---------------------------------------------------------------------------
 
   removeTab(tabId: string): void {
     const idx = this._tabs.findIndex((t) => t.tabId === tabId);
@@ -198,18 +175,14 @@ export class EditorViewStore implements Snapshottable<EditorViewSnapshot> {
     if (tab) tab.isPreview = false;
   }
 
-  // ---------------------------------------------------------------------------
   // Renderer
-  // ---------------------------------------------------------------------------
 
   updateRenderer(filePath: string, updater: (prev: FileRendererData) => FileRendererData): void {
     const tab = this._tabs.find((t) => t.path === filePath);
     if (tab) tab.renderer = updater(tab.renderer);
   }
 
-  // ---------------------------------------------------------------------------
   // Save
-  // ---------------------------------------------------------------------------
 
   async saveFile(filePath?: string): Promise<void> {
     const targetPath = filePath ?? this.activeFilePath;
@@ -250,11 +223,6 @@ export class EditorViewStore implements Snapshottable<EditorViewSnapshot> {
     }
   }
 
-  /**
-   * Resolves a pending conflict: either reloads buffer from disk ("Accept Incoming")
-   * or writes the user's buffer to disk ("Keep Mine").
-   * Called from EditorProvider after the conflict dialog resolves.
-   */
   async resolveConflict(accept: boolean): Promise<void> {
     const uri = this.pendingConflictUri;
     if (!uri) return;
@@ -281,15 +249,8 @@ export class EditorViewStore implements Snapshottable<EditorViewSnapshot> {
     }
   }
 
-  // ---------------------------------------------------------------------------
   // Lifecycle
-  // ---------------------------------------------------------------------------
 
-  /**
-   * Re-registers Monaco models for all currently open tabs and restores any
-   * crash-recovery buffer content. Called by EditorProvider on mount so that
-   * Monaco models (which are ephemeral) are recreated after a remount.
-   */
   async restore(): Promise<void> {
     for (const tab of this._tabs) {
       void this._registerModels(tab.path);
@@ -313,9 +274,7 @@ export class EditorViewStore implements Snapshottable<EditorViewSnapshot> {
     }
   }
 
-  // ---------------------------------------------------------------------------
   // Private helpers
-  // ---------------------------------------------------------------------------
 
   private _makeTab(filePath: string, isPreview: boolean, tabId?: string): EditorTab {
     const kind = getFileKind(filePath);

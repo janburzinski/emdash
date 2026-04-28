@@ -27,10 +27,8 @@ const CHECK_INTERVAL_MS = 60 * 60 * 1000; // 1 hour
 const STARTUP_DELAY_MS = 30 * 1000; // 30 seconds
 const INSTALL_RESTART_GUARD_TIMEOUT_MS = 2 * 60 * 1000;
 
-export interface UpdateState {
+interface UpdateState {
   status: 'idle' | 'checking' | 'available' | 'downloading' | 'downloaded' | 'installing' | 'error';
-  lastCheck?: Date;
-  nextCheck?: Date;
   currentVersion: string;
   availableVersion?: string;
   updateInfo?: UpdateInfo;
@@ -41,8 +39,6 @@ export interface UpdateState {
     total: number;
   };
   error?: string;
-  rollbackVersion?: string;
-  releaseNotes?: string;
 }
 
 class UpdateService {
@@ -101,7 +97,6 @@ class UpdateService {
   private setupEventListeners(): void {
     autoUpdater.on('checking-for-update', () => {
       this.updateState.status = 'checking';
-      this.updateState.lastCheck = new Date();
       events.emit(updateCheckingEvent, undefined);
     });
 
@@ -158,16 +153,12 @@ class UpdateService {
 
     autoUpdater.on('update-downloaded', (info: UpdateInfo) => {
       this.updateState.status = 'downloaded';
-      this.updateState.rollbackVersion = this.updateState.currentVersion;
       events.emit(updateDownloadedEvent, { version: info.version });
     });
   }
 
   private scheduleNextCheck(delay = CHECK_INTERVAL_MS): void {
-    if (this.checkTimer) {
-      clearTimeout(this.checkTimer);
-    }
-    this.updateState.nextCheck = new Date(Date.now() + delay);
+    if (this.checkTimer) clearTimeout(this.checkTimer);
     this.checkTimer = setTimeout(() => {
       this.checkForUpdates().catch((e) => {
         log.error('Scheduled update check failed:', e);
@@ -288,52 +279,6 @@ class UpdateService {
         rollback(`quitAndInstall threw: ${formatUpdaterError(error)}`);
       }
     }, 250);
-  }
-
-  async fetchReleaseNotes(): Promise<string | null> {
-    try {
-      if (!this.updateState.updateInfo) {
-        return null;
-      }
-
-      const releaseNotes = this.updateState.updateInfo.releaseNotes;
-      if (releaseNotes) {
-        const normalizedReleaseNotes =
-          typeof releaseNotes === 'string'
-            ? releaseNotes
-            : releaseNotes
-                .map((note) => note.note)
-                .filter((note): note is string => typeof note === 'string' && note.length > 0)
-                .join('\n\n');
-        if (normalizedReleaseNotes) {
-          this.updateState.releaseNotes = normalizedReleaseNotes;
-          return normalizedReleaseNotes;
-        }
-      }
-
-      const version = this.updateState.availableVersion;
-      if (!version) return null;
-
-      const response = await fetch(
-        `https://api.github.com/repos/generalaction/emdash/releases/tags/v${version}`
-      );
-
-      if (response.ok) {
-        const data = (await response.json()) as { body?: string };
-        const notes = data.body || 'No release notes available';
-        this.updateState.releaseNotes = notes;
-        return notes;
-      }
-
-      return null;
-    } catch (error) {
-      log.error('Failed to fetch release notes:', error);
-      return null;
-    }
-  }
-
-  getState(): UpdateState {
-    return { ...this.updateState };
   }
 
   shutdown(): void {

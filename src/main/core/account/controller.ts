@@ -46,12 +46,4 @@ export const accountController = createRPCController({
       return false;
     }
   },
-
-  validateSession: async () => {
-    try {
-      return await emdashAccountService.validateSession();
-    } catch {
-      return false;
-    }
-  },
 });

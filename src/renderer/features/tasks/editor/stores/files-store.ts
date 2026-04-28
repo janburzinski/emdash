@@ -8,18 +8,14 @@ import {
 import { events, rpc } from '@renderer/lib/ipc';
 import { Resource } from '@renderer/lib/stores/resource';
 
-// ---------------------------------------------------------------------------
 // Types
-// ---------------------------------------------------------------------------
 
 export interface FilesData {
   nodes: Map<string, FileNode>;
   childIndex: Map<string | null, string[]>;
 }
 
-// ---------------------------------------------------------------------------
 // FilesStore
-// ---------------------------------------------------------------------------
 
 export class FilesStore {
   // Non-observable imperative maps — tree.data drives reactive re-renders.
@@ -29,12 +25,6 @@ export class FilesStore {
   private readonly _pendingPaths = new Set<string>();
   private _bumpTimer: ReturnType<typeof setTimeout> | null = null;
 
-  /**
-   * The reactive container for the file tree. Components observe `tree.data`
-   * (or access `nodes`/`childIndex` getters which read through `tree.data`).
-   * The data object reference is replaced whenever the tree structure changes,
-   * triggering MobX re-renders — replacing the old `generation` counter.
-   */
   readonly tree: Resource<FilesData, FileWatchEvent[]>;
 
   constructor(
@@ -70,16 +60,8 @@ export class FilesStore {
     );
   }
 
-  // ---------------------------------------------------------------------------
   // Public reactive getters
-  // ---------------------------------------------------------------------------
 
-  /**
-   * Reading `nodes` establishes a MobX dependency on `tree.data`.
-   * When the tree structure changes (`tree.data` gets a new object reference),
-   * observer components re-render. The `??` fallback covers the initial null
-   * state; once set, `tree.data.nodes` and `_nodes` are the same Map instance.
-   */
   get nodes(): Map<string, FileNode> {
     return this.tree.data?.nodes ?? this._nodes;
   }
@@ -104,11 +86,8 @@ export class FilesStore {
     return this.tree.error;
   }
 
-  // ---------------------------------------------------------------------------
   // Lifecycle
-  // ---------------------------------------------------------------------------
 
-  /** Start watching — triggers initial load and subscribes to FS events. */
   startWatching(): void {
     this.tree.start();
   }
@@ -121,9 +100,7 @@ export class FilesStore {
     this.tree.dispose();
   }
 
-  // ---------------------------------------------------------------------------
   // Public incremental loading (called from UI on expand/reveal)
-  // ---------------------------------------------------------------------------
 
   async loadDir(dirPath: string, force = false): Promise<void> {
     await this._loadDirInternal(dirPath, force);
@@ -145,11 +122,8 @@ export class FilesStore {
     this._bumpTree();
   }
 
-  // ---------------------------------------------------------------------------
   // Private helpers
-  // ---------------------------------------------------------------------------
 
-  /** Full recursive load used as the Resource's fetch function. */
   private async _fetchAll(): Promise<FilesData> {
     this._nodes.clear();
     this._childIndex.clear();
@@ -159,7 +133,6 @@ export class FilesStore {
     return { nodes: this._nodes, childIndex: this._childIndex };
   }
 
-  /** Load a single directory level into the backing Maps. No reactivity bump. */
   private async _loadDirInternal(dirPath: string, force = false): Promise<void> {
     if (!force && (this._loadedPaths.has(dirPath) || this._pendingPaths.has(dirPath))) return;
     this._pendingPaths.add(dirPath);
@@ -249,7 +222,6 @@ export class FilesStore {
     }
   }
 
-  /** Mutate the backing maps for watch events. Returns true if anything changed. */
   private _applyWatchEventsInternal(watchEvents: FileWatchEvent[]): boolean {
     let changed = false;
 

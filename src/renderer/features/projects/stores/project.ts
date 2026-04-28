@@ -18,10 +18,6 @@ export type UnmountedProjectPhase = 'opening' | 'error' | 'closing' | 'idle';
 
 export type ProjectMode = 'pick' | 'clone' | 'new';
 
-/**
- * Holds all mounted-only state for a project. Created atomically by
- * ProjectStore.transitionToMounted and disposed on unmount or deletion.
- */
 export class MountedProject {
   readonly taskManager: TaskManagerStore;
   readonly view: ProjectViewStore;
@@ -69,11 +65,6 @@ export class MountedProject {
   }
 }
 
-/**
- * Container class — holds a stable reference in the ObservableMap across all
- * lifecycle transitions. Transitioning replaces `mountedProject` atomically
- * rather than nulling out individual fields.
- */
 export class ProjectStore {
   state: 'unregistered' | 'unmounted' | 'mounted';
   id: string;

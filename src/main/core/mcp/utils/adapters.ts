@@ -1,7 +1,5 @@
 import type { AdapterType, RawServerEntry, ServerMap } from '@shared/mcp/types';
 
-// ── Helpers ────────────────────────────────────────────────────────────────
-
 function isHttpServer(s: RawServerEntry): boolean {
   return s.type === 'http';
 }
@@ -47,8 +45,6 @@ function transformHttpServers(
   }
   return result;
 }
-
-// ── Forward Adapters (canonical → agent) ───────────────────────────────────
 
 function fwdPassthrough(servers: ServerMap): ServerMap {
   return deepClone(servers);
@@ -128,8 +124,6 @@ function fwdCopilot(servers: ServerMap): ServerMap {
   return result;
 }
 
-// ── Reverse Adapters (agent → canonical) ───────────────────────────────────
-
 function revPassthrough(servers: ServerMap): ServerMap {
   return deepClone(servers);
 }
@@ -206,8 +200,6 @@ function revCopilot(servers: ServerMap): ServerMap {
   }
   return result;
 }
-
-// ── Public API ─────────────────────────────────────────────────────────────
 
 const FORWARD: Record<AdapterType, (s: ServerMap) => ServerMap> = {
   passthrough: fwdPassthrough,

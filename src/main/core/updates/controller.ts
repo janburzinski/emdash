@@ -45,22 +45,4 @@ export const updateController = createRPCController({
       return { success: false, error: error instanceof Error ? error.message : String(error) };
     }
   },
-
-  getState: async () => {
-    try {
-      const state = updateService.getState();
-      return { success: true, data: state };
-    } catch (error) {
-      return { success: false, error: formatUpdaterError(error) };
-    }
-  },
-
-  getReleaseNotes: async () => {
-    try {
-      const notes = await updateService.fetchReleaseNotes();
-      return { success: true, data: notes };
-    } catch (error) {
-      return { success: false, error: formatUpdaterError(error) };
-    }
-  },
 });

@@ -13,13 +13,6 @@ export const SidebarContainer = React.forwardRef<
 ));
 SidebarContainer.displayName = 'SidebarContainer';
 
-export const SidebarHeader = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
-  ({ className, ...props }, ref) => (
-    <div ref={ref} className={cn('flex flex-col gap-1 border-b-0', className)} {...props} />
-  )
-);
-SidebarHeader.displayName = 'SidebarHeader';
-
 export const SidebarContent = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement>

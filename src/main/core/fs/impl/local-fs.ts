@@ -1,12 +1,11 @@
 import { createReadStream, promises as fs, statSync, type Stats } from 'node:fs';
-import { basename, dirname, extname, join, relative, resolve, sep } from 'node:path';
+import { dirname, extname, join, relative, resolve, sep } from 'node:path';
 import { createInterface } from 'node:readline';
 import parcelWatcher from '@parcel/watcher';
 import { glob } from 'glob';
 import ignore from 'ignore';
 import type { FileWatchEvent } from '@shared/fs';
 import {
-  DEFAULT_EMDASH_CONFIG,
   FileEntry,
   FileListResult,
   FileSystemError,
@@ -141,8 +140,6 @@ const IMAGE_MIME_TYPES: Record<string, string> = {
 };
 
 export class LocalFileSystem implements FileSystemProvider {
-  private listAbort: AbortController | null = null;
-
   constructor(private projectPath: string) {
     if (!projectPath) {
       throw new FileSystemError('Project path is required', FileSystemErrorCodes.INVALID_PATH);
@@ -150,20 +147,6 @@ export class LocalFileSystem implements FileSystemProvider {
     this.projectPath = resolve(projectPath);
   }
 
-  /**
-   * Cancel any in-flight list() traversal. Used by the IPC layer for per-sender debouncing.
-   * The in-process traversal checks the abort signal and exits early on the next tick.
-   */
-  cancelPendingList(): void {
-    if (this.listAbort) {
-      this.listAbort.abort();
-      this.listAbort = null;
-    }
-  }
-
-  /**
-   * Resolve and validate a relative path, ensuring it doesn't escape the project root
-   */
   private resolvePath(relPath: string): string {
     // Normalize the path and resolve it against project root
     const normalizedRelPath = relPath.replace(/\\/g, '/').replace(/^\//, '');
@@ -186,31 +169,19 @@ export class LocalFileSystem implements FileSystemProvider {
     return fullPath;
   }
 
-  /**
-   * Get relative path from absolute path
-   */
   private relPath(fullPath: string): string {
     return relative(this.projectPath, fullPath);
   }
 
-  /**
-   * Check if a path should be ignored during search
-   */
   private shouldIgnore(name: string): boolean {
     return SEARCH_IGNORES.has(name);
   }
 
-  /**
-   * Check if file is binary by extension
-   */
   private isBinaryFile(filePath: string): boolean {
     const ext = extname(filePath).toLowerCase();
     return BINARY_EXTENSIONS.has(ext);
   }
 
-  /**
-   * Convert fs.Stats to FileEntry
-   */
   private statToEntry(fullPath: string, stat: Stats): FileEntry {
     const relPath = this.relPath(fullPath);
     return {
@@ -231,7 +202,6 @@ export class LocalFileSystem implements FileSystemProvider {
     const timeBudgetMs = options.timeBudgetMs || 30000;
 
     const abort = new AbortController();
-    this.listAbort = abort;
 
     let truncated = false;
     let truncateReason: 'maxEntries' | 'timeBudget' | undefined;
@@ -313,10 +283,6 @@ export class LocalFileSystem implements FileSystemProvider {
     };
 
     await listDir(fullPath, options.recursive || false);
-
-    if (this.listAbort === abort) {
-      this.listAbort = null;
-    }
 
     return {
       entries,
@@ -590,101 +556,6 @@ export class LocalFileSystem implements FileSystemProvider {
           return { success: false, error: `Permission denied: ${path}` };
         }
       }
-      return { success: false, error: err instanceof Error ? err.message : String(err) };
-    }
-  }
-
-  async getProjectConfig(): Promise<{ success: boolean; content?: string; error?: string }> {
-    const configPath = join(this.projectPath, '.emdash.json');
-    try {
-      try {
-        const content = await fs.readFile(configPath, 'utf-8');
-        return { success: true, content };
-      } catch (err: unknown) {
-        const code = (err as NodeJS.ErrnoException).code;
-        if (code !== 'ENOENT') throw err;
-        // File doesn't exist — create with defaults
-        await fs.writeFile(configPath, DEFAULT_EMDASH_CONFIG, 'utf-8');
-        return { success: true, content: DEFAULT_EMDASH_CONFIG };
-      }
-    } catch (err: unknown) {
-      return { success: false, error: err instanceof Error ? err.message : String(err) };
-    }
-  }
-
-  async saveProjectConfig(content: string): Promise<{ success: boolean; error?: string }> {
-    try {
-      JSON.parse(content);
-    } catch {
-      return { success: false, error: 'Invalid JSON format' };
-    }
-    const configPath = join(this.projectPath, '.emdash.json');
-    try {
-      await fs.writeFile(configPath, content, 'utf-8');
-      return { success: true };
-    } catch (err: unknown) {
-      return { success: false, error: err instanceof Error ? err.message : String(err) };
-    }
-  }
-
-  async saveAttachment(
-    srcPath: string,
-    subdir?: string
-  ): Promise<{
-    success: boolean;
-    absPath?: string;
-    relPath?: string;
-    fileName?: string;
-    error?: string;
-  }> {
-    const ALLOWED_ATTACHMENT_EXTENSIONS = new Set([
-      '.png',
-      '.jpg',
-      '.jpeg',
-      '.gif',
-      '.webp',
-      '.bmp',
-      '.svg',
-    ]);
-
-    try {
-      try {
-        await fs.access(srcPath);
-      } catch {
-        return { success: false, error: 'Source file not found' };
-      }
-
-      const ext = extname(srcPath).toLowerCase();
-      if (!ALLOWED_ATTACHMENT_EXTENSIONS.has(ext)) {
-        return { success: false, error: 'Unsupported attachment type' };
-      }
-
-      const destDir = join(this.projectPath, '.emdash', subdir ?? 'attachments');
-      await fs.mkdir(destDir, { recursive: true });
-
-      const baseName = basename(srcPath);
-      let destName = baseName;
-      let counter = 1;
-      let destAbs = join(destDir, destName);
-
-      while (true) {
-        try {
-          await fs.access(destAbs);
-          // File exists — try next name
-          const nameWithoutExt = basename(baseName, ext);
-          destName = `${nameWithoutExt}-${counter}${ext}`;
-          destAbs = join(destDir, destName);
-          counter++;
-        } catch {
-          // File does not exist — safe to write here
-          break;
-        }
-      }
-
-      await fs.copyFile(srcPath, destAbs);
-      const relPath = relative(this.projectPath, destAbs);
-      return { success: true, absPath: destAbs, relPath, fileName: destName };
-    } catch (err: unknown) {
       return { success: false, error: err instanceof Error ? err.message : String(err) };
     }
   }

@@ -1,12 +1,3 @@
-/**
- * Standalone terminal dimension measurement utility.
- *
- * Extracted from FitAddon.proposeDimensions() but decoupled from any specific
- * terminal instance — accepts a container element and cell metrics directly.
- * This lets callers measure any DOM element (e.g. PaneSizingProvider's
- * container) without first mounting a terminal inside it.
- */
-
 const MINIMUM_COLS = 2;
 const MINIMUM_ROWS = 1;
 
@@ -15,15 +6,6 @@ export interface TerminalDimensions {
   rows: number;
 }
 
-/**
- * Compute terminal cols/rows from a container element's pixel dimensions and
- * the terminal's CSS cell size.
- *
- * @param container  The element whose CSS width/height defines the available area.
- * @param cellWidth  Terminal cell width in CSS pixels (terminal.dimensions.css.cell.width).
- * @param cellHeight Terminal cell height in CSS pixels (terminal.dimensions.css.cell.height).
- * @param scrollbarWidth Width in pixels to subtract for the scrollbar (0 when scrollback=0).
- */
 export function measureDimensions(
   container: HTMLElement,
   cellWidth: number,

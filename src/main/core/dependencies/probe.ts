@@ -7,11 +7,6 @@ const VERSION_PROBE_TIMEOUT_MS = 10_000;
 // `where` on Windows, `which` on macOS/Linux
 const RESOLVE_CMD = process.platform === 'win32' ? 'where' : 'which';
 
-/**
- * Resolves the absolute path of a command binary.
- * Uses `where` on Windows and `which` on macOS/Linux.
- * Returns `null` if the command is not found or the resolution fails.
- */
 export async function resolveCommandPath(command: string, exec: ExecFn): Promise<string | null> {
   try {
     const { stdout } = await exec(RESOLVE_CMD, [command], { timeout: WHICH_TIMEOUT_MS });
@@ -22,10 +17,6 @@ export async function resolveCommandPath(command: string, exec: ExecFn): Promise
   }
 }
 
-/**
- * Runs `command args` and collects stdout/stderr up to a timeout.
- * Never throws — all failures are captured in the returned `ProbeResult`.
- */
 export async function runVersionProbe(
   command: string,
   resolvedPath: string | null,

@@ -1,16 +1,8 @@
-/**
- * Utilities for detecting the SSH agent socket when the app is launched
- * from a GUI and may not have inherited it from the user's shell session.
- */
-
 import { execSync } from 'child_process';
 import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
 
-/**
- * Common SSH agent socket locations to check as fallback
- */
 const COMMON_SSH_AGENT_LOCATIONS: ReadonlyArray<{ path: string; description: string }> = [
   // macOS launchd
   { path: '/private/tmp/com.apple.launchd.*/Listeners', description: 'macOS launchd' },
@@ -29,9 +21,6 @@ const COMMON_SSH_AGENT_LOCATIONS: ReadonlyArray<{ path: string; description: str
   { path: path.join(os.homedir(), '.gnupg', 'S.gpg-agent.ssh'), description: 'GnuPG agent' },
 ];
 
-/**
- * Checks if a path is a socket file
- */
 function isSocketFile(filePath: string): boolean {
   try {
     const stats = fs.statSync(filePath);
@@ -41,9 +30,6 @@ function isSocketFile(filePath: string): boolean {
   }
 }
 
-/**
- * Expands glob patterns to find matching paths
- */
 function expandGlob(pattern: string): string[] {
   try {
     // Simple glob expansion for patterns like /tmp/ssh-*/agent.*
@@ -85,18 +71,6 @@ function expandGlob(pattern: string): string[] {
   }
 }
 
-/**
- * Detects the SSH_AUTH_SOCK environment variable.
- *
- * In normal operation, resolveUserEnv() (called at startup) will have already
- * merged SSH_AUTH_SOCK from the login shell into process.env, so the first
- * check here returns immediately. The remaining steps are fallbacks for
- * environments where resolveUserEnv() timed out, was skipped (AppImage, CI),
- * or the user's shell simply doesn't export SSH_AUTH_SOCK (e.g. custom
- * socket managers like 1Password).
- *
- * @returns The path to the SSH agent socket, or undefined if not found
- */
 export function detectSshAuthSock(): string | undefined {
   // Fast path — set by resolveUserEnv() at startup in the common case.
   if (process.env.SSH_AUTH_SOCK) {

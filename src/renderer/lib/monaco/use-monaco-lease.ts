@@ -2,14 +2,6 @@ import { observable, runInAction, type IObservableValue } from 'mobx';
 import { useEffect, useRef } from 'react';
 import type { PoolEntry } from './monaco-pool';
 
-/**
- * Leases one editor from `pool` on mount and releases it on unmount.
- * Returns a stable MobX observable box whose value is the active lease entry
- * (or null before it arrives / after unmount). This lets MobX `autorun` and
- * `reaction` consumers react to the lease arriving without any manual callback
- * coordination — the box is just another observable input alongside
- * `activeFile` and `modelRegistry.modelStatus`.
- */
 export function useMonacoLease<T>(pool: {
   lease(): Promise<PoolEntry<T>>;
   release(entry: PoolEntry<T>): void;

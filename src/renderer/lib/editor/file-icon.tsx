@@ -1,6 +1,5 @@
 import { File } from 'lucide-react';
 
-/** Maps a file extension (or full filename for extensionless files) to a devicon class name. */
 const EXTENSION_MAP: Record<string, string> = {
   // TypeScript / JavaScript
   ts: 'devicon-typescript-plain colored',
@@ -60,7 +59,6 @@ const EXTENSION_MAP: Record<string, string> = {
   svelte: 'devicon-svelte-plain colored',
 };
 
-/** Full-filename overrides for extensionless files. */
 const FILENAME_MAP: Record<string, string> = {
   Dockerfile: 'devicon-docker-plain colored',
   dockerfile: 'devicon-docker-plain colored',

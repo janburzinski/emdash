@@ -14,6 +14,4 @@ export const jiraController = createRPCController({
   },
 
   clearCredentials: async () => jiraConnectionService.clearCredentials(),
-
-  checkConnection: async () => jiraConnectionService.checkConnection(),
 });

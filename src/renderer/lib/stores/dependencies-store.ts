@@ -46,9 +46,7 @@ export class DependenciesStore {
     ]);
   }
 
-  // ---------------------------------------------------------------------------
   // Computed
-  // ---------------------------------------------------------------------------
 
   get allStatuses(): DependencyStatusMap {
     return this.local.data ?? {};
@@ -66,15 +64,8 @@ export class DependenciesStore {
       .map(([id]) => id);
   }
 
-  // ---------------------------------------------------------------------------
   // Remote (per SSH connection)
-  // ---------------------------------------------------------------------------
 
-  /**
-   * Returns (and lazily creates) a demand-loaded Resource for a remote connection.
-   * The resource probes all agent-category dependencies over SSH then fetches
-   * the results. It loads on first observer attachment.
-   */
   getRemote(connectionId: string): Resource<DependencyStatusMap> {
     let store = this._remoteStores.get(connectionId);
     if (!store) {
@@ -87,10 +78,6 @@ export class DependenciesStore {
     return store;
   }
 
-  /**
-   * Returns the installed agent IDs for a remote connection.
-   * Reads from the demand-loaded resource; returns [] while loading.
-   */
   remoteInstalledAgents(connectionId: string): string[] {
     const data = this.getRemote(connectionId).data;
     if (!data) return [];
@@ -99,9 +86,7 @@ export class DependenciesStore {
       .map(([id]) => id);
   }
 
-  // ---------------------------------------------------------------------------
   // Actions
-  // ---------------------------------------------------------------------------
 
   isInstalling(id: DependencyId, connectionId?: string): boolean {
     return this._installingDependencyKeys.has(this.installKey(id, connectionId));
@@ -154,16 +139,12 @@ export class DependenciesStore {
     this.local.setValue(statuses);
   }
 
-  // ---------------------------------------------------------------------------
   // Lifecycle
-  // ---------------------------------------------------------------------------
 
-  /** Activate the event subscription and trigger the initial local fetch. */
   start(): void {
     this.local.start();
   }
 
-  /** Dispose all resources (timers, event listeners). */
   dispose(): void {
     this.local.dispose();
     for (const store of this._remoteStores.values()) {

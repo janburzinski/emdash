@@ -2,8 +2,6 @@ import type { Task } from '@shared/tasks';
 import { isUnmountedProject } from '@renderer/features/projects/stores/project';
 import { getProjectManagerStore } from '@renderer/features/projects/stores/project-selectors';
 import type { AgentStatus } from '@renderer/features/tasks/conversations/conversation-manager';
-import type { DiffViewStore } from '@renderer/features/tasks/diff-view/stores/diff-view-store';
-import type { EditorViewStore } from '@renderer/features/tasks/editor/stores/editor-view-store';
 import {
   isUnprovisioned,
   isUnregistered,
@@ -12,39 +10,18 @@ import {
   TaskStore,
 } from './task';
 import type { TaskManagerStore } from './task-manager';
-import type { TaskViewStore } from './task-view';
 
-/** Call only inside `observer` components (or other MobX reactions). */
 export function getTaskManagerStore(projectId: string): TaskManagerStore | undefined {
-  const p = getProjectManagerStore().projects.get(projectId);
-  return p?.mountedProject?.taskManager;
+  return getProjectManagerStore().projects.get(projectId)?.mountedProject?.taskManager;
 }
 
-/** Call only inside `observer` components (or other MobX reactions). */
 export function getTaskStore(projectId: string, taskId: string): TaskStore | undefined {
   return getTaskManagerStore(projectId)?.tasks.get(taskId);
 }
 
-/** Registered task payload (`Task`) when the row exists and is not unregistered; otherwise undefined. */
 export function getRegisteredTaskData(projectId: string, taskId: string): Task | undefined {
   const store = getTaskStore(projectId, taskId);
-  if (!store) return undefined;
-  return registeredTaskData(store);
-}
-
-/** Call only inside `observer` components (or other MobX reactions). */
-export function getTaskView(projectId: string, taskId: string): TaskViewStore | undefined {
-  return asProvisioned(getTaskStore(projectId, taskId))?.taskView;
-}
-
-/** Call only inside `observer` components (or other MobX reactions). */
-export function getEditorView(projectId: string, taskId: string): EditorViewStore | undefined {
-  return getTaskView(projectId, taskId)?.editorView;
-}
-
-/** Call only inside `observer` components (or other MobX reactions). */
-export function getDiffView(projectId: string, taskId: string): DiffViewStore | undefined {
-  return getTaskView(projectId, taskId)?.diffView;
+  return store ? registeredTaskData(store) : undefined;
 }
 
 export function getTaskGitStore(projectId: string, taskId: string) {
@@ -55,10 +32,10 @@ export function taskAgentStatus(store: TaskStore): AgentStatus | null {
   return asProvisioned(store)?.conversations.taskStatus ?? null;
 }
 
-export type TaskViewKind =
+type TaskViewKind =
   | 'missing'
-  | 'project-mounting' // project is still opening — task data not yet available
-  | 'project-error' // project failed to open
+  | 'project-mounting'
+  | 'project-error'
   | 'creating'
   | 'create-error'
   | 'provisioning'
@@ -68,35 +45,17 @@ export type TaskViewKind =
   | 'idle'
   | 'ready';
 
-/**
- * Derives the task view kind from the project + task store state.
- *
- * Pass `projectId` so that "project still opening" can be distinguished from
- * "task genuinely missing". Call only inside `observer` components.
- */
 export function taskViewKind(store: TaskStore | undefined, projectId: string): TaskViewKind {
   const projectStore = getProjectManagerStore().projects.get(projectId);
-
-  // Project doesn't exist at all
   if (!projectStore) return 'missing';
-
-  // Project is being opened — tasks won't be available yet
   if (isUnmountedProject(projectStore)) {
-    if (projectStore.phase === 'opening') return 'project-mounting';
     if (projectStore.phase === 'error') return 'project-error';
-    // idle/closing unmounted — still needs to be opened
     return 'project-mounting';
   }
-
-  // Project is still being created (unregistered)
   if (projectStore.state === 'unregistered') return 'missing';
-
-  // Project is mounted — dispatch on task state
   if (!store) return 'missing';
-
   if (isUnregistered(store)) {
-    if (store.phase === 'creating') return 'creating';
-    return 'create-error';
+    return store.phase === 'creating' ? 'creating' : 'create-error';
   }
   if (isUnprovisioned(store)) {
     if (store.phase === 'provision') return 'provisioning';
@@ -108,18 +67,14 @@ export function taskViewKind(store: TaskStore | undefined, projectId: string): T
   return 'ready';
 }
 
-/** Returns the provisioned task payload if ready, otherwise undefined. */
 export function asProvisioned(store: TaskStore | undefined): ProvisionedTask | undefined {
   return store?.provisionedTask ?? undefined;
 }
 
-/** Returns the display name from any task store variant. */
 export function taskDisplayName(store: TaskStore | undefined): string | undefined {
-  if (!store) return undefined;
-  return store.data.name;
+  return store?.data.name;
 }
 
-/** Returns the error message for error states. */
 export function taskErrorMessage(store: TaskStore | undefined): string | undefined {
   if (!store) return undefined;
   if (isUnregistered(store) && store.phase === 'create-error') {
@@ -134,13 +89,4 @@ export function taskErrorMessage(store: TaskStore | undefined): string | undefin
     }
   }
   return undefined;
-}
-
-/** Returns the mount error message for the project. */
-export function projectMountErrorMessage(projectId: string): string {
-  const store = getProjectManagerStore().projects.get(projectId);
-  if (store && isUnmountedProject(store) && store.phase === 'error') {
-    return store.error ?? 'Failed to open project';
-  }
-  return 'Failed to open project';
 }

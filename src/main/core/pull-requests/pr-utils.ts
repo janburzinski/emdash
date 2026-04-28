@@ -8,7 +8,6 @@ import type {
   PullRequestUser,
 } from '@shared/pull-requests';
 import {
-  pullRequestAssignees,
   pullRequestChecks,
   pullRequestLabels,
   pullRequests,
@@ -18,10 +17,8 @@ import {
 export type PrRow = typeof pullRequests.$inferSelect;
 export type PrUserRow = typeof pullRequestUsers.$inferSelect;
 export type PrLabelRow = typeof pullRequestLabels.$inferSelect;
-export type PrAssigneeRow = typeof pullRequestAssignees.$inferSelect;
 export type PrCheckRow = typeof pullRequestChecks.$inferSelect;
 
-/** Convert a raw DB pull_request_users row to the shared PullRequestUser type. */
 export function dbRowToUserRow(row: PrUserRow): PullRequestUser {
   return {
     userId: row.userId,
@@ -34,7 +31,6 @@ export function dbRowToUserRow(row: PrUserRow): PullRequestUser {
   };
 }
 
-/** Convert a raw DB pull_request_checks row to the shared PullRequestCheck type. */
 export function dbRowToCheckRow(row: PrCheckRow): PullRequestCheck {
   return {
     id: row.id,
@@ -52,7 +48,6 @@ export function dbRowToCheckRow(row: PrCheckRow): PullRequestCheck {
   };
 }
 
-/** Assemble the fully denormalised PullRequest view from a DB row + related data. */
 export function assemblePullRequest(
   row: PrRow,
   author: PrUserRow | null,

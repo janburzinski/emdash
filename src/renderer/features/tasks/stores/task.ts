@@ -99,7 +99,6 @@ export class ProvisionedTask {
       terminals: false,
       draftComments: false,
       taskView: false,
-      /** Owned by TaskStore.data — do not attach a second observable tree here */
       _taskData: false,
     });
 
@@ -153,7 +152,6 @@ export class TaskStore {
     this.phase = phase;
     makeAutoObservable(this, {
       provisionedTask: observable.ref,
-      /** Deep observable so nested fields (e.g. `status`) notify observers (e.g. sidebar). */
       data: observable,
     });
   }
@@ -324,7 +322,6 @@ export function isProvisioned(
   return t.state === 'provisioned';
 }
 
-/** Full `Task` payload when registered (unprovisioned or provisioned); `undefined` when unregistered. */
 export function registeredTaskData(store: TaskStore): Task | undefined {
   return isRegistered(store) ? store.data : undefined;
 }

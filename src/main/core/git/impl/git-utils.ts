@@ -1,12 +1,9 @@
 import type { DiffLine, GitChangeStatus } from '@shared/git';
 
-/** Maximum bytes for fetching file content in diffs. */
 export const MAX_DIFF_CONTENT_BYTES = 512 * 1024;
 
-/** Maximum bytes for `git diff` output (larger than content limit due to headers/context). */
 export const MAX_DIFF_OUTPUT_BYTES = 10 * 1024 * 1024;
 
-/** Headers emitted by `git diff` that should be skipped when parsing hunks. */
 const DIFF_HEADER_PREFIXES = [
   'diff ',
   'index ',
@@ -22,11 +19,6 @@ const DIFF_HEADER_PREFIXES = [
   'Binary files',
 ];
 
-/**
- * Map a git status code (porcelain or diff-tree) to a typed GitChangeStatus.
- * Works for both two-char porcelain codes (e.g. ' M', 'A ', '??') and
- * single-letter diff-tree codes (e.g. 'A', 'D', 'R100').
- */
 export function mapStatus(code: string): GitChangeStatus {
   if (code.includes('U') || code === 'AA' || code === 'DD') return 'conflicted';
   if (code.includes('A') || code.includes('?')) return 'added';
@@ -35,12 +27,10 @@ export function mapStatus(code: string): GitChangeStatus {
   return 'modified';
 }
 
-/** Strip exactly one trailing newline, if present. */
 export function stripTrailingNewline(s: string): string {
   return s.endsWith('\n') ? s.slice(0, -1) : s;
 }
 
-/** Parse raw `git diff` output into structured diff lines, skipping headers. */
 export function parseDiffLines(stdout: string): { lines: DiffLine[]; isBinary: boolean } {
   const result: DiffLine[] = [];
   for (const line of stdout.split('\n')) {
@@ -56,15 +46,6 @@ export function parseDiffLines(stdout: string): { lines: DiffLine[]; isBinary: b
   }
   const isBinary = result.length === 0 && stdout.includes('Binary files');
   return { lines: result, isBinary };
-}
-
-/**
- * Strips the remote prefix from a fully-qualified remote tracking ref.
- * e.g. "origin/main" → "main", "main" → "main"
- */
-export function bareRefName(ref: string): string {
-  const slash = ref.indexOf('/');
-  return slash !== -1 ? ref.slice(slash + 1) : ref;
 }
 
 export function computeBaseRef(

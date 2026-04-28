@@ -7,25 +7,13 @@ import { modelRegistry } from '@renderer/lib/monaco/monaco-model-registry';
 import { DIFF_EDITOR_BASE_OPTIONS } from './editorConfig';
 
 export interface StickyDiffEditorProps {
-  /** URI for the left (original/before) side — typically git:// */
   originalUri: string;
-  /** URI for the right (modified/after) side — disk://, git://, etc. */
   modifiedUri: string;
   diffStyle: 'unified' | 'split';
-  /** Called whenever the content height changes, for auto-sizing parent containers. */
   onHeightChange?: (height: number) => void;
-  /** Called when the diff editor instance is created/disposed. */
   onEditorChange?: (editor: monaco.editor.IStandaloneDiffEditor | null) => void;
 }
 
-/**
- * Mounts a Monaco diff editor directly into a div (no pool lease/release).
- * The editor instance lives for the lifetime of this component; content is swapped
- * in-place via a MobX autorun when originalUri/modifiedUri change or models become ready.
- *
- * Requires Monaco to already be initialized (guaranteed by bootstrap awaiting
- * diffEditorPool.init before React renders).
- */
 export function StickyDiffEditor({
   originalUri,
   modifiedUri,

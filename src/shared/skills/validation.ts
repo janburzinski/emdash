@@ -1,11 +1,9 @@
 import type { SkillFrontmatter } from './types';
 
-/** Validate a skill name: lowercase, hyphens, 1-64 chars */
 export function isValidSkillName(name: string): boolean {
   return /^[a-z0-9][a-z0-9-]{0,62}[a-z0-9]?$/.test(name) && !name.includes('--');
 }
 
-/** Parse YAML frontmatter from SKILL.md content */
 export function parseFrontmatter(content: string): {
   frontmatter: SkillFrontmatter;
   body: string;

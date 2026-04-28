@@ -49,15 +49,6 @@ function runBundledMigrations(connection: BetterSqlite3.Database): void {
   })();
 }
 
-/**
- * Runs all pending migrations against the shared SQLite connection and validates
- * the schema contract. Call this once in main.ts before any db queries run.
- *
- * Throws `DatabaseSchemaMismatchError` when required columns/tables are missing
- * after migration (e.g. the user downgraded from a newer build).
- *
- * Returns the raw better-sqlite3 handle so the caller can close it on shutdown.
- */
 export async function initializeDatabase(): Promise<BetterSqlite3.Database> {
   runBundledMigrations(sqlite);
   return sqlite;

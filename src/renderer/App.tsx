@@ -13,7 +13,6 @@ import { GithubContextProvider } from './lib/providers/github-context-provider';
 import { ThemeProvider } from './lib/providers/theme-provider';
 import { TerminalPoolProvider } from './lib/pty/pty-pool-provider';
 import { queryClient } from './lib/query-client';
-import { RightSidebarProvider } from './lib/ui/right-sidebar';
 import { TooltipProvider } from './lib/ui/tooltip';
 
 export const HAS_SEEN_ONBOARDING = 'emdash:has-seen-onboarding:v1';
@@ -80,9 +79,7 @@ function AppContent() {
             <GithubContextProvider>
               <IntegrationsProvider>
                 <WorkspaceViewProvider>
-                  <RightSidebarProvider>
-                    <ThemeProvider>{renderContent()}</ThemeProvider>
-                  </RightSidebarProvider>
+                  <ThemeProvider>{renderContent()}</ThemeProvider>
                 </WorkspaceViewProvider>
               </IntegrationsProvider>
             </GithubContextProvider>

@@ -9,10 +9,6 @@ type Pending = {
   reject: (e: Error) => void;
 };
 
-/**
- * Persistent `git cat-file --batch` subprocess with a strictly serialized queue.
- * Local workspace only — SSH workspaces use per-call `git show` in GitService.
- */
 export class CatFileBatch {
   private disposed = false;
   private proc: ChildProcessWithoutNullStreams | null = null;
@@ -89,7 +85,6 @@ export class CatFileBatch {
     return this.proc;
   }
 
-  /** Marks the current process dead and unblocks any waiting reader; does not reject queue. */
   private _recordProcDeath(err: Error): void {
     this.proc = null;
     this.readAborted = err;

@@ -1,18 +1,14 @@
 import { spawn } from 'node:child_process';
 import path from 'node:path';
 import {
-  HEAD_MODE,
   toRangeString,
   toRefString,
   type Branch,
   type Commit,
   type CommitError,
-  type CommitFile,
   type CreateBranchError,
   type DeleteBranchError,
-  type DiffLine,
   type DiffMode,
-  type DiffResult,
   type FetchError,
   type FetchPrForReviewError,
   type FullGitStatus,
@@ -26,7 +22,6 @@ import {
   type PushError,
   type RemoteBranch,
   type RenameBranchError,
-  type SoftResetError,
 } from '@shared/git';
 import { DEFAULT_REMOTE_NAME } from '@shared/git-utils';
 import { ownerFromUrl } from '@shared/pull-requests';
@@ -39,8 +34,6 @@ import {
   computeBaseRef,
   mapStatus,
   MAX_DIFF_CONTENT_BYTES,
-  MAX_DIFF_OUTPUT_BYTES,
-  parseDiffLines,
   stripTrailingNewline,
 } from './git-utils';
 import {
@@ -369,14 +362,6 @@ export class GitService implements GitProvider {
     await this.exec('git', ['clean', '-fd'], { cwd: this.path });
   }
 
-  // ---------------------------------------------------------------------------
-  // Diffs
-  // ---------------------------------------------------------------------------
-
-  async getFileAtHead(filePath: string): Promise<string | null> {
-    return this.getFileAtRef(filePath, 'HEAD');
-  }
-
   async getFileAtRef(filePath: string, ref: string): Promise<string | null> {
     const cf = this._getCatFile();
     if (cf) {
@@ -417,212 +402,12 @@ export class GitService implements GitProvider {
     }
   }
 
-  async getFileDiff(
-    filePath: string,
-    base: DiffMode | GitObjectRef = HEAD_MODE
-  ): Promise<DiffResult> {
-    const diffArgs = (() => {
-      switch (base.kind) {
-        case 'staged':
-          return ['diff', '--no-color', '--unified=2000', '--cached', '--', filePath];
-        case 'head':
-          return ['diff', '--no-color', '--unified=2000', 'HEAD', '--', filePath];
-        default:
-          return [
-            'diff',
-            '--no-color',
-            '--unified=2000',
-            `${toRefString(base)}...HEAD`,
-            '--',
-            filePath,
-          ];
-      }
-    })();
-
-    const isObjectRef = base.kind !== 'head' && base.kind !== 'staged';
-
-    let diffStdout: string | undefined;
-    try {
-      const { stdout } = await this.exec('git', diffArgs, {
-        cwd: this.path,
-        maxBuffer: MAX_DIFF_OUTPUT_BYTES,
-      });
-      diffStdout = stdout;
-    } catch {}
-
-    const originalRef = isObjectRef ? toRefString(base as GitObjectRef) : 'HEAD';
-
-    const getOriginalContent = async (): Promise<string | undefined> => {
-      try {
-        const { stdout } = await this.exec('git', ['show', `${originalRef}:${filePath}`], {
-          cwd: this.path,
-          maxBuffer: MAX_DIFF_CONTENT_BYTES,
-        });
-        return stripTrailingNewline(stdout);
-      } catch {
-        return undefined;
-      }
-    };
-
-    const getModifiedContent = async (): Promise<string | undefined> => {
-      if (isObjectRef) {
-        try {
-          const { stdout } = await this.exec('git', ['show', `HEAD:${filePath}`], {
-            cwd: this.path,
-            maxBuffer: MAX_DIFF_CONTENT_BYTES,
-          });
-          return stripTrailingNewline(stdout);
-        } catch {
-          return undefined;
-        }
-      }
-      try {
-        const result = await this.fs.read(filePath, MAX_DIFF_CONTENT_BYTES);
-        if (result.truncated) return undefined;
-        return stripTrailingNewline(result.content);
-      } catch {
-        return undefined;
-      }
-    };
-
-    if (diffStdout !== undefined) {
-      const { lines, isBinary } = parseDiffLines(diffStdout);
-      if (isBinary) return { lines: [], isBinary: true };
-
-      const [originalContent, modifiedContent] = await Promise.all([
-        getOriginalContent(),
-        getModifiedContent(),
-      ]);
-
-      if (lines.length === 0) {
-        if (modifiedContent !== undefined) {
-          return {
-            lines: modifiedContent.split('\n').map((l) => ({ right: l, type: 'add' as const })),
-            modifiedContent,
-          };
-        }
-        if (originalContent !== undefined) {
-          return {
-            lines: originalContent.split('\n').map((l) => ({ left: l, type: 'del' as const })),
-            originalContent,
-          };
-        }
-        return { lines: [] };
-      }
-      return { lines, originalContent, modifiedContent };
-    }
-
-    const [originalContent, modifiedContent] = await Promise.all([
-      getOriginalContent(),
-      getModifiedContent(),
-    ]);
-
-    if (modifiedContent !== undefined) {
-      return {
-        lines: modifiedContent.split('\n').map((l) => ({ right: l, type: 'add' as const })),
-        originalContent,
-        modifiedContent,
-      };
-    }
-    if (originalContent !== undefined) {
-      return {
-        lines: originalContent.split('\n').map((l) => ({ left: l, type: 'del' as const })),
-        originalContent,
-      };
-    }
-    return { lines: [] };
-  }
-
-  async getCommitFileDiff(commitHash: string, filePath: string): Promise<DiffResult> {
-    const getContentAt = async (ref: string): Promise<string | undefined> => {
-      try {
-        const { stdout } = await this.exec('git', ['show', `${ref}:${filePath}`], {
-          cwd: this.path,
-          maxBuffer: MAX_DIFF_CONTENT_BYTES,
-        });
-        return stripTrailingNewline(stdout);
-      } catch {
-        return undefined;
-      }
-    };
-
-    let hasParent = true;
-    try {
-      await this.exec('git', ['rev-parse', '--verify', `${commitHash}~1`], { cwd: this.path });
-    } catch {
-      hasParent = false;
-    }
-
-    if (!hasParent) {
-      const modifiedContent = await getContentAt(commitHash);
-      if (modifiedContent === undefined) return { lines: [] };
-      if (modifiedContent === '') return { lines: [], modifiedContent };
-      return {
-        lines: modifiedContent.split('\n').map((l) => ({ right: l, type: 'add' as const })),
-        modifiedContent,
-      };
-    }
-
-    let diffStdout: string | undefined;
-    try {
-      const { stdout } = await this.exec(
-        'git',
-        ['diff', '--no-color', '--unified=2000', `${commitHash}~1`, commitHash, '--', filePath],
-        { cwd: this.path, maxBuffer: MAX_DIFF_OUTPUT_BYTES }
-      );
-      diffStdout = stdout;
-    } catch {}
-
-    let diffLines: DiffLine[] = [];
-    if (diffStdout !== undefined) {
-      const { lines, isBinary } = parseDiffLines(diffStdout);
-      if (isBinary) return { lines: [], isBinary: true };
-      diffLines = lines;
-    }
-
-    const [originalContent, modifiedContent] = await Promise.all([
-      getContentAt(`${commitHash}~1`),
-      getContentAt(commitHash),
-    ]);
-
-    if (diffLines.length > 0) return { lines: diffLines, originalContent, modifiedContent };
-
-    if (modifiedContent !== undefined && modifiedContent !== '') {
-      return {
-        lines: modifiedContent.split('\n').map((l) => ({ right: l, type: 'add' as const })),
-        originalContent,
-        modifiedContent,
-      };
-    }
-    if (originalContent !== undefined) {
-      return {
-        lines: originalContent.split('\n').map((l) => ({ left: l, type: 'del' as const })),
-        originalContent,
-        modifiedContent,
-      };
-    }
-    return { lines: [], originalContent, modifiedContent };
-  }
-
-  // ---------------------------------------------------------------------------
-  // Commit log
-  // ---------------------------------------------------------------------------
-
   async getLog(options?: {
     maxCount?: number;
     skip?: number;
     knownAheadCount?: number;
     preferredRemote?: string;
-    /**
-     * When provided, compute aheadCount as `base..<head|HEAD>` instead of
-     * `@{upstream}..HEAD`. Use an immutable commit SHA for merged PRs so the
-     * count remains stable after the remote base branch moves forward.
-     */
     base?: GitObjectRef;
-    /**
-     * When provided, anchor the log and aheadCount range to this ref instead
-     * of the live HEAD. Pass `commitRef(pr.headRefOid)` for merged PRs.
-     */
     head?: GitObjectRef;
   }): Promise<{ commits: Commit[]; aheadCount: number }> {
     const { maxCount = 50, skip = 0, knownAheadCount, preferredRemote, base, head } = options ?? {};
@@ -733,11 +518,6 @@ export class GitService implements GitProvider {
     return { commits, aheadCount };
   }
 
-  async getLatestCommit(): Promise<Commit | null> {
-    const { commits } = await this.getLog({ maxCount: 1 });
-    return commits[0] || null;
-  }
-
   async getChangedFiles(base: DiffMode | GitObjectRef | MergeBaseRange): Promise<GitChange[]> {
     const isRange = 'base' in base;
     const isStaged = !isRange && (base as DiffMode | GitObjectRef).kind === 'staged';
@@ -797,62 +577,7 @@ export class GitService implements GitProvider {
     return changes;
   }
 
-  async getCommitFiles(commitHash: string): Promise<CommitFile[]> {
-    const { stdout } = await this.exec(
-      'git',
-      [
-        'diff-tree',
-        '--root',
-        '--no-commit-id',
-        '-r',
-        '-m',
-        '--first-parent',
-        '--numstat',
-        commitHash,
-      ],
-      { cwd: this.path }
-    );
-
-    const { stdout: nameStatus } = await this.exec(
-      'git',
-      [
-        'diff-tree',
-        '--root',
-        '--no-commit-id',
-        '-r',
-        '-m',
-        '--first-parent',
-        '--name-status',
-        commitHash,
-      ],
-      { cwd: this.path }
-    );
-
-    const statLines = stdout.trim().split('\n').filter(Boolean);
-    const statusLines = nameStatus.trim().split('\n').filter(Boolean);
-
-    const statusMap = new Map<string, string>();
-    for (const line of statusLines) {
-      const [code, ...pathParts] = line.split('\t');
-      const filePath = pathParts[pathParts.length - 1] || '';
-      statusMap.set(filePath, mapStatus(code ?? ''));
-    }
-
-    return statLines.map((line) => {
-      const [addStr, delStr, ...pathParts] = line.split('\t');
-      const filePath = pathParts.join('\t');
-      return {
-        path: filePath,
-        status: statusMap.get(filePath) || 'modified',
-        additions: addStr === '-' ? 0 : Number.parseInt(addStr || '0', 10) || 0,
-        deletions: delStr === '-' ? 0 : Number.parseInt(delStr || '0', 10) || 0,
-      };
-    });
-  }
-
-  // ---------------------------------------------------------------------------
   // Mutations
-  // ---------------------------------------------------------------------------
 
   async commit(message: string): Promise<Result<{ hash: string }, CommitError>> {
     if (!message || !message.trim()) return err({ type: 'empty_message' });
@@ -1146,34 +871,6 @@ export class GitService implements GitProvider {
       }
 
       return err({ type: 'error', message });
-    }
-  }
-
-  async softReset(): Promise<Result<{ subject: string; body: string }, SoftResetError>> {
-    try {
-      await this.exec('git', ['rev-parse', '--verify', 'HEAD~1'], { cwd: this.path });
-    } catch {
-      return err({ type: 'initial_commit' });
-    }
-
-    const { commits: log } = await this.getLog({ maxCount: 1 });
-    if (log[0]?.isPushed) {
-      return err({ type: 'already_pushed' });
-    }
-
-    try {
-      const { stdout: subject } = await this.exec('git', ['log', '-1', '--pretty=format:%s'], {
-        cwd: this.path,
-      });
-      const { stdout: body } = await this.exec('git', ['log', '-1', '--pretty=format:%b'], {
-        cwd: this.path,
-      });
-
-      await this.exec('git', ['reset', '--soft', 'HEAD~1'], { cwd: this.path });
-
-      return ok({ subject: subject.trim(), body: body.trim() });
-    } catch (error: unknown) {
-      return err({ type: 'error', message: String(error) });
     }
   }
 
@@ -1503,9 +1200,7 @@ export class GitService implements GitProvider {
     }
   }
 
-  // ---------------------------------------------------------------------------
   // Repo info
-  // ---------------------------------------------------------------------------
 
   async detectInfo(): Promise<GitInfo> {
     try {

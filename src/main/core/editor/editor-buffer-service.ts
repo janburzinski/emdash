@@ -24,10 +24,6 @@ export class EditorBufferService {
     await db.delete(editorBuffers).where(eq(editorBuffers.id, id));
   }
 
-  async clearAllForWorkspace(workspaceId: string): Promise<void> {
-    await db.delete(editorBuffers).where(eq(editorBuffers.workspaceId, workspaceId));
-  }
-
   async listBuffers(
     projectId: string,
     workspaceId: string

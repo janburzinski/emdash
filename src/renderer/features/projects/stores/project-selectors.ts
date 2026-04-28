@@ -6,17 +6,14 @@ import type { ProjectManagerStore } from './project-manager';
 import type { ProjectSettingsStore } from './project-settings-store';
 import type { RepositoryStore } from './repository-store';
 
-/** Returns the ProjectManagerStore from appState. Call only inside `observer` components (or other MobX reactions). */
 export function getProjectManagerStore(): ProjectManagerStore {
   return appState.projects;
 }
 
-/** Call only inside `observer` components (or other MobX reactions). */
 export function getProjectStore(projectId: string): ProjectStore | undefined {
   return getProjectManagerStore().projects.get(projectId);
 }
 
-/** Summary for routing the project shell; call only inside `observer` (or other MobX reactions). */
 export type ProjectViewKind =
   | 'missing'
   | 'creating'
@@ -42,7 +39,6 @@ export function projectViewKind(store: ProjectStore | undefined): ProjectViewKin
   return 'ready';
 }
 
-/** Returns the mounted project payload if ready, otherwise undefined. */
 export function asMounted(store: ProjectStore | undefined): MountedProject | undefined {
   return store?.mountedProject ?? undefined;
 }
@@ -53,7 +49,6 @@ export function mountedProjectData(
   return store?.mountedProject?.data ?? null;
 }
 
-/** Returns the display name from any project store variant. */
 export function projectDisplayName(store: ProjectStore | undefined): string | undefined {
   return store?.name ?? undefined;
 }
@@ -68,17 +63,14 @@ export function unmountedMountErrorMessage(store: ProjectStore | undefined): str
   return 'Failed to open project';
 }
 
-/** Returns the RepositoryStore for a mounted project, or undefined if not ready. */
 export function getRepositoryStore(projectId: string): RepositoryStore | undefined {
   return asMounted(getProjectStore(projectId))?.repository;
 }
 
-/** Returns the ProjectSettingsStore for a mounted project, or undefined if not ready. */
 export function getProjectSettingsStore(projectId: string): ProjectSettingsStore | undefined {
   return asMounted(getProjectStore(projectId))?.settings;
 }
 
-/** Returns the PrSyncStore for a mounted project, or undefined if not ready. */
 export function getPrSyncStore(projectId: string): PrSyncStore | undefined {
   return asMounted(getProjectStore(projectId))?.prSync;
 }

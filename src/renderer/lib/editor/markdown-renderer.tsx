@@ -12,10 +12,6 @@ interface MarkdownEditorRendererProps {
   filePath: string;
 }
 
-/**
- * Renders a markdown file as a formatted preview.
- * A floating "Edit source" button in the top-right corner toggles to Monaco source view.
- */
 export const MarkdownEditorRenderer = observer(function MarkdownEditorRenderer({
   filePath,
 }: MarkdownEditorRendererProps) {
