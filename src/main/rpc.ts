@@ -1,6 +1,7 @@
 import { createRPCRouter } from '../shared/ipc/rpc';
 import { accountController } from './core/account/controller';
 import { appController } from './core/app/controller';
+import { browserController } from './core/browser/controller';
 import { conversationController } from './core/conversations/controller';
 import { dependenciesController } from './core/dependencies/controller';
 import { editorBufferController } from './core/editor/controller';
@@ -33,6 +34,7 @@ export const rpcRouter = createRPCRouter({
   account: accountController,
   legacyPort: legacyPortController,
   app: appController,
+  browser: browserController,
   appSettings: appSettingsController,
   providerSettings: providerSettingsController,
   repository: repositoryController,
