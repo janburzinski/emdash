@@ -98,10 +98,6 @@ export class DependencyManager {
     this.connectionId = connectionId;
   }
 
-  /**
-   * Kick off background probing for all dependencies. Returns immediately;
-   * results stream in via `dependencyStatusUpdatedChannel` events.
-   */
   initialize(): void {
     void this.probeAll();
   }
@@ -121,11 +117,6 @@ export class DependencyManager {
     });
   }
 
-  /**
-   * Two-phase probe for a single dependency:
-   *   1. Resolve path (fast, ~5ms) — emits an event immediately.
-   *   2. Run version probe (slow, up to 10s) — emits a second event on completion.
-   */
   async probe(id: DependencyId): Promise<DependencyState> {
     const descriptor = getDependencyDescriptor(id);
     if (!descriptor) {
@@ -176,10 +167,6 @@ export class DependencyManager {
     );
   }
 
-  /**
-   * Run the installCommand for a dependency, then re-probe to update state.
-   * Returns the updated DependencyState after installation attempt.
-   */
   async install(id: DependencyId): Promise<DependencyInstallResult> {
     const descriptor = getDependencyDescriptor(id);
     if (!descriptor) {

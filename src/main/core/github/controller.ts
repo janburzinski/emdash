@@ -1,4 +1,3 @@
-import { homedir } from 'node:os';
 import * as path from 'node:path';
 import type {
   GitHubAuthResponse,
@@ -77,15 +76,6 @@ export const githubController = createRPCController({
     }
   },
 
-  isAuthenticated: async () => {
-    try {
-      return await githubConnectionService.isAuthenticated();
-    } catch (error) {
-      log.error('GitHub authentication check failed:', error);
-      return false;
-    }
-  },
-
   logout: async () => {
     try {
       await githubConnectionService.logout();
@@ -94,36 +84,6 @@ export const githubController = createRPCController({
     } catch (error) {
       log.error('GitHub logout failed:', error);
       return { success: false, error: 'Logout failed' };
-    }
-  },
-
-  getUser: async () => {
-    try {
-      return await githubConnectionService.getCurrentUser();
-    } catch (error) {
-      log.error('Failed to get user info:', error);
-      return null;
-    }
-  },
-
-  storeToken: async (token: string) => {
-    try {
-      await githubConnectionService.storeToken(token);
-      return { success: true };
-    } catch (error) {
-      log.error('Failed to store token:', error);
-      return { success: false, error: 'Failed to store token' };
-    }
-  },
-
-  // -- Repositories --------------------------------------------------------
-
-  getRepositories: async () => {
-    try {
-      return await repoService.listRepositories();
-    } catch (error) {
-      log.error('Failed to get repositories:', error);
-      return [];
     }
   },
 
@@ -166,70 +126,6 @@ export const githubController = createRPCController({
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Failed to create repository',
-      };
-    }
-  },
-
-  deleteRepository: async (owner: string, name: string) => {
-    try {
-      await repoService.deleteRepository(owner, name);
-      return { success: true };
-    } catch (error) {
-      log.error('Failed to delete repository:', error);
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : 'Failed to delete repository',
-      };
-    }
-  },
-
-  validateRepoName: async (name: string, owner?: string) => {
-    try {
-      const formatValidation = repoService.validateRepositoryName(name);
-      if (!formatValidation.valid) {
-        return {
-          success: true,
-          valid: false,
-          exists: false,
-          error: formatValidation.error,
-        };
-      }
-
-      if (owner) {
-        const exists = await repoService.checkRepositoryExists(owner, name);
-        if (exists) {
-          return {
-            success: true,
-            valid: true,
-            exists: true,
-            error: `Repository ${owner}/${name} already exists`,
-          };
-        }
-      }
-
-      return {
-        success: true,
-        valid: true,
-        exists: false,
-      };
-    } catch (error) {
-      log.error('Failed to validate repo name:', error);
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : 'Validation failed',
-      };
-    }
-  },
-
-  checkRepositoryExists: async (owner: string, name: string) => {
-    try {
-      const exists = await repoService.checkRepositoryExists(owner, name);
-      return { success: true, exists };
-    } catch (error) {
-      log.error('Failed to check repository existence:', error);
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : 'Failed to check repository',
       };
     }
   },
@@ -295,76 +191,6 @@ export const githubController = createRPCController({
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Initialize failed',
-      };
-    }
-  },
-
-  createNewProject: async (params: {
-    name: string;
-    owner: string;
-    isPrivate: boolean;
-    description?: string;
-  }) => {
-    const { name, owner, isPrivate, description } = params;
-
-    let repoUrl: string | undefined;
-    let nameWithOwner: string | undefined;
-    let defaultBranch: string | undefined;
-    let githubRepoCreated = false;
-
-    try {
-      const repoInfo = await repoService.createRepository({ name, owner, isPrivate, description });
-      repoUrl = repoInfo.url;
-      nameWithOwner = repoInfo.nameWithOwner;
-      defaultBranch = repoInfo.defaultBranch;
-      githubRepoCreated = true;
-
-      const cloneUrl = `https://github.com/${nameWithOwner}.git`;
-      const settings = {};
-      const projectDir =
-        (settings as { projects?: { defaultDirectory?: string } }).projects?.defaultDirectory ??
-        path.join(homedir(), 'emdash-projects');
-      const localPath = path.join(projectDir, name);
-      const exec = getGitLocalExec(() => githubConnectionService.getToken());
-      const parentFs = new LocalFileSystem(path.dirname(localPath));
-      await parentFs.mkdir('.', { recursive: true });
-      const cloneResult = await cloneRepository(cloneUrl, localPath, exec);
-      if (!cloneResult.success) {
-        throw new Error(cloneResult.error ?? 'Clone failed');
-      }
-
-      const projectFs = new LocalFileSystem(localPath);
-      await initializeNewProject(
-        { repoUrl: cloneUrl, localPath, name, description },
-        exec,
-        projectFs
-      );
-
-      return {
-        success: true,
-        projectPath: localPath,
-        repoUrl,
-        nameWithOwner,
-        defaultBranch,
-        githubRepoCreated,
-      };
-    } catch (error) {
-      log.error('Failed to create new project:', error);
-
-      if (githubRepoCreated && nameWithOwner) {
-        try {
-          const [repoOwner, repoName] = nameWithOwner.split('/');
-          await repoService.deleteRepository(repoOwner, repoName);
-        } catch (cleanupError) {
-          log.error('Failed to clean up GitHub repo after project creation failure:', cleanupError);
-        }
-      }
-
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : 'Failed to create project',
-        repoUrl,
-        githubRepoCreated,
       };
     }
   },

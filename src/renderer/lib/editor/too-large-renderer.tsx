@@ -11,7 +11,6 @@ function formatBytes(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-/** Shown when a file exceeds the editor's read limit. */
 export function TooLargeRenderer({ file }: TooLargeRendererProps) {
   const fileName = file.path.split('/').pop() ?? file.path;
 

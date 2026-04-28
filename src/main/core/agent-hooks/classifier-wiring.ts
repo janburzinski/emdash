@@ -13,8 +13,6 @@ const IDLE_THRESHOLD_MS = 2500;
 const COOLDOWN_MS = 10_000;
 const EDGE_RESET_THRESHOLD = 20;
 
-// ── Helpers ──────────────────────────────────────────────────────────
-
 function isSubstantiveOutput(chunk: string): boolean {
   return stripAnsi(chunk).trim().length > 0;
 }
@@ -27,8 +25,6 @@ function classificationKey(result: ClassificationResult): string | undefined {
 function isAppFocused(): boolean {
   return BrowserWindow.getAllWindows().some((w) => !w.isDestroyed() && w.isFocused());
 }
-
-// ── Emission guard ───────────────────────────────────────────────────
 
 function createEmissionGuard() {
   let lastEmittedKey: string | undefined;

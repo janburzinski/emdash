@@ -57,7 +57,6 @@ const ICON_BUTTON =
 const ICON_WRAPPER =
   'flex h-6 w-6 items-center justify-center rounded-md bg-muted/40 text-muted-foreground';
 
-/** Logo wrapper without background - logos render directly. */
 const LOGO_WRAPPER = 'flex h-6 w-6 items-center justify-center';
 
 const IntegrationRow: React.FC<IntegrationRowProps> = ({

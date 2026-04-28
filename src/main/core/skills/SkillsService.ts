@@ -594,7 +594,6 @@ export class SkillsService {
     return skills;
   }
 
-  /** Minimal YAML parser for openai.yaml interface block */
   private parseSimpleYaml(content: string): Record<string, string> {
     const result: Record<string, string> = {};
     for (const line of content.split('\n')) {

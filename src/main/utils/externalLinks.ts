@@ -1,10 +1,5 @@
 import { BrowserWindow, shell } from 'electron';
 
-/**
- * Ensure any external HTTP(S) links open in the user's default browser
- * rather than inside the Electron window. Keeps app navigation scoped
- * to our renderer while preserving expected link behavior.
- */
 export function registerExternalLinkHandlers(win: BrowserWindow, isDev: boolean) {
   const wc = win.webContents;
 

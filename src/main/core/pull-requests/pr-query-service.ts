@@ -13,15 +13,12 @@ import {
 } from '@main/db/schema';
 import { assemblePullRequest, type PrRow } from './pr-utils';
 
-/** Internal capability type — not exposed to the renderer. */
 export type ProjectRemoteCapability =
   | { status: 'ready'; repositoryUrl: string }
   | { status: 'no_remote' }
   | { status: 'unsupported_remote' };
 
-// ---------------------------------------------------------------------------
 // Helpers
-// ---------------------------------------------------------------------------
 
 async function fetchRelated(rows: PrRow[]): Promise<PullRequest[]> {
   if (rows.length === 0) return [];
@@ -83,9 +80,7 @@ async function fetchRelated(rows: PrRow[]): Promise<PullRequest[]> {
   );
 }
 
-// ---------------------------------------------------------------------------
 // PrQueryService
-// ---------------------------------------------------------------------------
 
 export class PrQueryService {
   async listPullRequests(projectId: string, options: ListPrOptions = {}): Promise<PullRequest[]> {

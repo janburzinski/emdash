@@ -10,6 +10,4 @@ export const forgejoController = createRPCController({
   },
 
   clearCredentials: async () => forgejoConnectionService.clearCredentials(),
-
-  checkConnection: async () => forgejoConnectionService.checkConnection(),
 });

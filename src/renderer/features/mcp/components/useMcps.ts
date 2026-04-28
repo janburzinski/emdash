@@ -12,8 +12,6 @@ export function useMcps() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // ── Queries ──────────────────────────────────────────────────────────
-
   const {
     data: mcpData,
     isPending: isLoading,
@@ -38,8 +36,6 @@ export function useMcps() {
       throw new Error(result.error ?? 'Failed to get providers');
     },
   });
-
-  // ── Mutations ────────────────────────────────────────────────────────
 
   const saveMutation = useMutation({
     mutationFn: async (payload: { server: McpServer; source: 'catalog' | 'custom' | null }) => {

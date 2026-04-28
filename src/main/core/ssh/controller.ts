@@ -11,10 +11,9 @@ import { log } from '@main/lib/logger';
 import { capture } from '@main/lib/telemetry';
 import { sshConnectionManager } from './ssh-connection-manager';
 import { sshCredentialService } from './ssh-credential-service';
-import { resolveIdentityAgent } from './utils';
+import { resolveIdentityAgent } from './sshConfigParser';
 
 export const sshController = createRPCController({
-  /** List all saved SSH connections (no secrets). */
   getConnections: async (): Promise<SshConfig[]> => {
     const rows = await db.select().from(sshConnectionsTable);
     return rows.map((row) => ({
@@ -30,7 +29,6 @@ export const sshController = createRPCController({
     }));
   },
 
-  /** Create or update an SSH connection, storing secrets in local secure storage. */
   saveConnection: async (
     config: Partial<Pick<SshConfig, 'id'>> &
       Omit<SshConfig, 'id'> & { password?: string; passphrase?: string }
@@ -85,7 +83,6 @@ export const sshController = createRPCController({
     return { ...dbConfig, id: connectionId, worktreesDir: config.worktreesDir };
   },
 
-  /** Delete a saved SSH connection and its stored credentials. */
   deleteConnection: async (id: string): Promise<void> => {
     if (sshConnectionManager.isConnected(id)) {
       await sshConnectionManager.disconnect(id).catch((e) => {
@@ -99,7 +96,6 @@ export const sshController = createRPCController({
     await db.delete(sshConnectionsTable).where(eq(sshConnectionsTable.id, id));
   },
 
-  /** Test a connection without persisting anything. */
   testConnection: async (
     config: SshConfig & { password?: string; passphrase?: string }
   ): Promise<ConnectionTestResult> => {
@@ -149,27 +145,15 @@ export const sshController = createRPCController({
     });
   },
 
-  /** Intentionally close a connection and stop auto-reconnect. */
-  disconnect: async (connectionId: string): Promise<void> => {
-    await sshConnectionManager.disconnect(connectionId);
-  },
-
-  /** Ensure a connection is established (no-op if already connected). */
   connect: async (connectionId: string): Promise<ConnectionState> => {
     await sshConnectionManager.connect(connectionId);
     return sshConnectionManager.getConnectionState(connectionId);
   },
 
-  /** Returns whether the connection is currently live. */
-  getState: async (connectionId: string): Promise<'connected' | 'disconnected'> => {
-    return sshConnectionManager.isConnected(connectionId) ? 'connected' : 'disconnected';
-  },
-  /** Returns the current ConnectionState for every connection tracked by the manager. */
   getConnectionState: async (): Promise<Record<string, ConnectionState>> => {
     return sshConnectionManager.getAllConnectionStates();
   },
 
-  /** Rename a saved SSH connection without changing any other fields. */
   renameConnection: async (id: string, name: string): Promise<void> => {
     const [row] = await db.select().from(sshConnectionsTable).where(eq(sshConnectionsTable.id, id));
     if (!row) throw new Error(`SSH connection ${id} not found`);
@@ -179,7 +163,6 @@ export const sshController = createRPCController({
       .where(eq(sshConnectionsTable.id, id));
   },
 
-  /** List files/directories at a remote path via SFTP. */
   listFiles: async ({
     connectionId,
     path: remotePath,

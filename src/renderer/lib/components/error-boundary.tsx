@@ -1,5 +1,5 @@
 import React from 'react';
-import { captureComponentError } from '../../_legacy/errorTracking';
+import { captureComponentError } from '../error-tracking';
 import { rpc } from '../ipc';
 import { Button } from '../ui/button';
 

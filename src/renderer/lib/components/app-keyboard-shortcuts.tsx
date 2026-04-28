@@ -14,11 +14,6 @@ import {
 } from '@renderer/lib/layout/navigation-provider';
 import { useShowModal } from '@renderer/lib/modal/modal-provider';
 
-/**
- * Mounts global keyboard shortcut handlers for the entire application.
- * Renders nothing — exists only to register useHotkey() calls that are always active.
- * Must be mounted inside all relevant providers (ModalProvider, WorkspaceLayoutContext, etc.).
- */
 export function AppKeyboardShortcuts() {
   const { value: keyboard } = useAppSettingsKey('keyboard');
   const showNewProject = useShowModal('addProjectModal');

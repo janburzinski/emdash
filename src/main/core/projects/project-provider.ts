@@ -10,12 +10,6 @@ import { TerminalProvider } from '../terminals/terminal-provider';
 import type { Workspace } from '../workspaces/workspace';
 import { ProjectSettingsProvider } from './settings/schema';
 
-export type BaseTaskProvisionArgs = {
-  taskId: string;
-  conversations: Conversation[];
-  terminals: Terminal[];
-};
-
 export type ProvisionTaskError =
   | { type: 'timeout'; message: string; timeout: number }
   | { type: 'branch-not-found'; branch: string }

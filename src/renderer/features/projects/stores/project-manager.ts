@@ -20,24 +20,24 @@ interface BaseModeData {
   path: string;
 }
 
-export interface PickModeData extends BaseModeData {
+interface PickModeData extends BaseModeData {
   mode: 'pick';
   initGitRepository?: boolean;
 }
 
-export interface CloneModeData extends BaseModeData {
+interface CloneModeData extends BaseModeData {
   mode: 'clone';
   repositoryUrl: string;
 }
 
-export interface NewModeData extends BaseModeData {
+interface NewModeData extends BaseModeData {
   mode: 'new';
   repositoryName: string;
   repositoryOwner: string;
   repositoryVisibility: 'public' | 'private';
 }
 
-export type ModeData = PickModeData | CloneModeData | NewModeData;
+type ModeData = PickModeData | CloneModeData | NewModeData;
 
 export type ProjectType = { type: 'local' } | { type: 'ssh'; connectionId: string };
 

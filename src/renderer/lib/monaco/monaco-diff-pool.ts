@@ -38,7 +38,6 @@ export const diffEditorPool = {
     return diffPool.init(reserveTarget);
   },
 
-  /** Resolves with the Monaco namespace once init has completed. */
   async whenReady(): Promise<typeof monaco> {
     return diffPool.init(0).then(() => diffPool.getMonaco()!);
   },
@@ -57,13 +56,6 @@ export const diffEditorPool = {
     diffPool.setTheme(getMonacoTheme(effectiveTheme));
   },
 
-  /**
-   * Apply typed-URI models to a diff editor.
-   *
-   * @param originalUri — URI for the left (original/before) side — typically git://
-   * @param modifiedUri — URI for the right (modified/after) side — disk://, git://, etc.
-   * @param language — Monaco language identifier (used only as a fallback safety net)
-   */
   applyContent(
     entry: DiffPoolEntry,
     originalUri: string,

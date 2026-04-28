@@ -73,9 +73,7 @@ export const EditorMainPanel = observer(function EditorMainPanel() {
   );
 });
 
-// ---------------------------------------------------------------------------
 // Floating "View rendered" toggle shown when editing markdown/svg source
-// ---------------------------------------------------------------------------
 
 interface SourceToggleOverlayProps {
   filePath: string;
@@ -106,9 +104,7 @@ function SourceToggleOverlay({ filePath, kind, editorView }: SourceToggleOverlay
   );
 }
 
-// ---------------------------------------------------------------------------
 // Non-Monaco renderer dispatcher
-// ---------------------------------------------------------------------------
 
 interface ActiveNonMonacoRendererProps {
   file: ManagedFile;

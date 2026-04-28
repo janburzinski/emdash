@@ -11,30 +11,26 @@ import { parseRemoteEnvOutput } from '@main/utils/userEnv';
 import { buildConnectConfigFromRow } from './build-connect-config';
 import { SshClientProxy } from './ssh-client-proxy';
 
-// ─── Error classes ────────────────────────────────────────────────────────────
-
-export class SshAuthError extends Error {
+class SshAuthError extends Error {
   constructor(message: string) {
     super(message);
     this.name = 'SshAuthError';
   }
 }
 
-export class SshTimeoutError extends Error {
+class SshTimeoutError extends Error {
   constructor(message: string) {
     super(message);
     this.name = 'SshTimeoutError';
   }
 }
 
-export class SshConnectionError extends Error {
+class SshConnectionError extends Error {
   constructor(message: string) {
     super(message);
     this.name = 'SshConnectionError';
   }
 }
-
-// ─── Types ────────────────────────────────────────────────────────────────────
 
 export type SshConnectionEvent =
   | { type: 'connecting'; connectionId: string }
@@ -45,7 +41,6 @@ export type SshConnectionEvent =
   | { type: 'reconnect-failed'; connectionId: string }
   | { type: 'error'; connectionId: string; error: Error };
 
-/** Delays (ms) between successive reconnect attempts. Length = max attempts. */
 const RECONNECT_DELAYS_MS = [1_000, 2_000, 5_000, 10_000, 20_000];
 
 interface ReconnectState {
@@ -53,32 +48,15 @@ interface ReconnectState {
   timer: NodeJS.Timeout | undefined;
 }
 
-// ─── Implementation ──────────────────────────────────────────────────────────
-
 export class SshConnectionManager extends EventEmitter {
-  /** One stable proxy per connection ID — survives reconnects. */
   private proxies: Map<string, SshClientProxy> = new Map();
 
   private pendingConnections: Map<string, Promise<SshClientProxy>> = new Map();
 
-  /** Tracks ongoing reconnect backoff state per connection. */
   private reconnecting: Map<string, ReconnectState> = new Map();
 
-  /**
-   * IDs for which disconnect() was called — these are excluded from
-   * auto-reconnect so an intentional teardown is never silently restarted.
-   */
   private intentionalDisconnects: Set<string> = new Set();
 
-  // ─── Public API ──────────────────────────────────────────────────────────
-
-  /**
-   * Connect and register a client under the given ID.
-   *
-   * - Reuses an existing connection if already in the pool.
-   * - Concurrent calls for the same ID coalesce to a single attempt.
-   * - Throws SshAuthError, SshTimeoutError, or SshConnectionError on failure.
-   */
   async connect(id: string): Promise<SshClientProxy> {
     this.intentionalDisconnects.delete(id);
 
@@ -108,22 +86,14 @@ export class SshConnectionManager extends EventEmitter {
     }
   }
 
-  /** Get the stable SshClientProxy for a connection, or undefined. */
   getProxy(id: string): SshClientProxy | undefined {
     return this.proxies.get(id);
   }
 
-  /** Returns true if the connection is currently live. */
   isConnected(id: string): boolean {
     return this.proxies.get(id)?.isConnected ?? false;
   }
 
-  /** IDs of all connections that have a proxy (connected or reconnecting). */
-  getConnectionIds(): string[] {
-    return Array.from(this.proxies.keys());
-  }
-
-  /** Returns the current ConnectionState for a single connection ID. */
   getConnectionState(id: string): ConnectionState {
     if (this.proxies.get(id)?.isConnected) return 'connected';
     if (this.reconnecting.has(id)) return 'reconnecting';
@@ -131,7 +101,6 @@ export class SshConnectionManager extends EventEmitter {
     return 'disconnected';
   }
 
-  /** Returns the current ConnectionState for every tracked connection. */
   getAllConnectionStates(): Record<string, ConnectionState> {
     const result: Record<string, ConnectionState> = {};
     for (const id of this.proxies.keys()) {
@@ -140,10 +109,6 @@ export class SshConnectionManager extends EventEmitter {
     return result;
   }
 
-  /**
-   * Gracefully close a connection and permanently stop reconnection for it.
-   * This is an intentional teardown — auto-reconnect will NOT fire afterward.
-   */
   async disconnect(id: string): Promise<void> {
     this.intentionalDisconnects.add(id);
     this.cancelReconnect(id);
@@ -178,15 +143,6 @@ export class SshConnectionManager extends EventEmitter {
       client.end();
     });
   }
-
-  /** Gracefully close all connections. */
-  async disconnectAll(): Promise<void> {
-    const ids = Array.from(this.proxies.keys());
-    log.info('SshConnectionManager: disconnecting all connections', { count: ids.length });
-    await Promise.all(ids.map((id) => this.disconnect(id)));
-  }
-
-  // ─── Private ─────────────────────────────────────────────────────────────
 
   private createConnection(id: string, config: ConnectConfig): Promise<SshClientProxy> {
     log.info('SshConnectionManager: creating connection', {
@@ -298,12 +254,6 @@ export class SshConnectionManager extends EventEmitter {
     });
   }
 
-  /**
-   * Runs `bash -l -c 'env'` on the remote machine and stores the result on
-   * the proxy. This is a one-shot operation per connection — callers that need
-   * the remote env before the capture completes can fall back to `bash -l -c`
-   * wrappers on individual commands.
-   */
   private captureRemoteEnv(proxy: SshClientProxy): Promise<void> {
     const TIMEOUT_MS = 5_000;
     return new Promise((resolve, reject) => {

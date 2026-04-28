@@ -1,14 +1,8 @@
-/**
- * Remote FileSystem implementation
- * Uses SFTP over SSH for remote filesystem operations
- */
-
 import type { SFTPWrapper } from 'ssh2';
 import type { FileWatchEvent } from '@shared/fs';
 import { quoteShellArg } from '../../../utils/shellEscape';
 import type { SshClientProxy } from '../../ssh/ssh-client-proxy';
 import {
-  DEFAULT_EMDASH_CONFIG,
   FileEntry,
   FileListResult,
   FileSystemError,
@@ -32,25 +26,10 @@ interface SftpError extends Error {
   code?: number;
 }
 
-/**
- * Allowed image extensions for readImage
- */
 const ALLOWED_IMAGE_EXTENSIONS = ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.svg', '.bmp', '.ico'];
-
-/**
- * Maximum file size for reading (100MB to prevent memory issues)
- */
 const MAX_READ_SIZE = 100 * 1024 * 1024;
-
-/**
- * Default max bytes for read operations
- */
 const DEFAULT_MAX_BYTES = 200 * 1024;
 
-/**
- * SshFileSystem implements IFileSystem using SFTP over SSH.
- * Provides path traversal protection and proper error handling.
- */
 export class SshFileSystem implements FileSystemProvider {
   private cachedSftp: SFTPWrapper | undefined;
 
@@ -64,8 +43,6 @@ export class SshFileSystem implements FileSystemProvider {
     // Normalize remote path to use forward slashes
     this.remotePath = remotePath.replace(/\\/g, '/');
   }
-
-  // ─── Private helpers ──────────────────────────────────────────────────────
 
   private getSftp(): Promise<SFTPWrapper> {
     if (this.cachedSftp) return Promise.resolve(this.cachedSftp);
@@ -102,11 +79,6 @@ export class SshFileSystem implements FileSystemProvider {
     });
   }
 
-  // ─── IFileSystem ──────────────────────────────────────────────────────────
-
-  /**
-   * List directory contents via SFTP
-   */
   async list(path: string = '', options?: ListOptions): Promise<FileListResult> {
     const startTime = Date.now();
     const fullPath = this.resolveRemotePath(path);
@@ -197,10 +169,6 @@ export class SshFileSystem implements FileSystemProvider {
     });
   }
 
-  /**
-   * Read file contents via SFTP
-   * Handles large files by respecting maxBytes limit
-   */
   async read(path: string, maxBytes: number = DEFAULT_MAX_BYTES): Promise<ReadResult> {
     const fullPath = this.resolveRemotePath(path);
     const sftp = await this.getSftp();
@@ -265,10 +233,6 @@ export class SshFileSystem implements FileSystemProvider {
     });
   }
 
-  /**
-   * Write file contents via SFTP
-   * Creates parent directories recursively if needed
-   */
   async write(path: string, content: string): Promise<WriteResult> {
     const fullPath = this.resolveRemotePath(path);
     const sftp = await this.getSftp();
@@ -322,123 +286,6 @@ export class SshFileSystem implements FileSystemProvider {
     });
   }
 
-  /**
-   * Recursively list all files and directories via SSH find (single round-trip).
-   * Returns items in the same {path, type} format used by the local fs:list handler.
-   */
-  async listRecursive(options?: { includeDirs?: boolean; maxEntries?: number }): Promise<{
-    items: Array<{ path: string; type: 'file' | 'dir' }>;
-    truncated: boolean;
-  }> {
-    const includeDirs = options?.includeDirs ?? true;
-    const maxEntries = options?.maxEntries ?? 5000;
-
-    // Directories to prune from the listing
-    const pruneNames = [
-      '.git',
-      'node_modules',
-      'dist',
-      'build',
-      '.next',
-      'out',
-      '.turbo',
-      'coverage',
-      '.nyc_output',
-      '.cache',
-      'tmp',
-      'temp',
-      '__pycache__',
-      '.pytest_cache',
-      'venv',
-      '.venv',
-      'target',
-      '.terraform',
-      '.serverless',
-      'vendor',
-      'bower_components',
-      'worktrees',
-      '.worktrees',
-      '.DS_Store',
-    ];
-
-    // Build prune clause for find (names are hardcoded, but escape for safety)
-    const pruneExpr = pruneNames.map((name) => `-name ${quoteShellArg(name)}`).join(' -o ');
-
-    // Build find command: prune ignored dirs, print files (and optionally dirs)
-    const typeFilter = includeDirs ? '' : '-type f';
-    const command = [
-      `find ${quoteShellArg(this.remotePath)}`,
-      `\\( ${pruneExpr} \\) -prune -o`,
-      typeFilter ? `${typeFilter} -print` : '-print',
-      `2>/dev/null`,
-      `| head -n ${maxEntries + 1}`,
-    ]
-      .filter(Boolean)
-      .join(' ');
-
-    try {
-      const result = await this.exec(command);
-
-      const lines = result.stdout.split('\n').filter((line) => line.trim());
-
-      // Check if we exceeded maxEntries (we asked for maxEntries+1 to detect truncation)
-      const truncated = lines.length > maxEntries;
-      const effectiveLines = truncated ? lines.slice(0, maxEntries) : lines;
-
-      const items: Array<{ path: string; type: 'file' | 'dir' }> = [];
-
-      for (const line of effectiveLines) {
-        const trimmed = line.trim();
-        if (!trimmed) continue;
-
-        // Skip the root path itself
-        if (trimmed === this.remotePath || trimmed === this.remotePath + '/') continue;
-
-        const relPath = this.relativePath(trimmed);
-        if (!relPath) continue;
-
-        // Determine type: find outputs directories with trailing / when using -print,
-        // but standard find doesn't. We'll use a heuristic: if any other entry starts
-        // with this path + '/', it's a directory. For efficiency, detect trailing slash.
-        const isDir = trimmed.endsWith('/');
-        const cleanRel = relPath.replace(/\/$/, '');
-
-        if (!cleanRel) continue;
-
-        items.push({
-          path: cleanRel,
-          type: isDir ? 'dir' : 'file',
-        });
-      }
-
-      // Since `find` doesn't always indicate directories clearly with just -print,
-      // we do a second pass: any path that is a prefix of another path is a directory.
-      const pathSet = new Set(items.map((i) => i.path));
-      for (const item of items) {
-        if (item.type === 'file') {
-          // Check if any other path starts with this path + '/'
-          const prefix = item.path + '/';
-          for (const otherPath of pathSet) {
-            if (otherPath.startsWith(prefix)) {
-              item.type = 'dir';
-              break;
-            }
-          }
-        }
-      }
-
-      // Filter out dirs if not requested
-      const finalItems = includeDirs ? items : items.filter((i) => i.type === 'file');
-
-      return { items: finalItems, truncated };
-    } catch {
-      return { items: [], truncated: false };
-    }
-  }
-
-  /**
-   * Check if a path exists via SFTP
-   */
   async exists(path: string): Promise<boolean> {
     try {
       const entry = await this.stat(path);
@@ -491,9 +338,6 @@ export class SshFileSystem implements FileSystemProvider {
     }
   }
 
-  /**
-   * Get file/directory metadata via SFTP
-   */
   async stat(path: string): Promise<FileEntry | null> {
     const fullPath = this.resolveRemotePath(path);
     const sftp = await this.getSftp();
@@ -526,10 +370,6 @@ export class SshFileSystem implements FileSystemProvider {
     });
   }
 
-  /**
-   * Search for content in files via SSH exec (grep)
-   * Uses grep on the remote host for better performance on large codebases
-   */
   async search(query: string, options?: SearchOptions): Promise<SearchResult> {
     const searchPattern = options?.pattern || query;
     const basePath = this.remotePath;
@@ -617,10 +457,6 @@ export class SshFileSystem implements FileSystemProvider {
     }
   }
 
-  /**
-   * Remove a file via SFTP
-   * For directories, uses SSH exec with rm -rf
-   */
   async remove(
     path: string,
     options?: { recursive?: boolean }
@@ -666,9 +502,6 @@ export class SshFileSystem implements FileSystemProvider {
     }
   }
 
-  /**
-   * Read image file as base64 data URL via SFTP
-   */
   async readImage(path: string): Promise<{
     success: boolean;
     dataUrl?: string;
@@ -758,51 +591,6 @@ export class SshFileSystem implements FileSystemProvider {
     });
   }
 
-  /**
-   * Read (or auto-create) the project's .emdash.json config file via SFTP
-   */
-  async getProjectConfig(): Promise<{ success: boolean; content?: string; error?: string }> {
-    try {
-      const result = await this.read('.emdash.json').catch(async (err: unknown) => {
-        const code = (err as FileSystemError).code;
-        if (code !== FileSystemErrorCodes.NOT_FOUND) throw err;
-        // File doesn't exist — create with defaults then return defaults
-        await this.write('.emdash.json', DEFAULT_EMDASH_CONFIG);
-        return {
-          content: DEFAULT_EMDASH_CONFIG,
-          truncated: false,
-          totalSize: Buffer.byteLength(DEFAULT_EMDASH_CONFIG),
-        };
-      });
-      return { success: true, content: result.content };
-    } catch (err: unknown) {
-      return { success: false, error: err instanceof Error ? err.message : String(err) };
-    }
-  }
-
-  /**
-   * Write the project's .emdash.json config file via SFTP after validating JSON
-   */
-  async saveProjectConfig(content: string): Promise<{ success: boolean; error?: string }> {
-    try {
-      JSON.parse(content);
-    } catch {
-      return { success: false, error: 'Invalid JSON format' };
-    }
-    try {
-      await this.write('.emdash.json', content);
-      return { success: true };
-    } catch (err: unknown) {
-      return { success: false, error: err instanceof Error ? err.message : String(err) };
-    }
-  }
-
-  // ─── Private utilities ────────────────────────────────────────────────────
-
-  /**
-   * Build absolute remote path from relative path
-   * Provides path traversal protection
-   */
   private resolveRemotePath(relPath: string): string {
     // Normalize path separators to forward slashes
     const normalized = relPath.replace(/\\/g, '/');
@@ -836,9 +624,6 @@ export class SshFileSystem implements FileSystemProvider {
     return fullPath;
   }
 
-  /**
-   * Check if a path is within the base directory
-   */
   private isWithinBase(fullPath: string): boolean {
     // Normalize both paths
     const normalizedPath = fullPath.replace(/\/+/g, '/').replace(/\/$/, '');
@@ -848,9 +633,6 @@ export class SshFileSystem implements FileSystemProvider {
     return normalizedPath === normalizedBase || normalizedPath.startsWith(`${normalizedBase}/`);
   }
 
-  /**
-   * Get relative path from full remote path
-   */
   private relativePath(fullPath: string): string {
     const normalized = fullPath.replace(/\\/g, '/');
     const normalizedBase = this.remotePath.replace(/\\/g, '/');
@@ -867,9 +649,6 @@ export class SshFileSystem implements FileSystemProvider {
     return normalized;
   }
 
-  /**
-   * Recursively ensure a remote directory exists
-   */
   private async ensureRemoteDir(sftp: SFTPWrapper, dirPath: string): Promise<void> {
     return new Promise((resolve, reject) => {
       sftp.mkdir(dirPath, (err) => {
@@ -911,9 +690,6 @@ export class SshFileSystem implements FileSystemProvider {
     });
   }
 
-  /**
-   * Map SFTP error codes to FileSystemError
-   */
   private mapSftpError(error: unknown, path?: string): FileSystemError {
     const sftpErr = error as SftpError;
     const message = typeof sftpErr?.message === 'string' ? sftpErr.message : String(error);

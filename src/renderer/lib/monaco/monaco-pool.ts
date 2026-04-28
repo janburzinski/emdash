@@ -6,23 +6,14 @@ export type PoolEntry<TEditor> = {
   editor: TEditor;
   container: HTMLDivElement;
   status: 'idle' | 'leased';
-  /** Per-lease event disposables — cleared on release. */
   disposables: monaco.IDisposable[];
 };
 
 export type MonacoPoolOptions<TEditor> = {
-  /** Used as the DOM root element ID for this pool's off-screen container. */
   poolId: string;
-  /** Number of idle instances to keep pre-warmed. Default: 1. */
   reserveTarget?: number;
-  /** Factory: create a new editor instance inside the given container. */
   createEditor: (m: typeof monaco, container: HTMLDivElement) => TEditor;
-  /**
-   * Called during release before the container is reparented.
-   * Use to dispose models, reset options, etc.
-   */
   cleanupOnRelease: (editor: TEditor) => void;
-  /** Called once after Monaco loads, before pre-warming entries. */
   onInit?: (m: typeof monaco) => Promise<void>;
 };
 
@@ -40,10 +31,6 @@ export class MonacoPool<TEditor> {
     this.reserveTarget = options.reserveTarget ?? DEFAULT_RESERVE;
   }
 
-  /**
-   * Load Monaco, run onInit, and pre-create idle entries.
-   * Safe to call multiple times — subsequent calls return the same promise.
-   */
   init(reserveTarget?: number): Promise<void> {
     if (reserveTarget !== undefined) {
       this.reserveTarget = reserveTarget;
@@ -68,10 +55,6 @@ export class MonacoPool<TEditor> {
     return this.initPromise;
   }
 
-  /**
-   * Lease an idle editor instance. Creates one on-demand if none are available.
-   * Schedules background replenishment after returning.
-   */
   async lease(): Promise<PoolEntry<TEditor>> {
     if (!this.monacoInstance) {
       await this.init();
@@ -90,10 +73,6 @@ export class MonacoPool<TEditor> {
     return entry;
   }
 
-  /**
-   * Return a leased entry to the pool.
-   * Disposes per-lease disposables, calls cleanupOnRelease, reparents container.
-   */
   release(entry: PoolEntry<TEditor>): void {
     for (const d of entry.disposables) {
       try {
@@ -119,15 +98,10 @@ export class MonacoPool<TEditor> {
     entry.status = 'idle';
   }
 
-  /**
-   * Set the global Monaco theme (affects all instances simultaneously).
-   * Pass the resolved theme name (e.g. 'custom-dark'), not the app theme key.
-   */
   setTheme(themeName: string): void {
     this.monacoInstance?.editor.setTheme(themeName);
   }
 
-  /** Returns the underlying Monaco instance, or null if not yet initialised. */
   getMonaco(): typeof monaco | null {
     return this.monacoInstance;
   }

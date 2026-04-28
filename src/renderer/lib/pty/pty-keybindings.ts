@@ -59,14 +59,6 @@ export function shouldCopySelectionFromTerminal(
   return ctrl && !meta && !shift && !alt;
 }
 
-/**
- * Detect Cmd+Backspace on macOS for "kill to beginning of line".
- * We send Ctrl+U (\x15) to the PTY, which readline-compatible shells
- * and most CLI agents interpret as unix-line-discard.
- *
- * Only intercepted on macOS — on Linux/Windows, Ctrl+U already reaches
- * the PTY natively for the same effect.
- */
 export function shouldKillLineFromTerminal(event: KeyEventLike, isMacPlatform: boolean): boolean {
   if (!isMacPlatform) return false;
   if (event.type !== 'keydown') return false;
@@ -75,11 +67,6 @@ export function shouldKillLineFromTerminal(event: KeyEventLike, isMacPlatform: b
   return event.metaKey === true && !event.ctrlKey && !event.shiftKey && !event.altKey;
 }
 
-/**
- * Detect Ctrl+Shift+V paste shortcut on Linux.
- * Linux terminals use Ctrl+Shift+V as the standard paste shortcut,
- * unlike Windows/macOS which use Ctrl+V/Cmd+V.
- */
 export function shouldPasteToTerminal(event: KeyEventLike, isMacPlatform: boolean): boolean {
   if (event.type !== 'keydown') return false;
   if (event.key.toLowerCase() !== 'v') return false;

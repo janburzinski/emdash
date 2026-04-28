@@ -4,10 +4,6 @@ import { events } from '@renderer/lib/ipc';
 import { Resource } from '@renderer/lib/stores/resource';
 
 export class DevServerStore {
-  /**
-   * Event-driven resource — starts empty, updated by `hostPreviewEventChannel`
-   * events. Each event atomically replaces the map to trigger MobX reactivity.
-   */
   readonly servers: Resource<Map<string, string>, HostPreviewEvent>;
 
   constructor(taskId: string, workspaceId: string) {

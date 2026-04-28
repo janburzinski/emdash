@@ -4,7 +4,6 @@ interface ImageRendererProps {
   file: ManagedFile;
 }
 
-/** Renders raster image files (png, jpg, gif, webp, ico, bmp). */
 export function ImageRenderer({ file }: ImageRendererProps) {
   const fileName = file.path.split('/').pop() ?? file.path;
 

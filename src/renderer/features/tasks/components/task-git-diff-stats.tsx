@@ -3,10 +3,6 @@ import type { TaskStore } from '@renderer/features/tasks/stores/task';
 import { asProvisioned } from '@renderer/features/tasks/stores/task-selectors';
 import { cn } from '@renderer/utils/utils';
 
-/**
- * Working-tree line add/remove totals for a provisioned task (same source as GitStore / diff UI).
- * Renders nothing when unprovisioned, loading, in error, or clean.
- */
 export const TaskGitDiffStats = observer(function TaskGitDiffStats({
   task,
   className,

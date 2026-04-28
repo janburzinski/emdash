@@ -7,12 +7,6 @@ import { events } from '@main/lib/events';
 export class GitWatcherService {
   private sub: parcelWatcher.AsyncSubscription | null = null;
 
-  /**
-   * Registered worktrees. Maps workspaceId → git-dir path relative to the
-   * repo's .git directory (from `GitService.getWorktreeGitDir`).
-   *   Main workspace → ''
-   *   Linked worktree → e.g. 'worktrees/<git-admin-id>'
-   */
   private readonly _worktrees = new Map<string, string>();
 
   constructor(
@@ -20,14 +14,6 @@ export class GitWatcherService {
     private readonly repoPath: string
   ) {}
 
-  /**
-   * Register a workspace so that index/HEAD changes inside its git dir are
-   * emitted as gitWorkspaceChangedChannel events.
-   *
-   * @param workspaceId  The renderer-side workspace key.
-   * @param relativeGitDir  Path of the worktree's git dir relative to .git/.
-   *   Pass '' for the main worktree; 'worktrees/<name>' for linked worktrees.
-   */
   registerWorktree(workspaceId: string, relativeGitDir: string): void {
     this._worktrees.set(workspaceId, relativeGitDir);
   }

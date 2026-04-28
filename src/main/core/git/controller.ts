@@ -1,4 +1,4 @@
-import type { DiffMode, GitObjectRef, GitRef, MergeBaseRange } from '@shared/git';
+import type { DiffMode, GitObjectRef, MergeBaseRange } from '@shared/git';
 import { createRPCController } from '@shared/ipc/rpc';
 import { err, ok } from '@shared/result';
 import { TooManyFilesChangedError } from '@main/core/git/impl/status-parser';
@@ -22,57 +22,6 @@ export const gitController = createRPCController({
     }
   },
 
-  getStatus: async (projectId: string, workspaceId: string) => {
-    try {
-      const env = resolveWorkspace(projectId, workspaceId);
-      if (!env) return err({ type: 'not_found' as const });
-      const { changes, currentBranch } = await env.git.getStatus();
-      return ok({ changes, currentBranch });
-    } catch (e) {
-      if (e instanceof TooManyFilesChangedError) {
-        return err({ type: 'too_many_files' as const });
-      }
-      log.error('gitCtrl.getStatus failed', { projectId, workspaceId, error: e });
-      return err({ type: 'git_error' as const, message: String(e) });
-    }
-  },
-
-  getStagedChanges: async (projectId: string, workspaceId: string) => {
-    try {
-      const env = resolveWorkspace(projectId, workspaceId);
-      if (!env) return err({ type: 'not_found' as const });
-      const data = await env.git.getStagedChanges();
-      return ok(data);
-    } catch (e) {
-      log.error('gitCtrl.getStagedChanges failed', { projectId, workspaceId, error: e });
-      return err({ type: 'git_error' as const, message: String(e) });
-    }
-  },
-
-  getUnstagedChanges: async (projectId: string, workspaceId: string) => {
-    try {
-      const env = resolveWorkspace(projectId, workspaceId);
-      if (!env) return err({ type: 'not_found' as const });
-      const data = await env.git.getUnstagedChanges();
-      return ok(data);
-    } catch (e) {
-      log.error('gitCtrl.getUnstagedChanges failed', { projectId, workspaceId, error: e });
-      return err({ type: 'git_error' as const, message: String(e) });
-    }
-  },
-
-  getCurrentBranch: async (projectId: string, workspaceId: string) => {
-    try {
-      const env = resolveWorkspace(projectId, workspaceId);
-      if (!env) return err({ type: 'not_found' as const });
-      const currentBranch = await env.git.getCurrentBranch();
-      return ok({ currentBranch });
-    } catch (e) {
-      log.error('gitCtrl.getCurrentBranch failed', { projectId, workspaceId, error: e });
-      return err({ type: 'git_error' as const, message: String(e) });
-    }
-  },
-
   getChangedFiles: async (
     projectId: string,
     workspaceId: string,
@@ -85,18 +34,6 @@ export const gitController = createRPCController({
       return ok({ changes });
     } catch (e) {
       log.error('gitCtrl.getChangedFiles failed', { projectId, workspaceId, base, error: e });
-      return err({ type: 'git_error' as const, message: String(e) });
-    }
-  },
-
-  getFileAtHead: async (projectId: string, workspaceId: string, filePath: string) => {
-    try {
-      const env = resolveWorkspace(projectId, workspaceId);
-      if (!env) return err({ type: 'not_found' as const });
-      const content = await env.git.getFileAtHead(filePath);
-      return ok({ content });
-    } catch (e) {
-      log.error('gitCtrl.getFileAtHead failed', { projectId, workspaceId, filePath, error: e });
       return err({ type: 'git_error' as const, message: String(e) });
     }
   },
@@ -121,36 +58,6 @@ export const gitController = createRPCController({
       return ok({ content });
     } catch (e) {
       log.error('gitCtrl.getFileAtIndex failed', { projectId, workspaceId, filePath, error: e });
-      return err({ type: 'git_error' as const, message: String(e) });
-    }
-  },
-
-  getFileDiff: async (projectId: string, workspaceId: string, filePath: string, base?: GitRef) => {
-    try {
-      const env = resolveWorkspace(projectId, workspaceId);
-      if (!env) return err({ type: 'not_found' as const });
-      const diff = await env.git.getFileDiff(filePath, base);
-      return ok({ diff });
-    } catch (e) {
-      log.error('gitCtrl.getFileDiff failed', { projectId, workspaceId, filePath, error: e });
-      return err({ type: 'git_error' as const, message: String(e) });
-    }
-  },
-
-  stageFile: async (projectId: string, workspaceId: string, filePath: string) => {
-    try {
-      const env = resolveWorkspace(projectId, workspaceId);
-      if (!env) return err({ type: 'not_found' as const });
-      await env.git.stageFiles([filePath]);
-      capture('vcs_files_staged', {
-        count: 1,
-        scope: 'single',
-        project_id: projectId,
-        task_id: workspaceId,
-      });
-      return ok();
-    } catch (e) {
-      log.error('gitCtrl.stageFile failed', { projectId, workspaceId, filePath, error: e });
       return err({ type: 'git_error' as const, message: String(e) });
     }
   },
@@ -192,24 +99,6 @@ export const gitController = createRPCController({
     }
   },
 
-  unstageFile: async (projectId: string, workspaceId: string, filePath: string) => {
-    try {
-      const env = resolveWorkspace(projectId, workspaceId);
-      if (!env) return err({ type: 'not_found' as const });
-      await env.git.unstageFiles([filePath]);
-      capture('vcs_files_unstaged', {
-        count: 1,
-        scope: 'single',
-        project_id: projectId,
-        task_id: workspaceId,
-      });
-      return ok();
-    } catch (e) {
-      log.error('gitCtrl.unstageFile failed', { projectId, workspaceId, filePath, error: e });
-      return err({ type: 'git_error' as const, message: String(e) });
-    }
-  },
-
   unstageFiles: async (projectId: string, workspaceId: string, filePaths: string[]) => {
     try {
       const env = resolveWorkspace(projectId, workspaceId);
@@ -243,24 +132,6 @@ export const gitController = createRPCController({
       return ok();
     } catch (e) {
       log.error('gitCtrl.unstageAllFiles failed', { projectId, workspaceId, error: e });
-      return err({ type: 'git_error' as const, message: String(e) });
-    }
-  },
-
-  revertFile: async (projectId: string, workspaceId: string, filePath: string) => {
-    try {
-      const env = resolveWorkspace(projectId, workspaceId);
-      if (!env) return err({ type: 'not_found' as const });
-      await env.git.revertFiles([filePath]);
-      capture('vcs_files_discarded', {
-        count: 1,
-        scope: 'single',
-        project_id: projectId,
-        task_id: workspaceId,
-      });
-      return ok();
-    } catch (e) {
-      log.error('gitCtrl.revertFile failed', { projectId, workspaceId, filePath, error: e });
       return err({ type: 'git_error' as const, message: String(e) });
     }
   },
@@ -363,14 +234,6 @@ export const gitController = createRPCController({
     return ok({ output: result.data.output });
   },
 
-  softReset: async (projectId: string, workspaceId: string) => {
-    const env = resolveWorkspace(projectId, workspaceId);
-    if (!env) return err({ type: 'not_found' as const });
-    const result = await env.git.softReset();
-    if (!result.success) return err(result.error);
-    return ok({ subject: result.data.subject, body: result.data.body });
-  },
-
   getLog: async (
     projectId: string,
     workspaceId: string,
@@ -395,53 +258,6 @@ export const gitController = createRPCController({
       return ok({ commits: result.commits, aheadCount: result.aheadCount });
     } catch (e) {
       log.error('gitCtrl.getLog failed', { projectId, workspaceId, error: e });
-      return err({ type: 'git_error' as const, message: String(e) });
-    }
-  },
-
-  getLatestCommit: async (projectId: string, workspaceId: string) => {
-    try {
-      const env = resolveWorkspace(projectId, workspaceId);
-      if (!env) return err({ type: 'not_found' as const });
-      const commit = await env.git.getLatestCommit();
-      return ok({ commit });
-    } catch (e) {
-      log.error('gitCtrl.getLatestCommit failed', { projectId, workspaceId, error: e });
-      return err({ type: 'git_error' as const, message: String(e) });
-    }
-  },
-
-  getCommitFiles: async (projectId: string, workspaceId: string, commitHash: string) => {
-    try {
-      const env = resolveWorkspace(projectId, workspaceId);
-      if (!env) return err({ type: 'not_found' as const });
-      const files = await env.git.getCommitFiles(commitHash);
-      return ok({ files });
-    } catch (e) {
-      log.error('gitCtrl.getCommitFiles failed', { projectId, workspaceId, commitHash, error: e });
-      return err({ type: 'git_error' as const, message: String(e) });
-    }
-  },
-
-  getCommitFileDiff: async (
-    projectId: string,
-    workspaceId: string,
-    commitHash: string,
-    filePath: string
-  ) => {
-    try {
-      const env = resolveWorkspace(projectId, workspaceId);
-      if (!env) return err({ type: 'not_found' as const });
-      const diff = await env.git.getCommitFileDiff(commitHash, filePath);
-      return ok({ diff });
-    } catch (e) {
-      log.error('gitCtrl.getCommitFileDiff failed', {
-        projectId,
-        workspaceId,
-        commitHash,
-        filePath,
-        error: e,
-      });
       return err({ type: 'git_error' as const, message: String(e) });
     }
   },

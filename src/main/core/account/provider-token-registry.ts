@@ -13,7 +13,6 @@ export const providerTokenRegistry = {
     await handler(token);
   },
 
-  /** For testing only — removes all registered handlers. */
   clear(): void {
     handlers.clear();
   },

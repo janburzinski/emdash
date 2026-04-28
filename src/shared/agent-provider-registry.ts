@@ -28,7 +28,6 @@ export type AgentProviderId = (typeof AGENT_PROVIDER_IDS)[number];
 export type AgentProviderDefinition = {
   id: AgentProviderId;
   name: string;
-  /** Short one-liner shown in the agent info card. */
   description?: string;
   docUrl?: string;
   installCommand?: string;
@@ -38,28 +37,14 @@ export type AgentProviderDefinition = {
   cli?: string;
   autoApproveFlag?: string;
   initialPromptFlag?: string;
-  /**
-   * When true, the initial prompt is delivered via keystroke injection
-   * (typing into the TUI after startup) instead of as a CLI argument.
-   * Use for agents whose CLI has no flag for interactive-mode prompt delivery.
-   */
   useKeystrokeInjection?: boolean;
   resumeFlag?: string;
-  /**
-   * CLI flag to assign a unique session ID per chat instance.
-   * Used to isolate session state when multiple chats of the same provider
-   * run in the same worktree. The flag receives a deterministic UUID
-   * derived from the Emdash conversation ID.
-   * e.g. '--session-id' for Claude Code.
-   */
   sessionIdFlag?: string;
   defaultArgs?: string[];
   planActivateCommand?: string;
   autoStartCommand?: string;
   icon?: string;
-  /** Accessible alt text for the provider logo. */
   alt?: string;
-  /** When true, the logo should be colour-inverted in dark mode. */
   invertInDark?: boolean;
   terminalOnly?: boolean;
   supportsHooks?: boolean;
@@ -440,11 +425,6 @@ export function getInstallCommandForProvider(id: AgentProviderId): string | null
   return PROVIDER_MAP.get(id)?.installCommand ?? null;
 }
 
-/**
- * Validates if a string is a valid provider ID.
- * @param value - The value to validate
- * @returns true if the value is a valid provider ID, false otherwise
- */
 export function isValidProviderId(value: unknown): value is AgentProviderId {
   return typeof value === 'string' && AGENT_PROVIDER_IDS.includes(value as AgentProviderId);
 }

@@ -99,8 +99,3 @@ export function useShowModal<MId extends ModalId>(id: MId) {
   const { showModal } = useModalContext();
   return (args: UserArgs<MId>) => showModal(id, args);
 }
-
-export function useTransitionModal<MId extends ModalId>(id: MId) {
-  const { transitionModal } = useModalContext();
-  return (args: UserArgs<MId>) => transitionModal(id, args);
-}

@@ -9,7 +9,5 @@ export const linearController = createRPCController({
     return linearConnectionService.saveToken(token);
   },
 
-  checkConnection: async () => linearConnectionService.checkConnection(),
-
   clearToken: async () => linearConnectionService.clearToken(),
 });

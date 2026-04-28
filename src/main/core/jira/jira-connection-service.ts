@@ -128,17 +128,6 @@ export class JiraConnectionService {
   }
 
   private async doGet(url: URL, email: string, token: string): Promise<string> {
-    return this.doRequest(url, email, token, 'GET');
-  }
-
-  private async doRequest(
-    url: URL,
-    email: string,
-    token: string,
-    method: 'GET' | 'POST',
-    payload?: string,
-    extraHeaders?: Record<string, string>
-  ): Promise<string> {
     const auth = encodeBasic(email, token);
     return new Promise<string>((resolve, reject) => {
       const req = request(
@@ -146,11 +135,10 @@ export class JiraConnectionService {
           hostname: url.hostname,
           path: url.pathname + url.search,
           protocol: url.protocol,
-          method,
+          method: 'GET',
           headers: {
             Authorization: `Basic ${auth}`,
             Accept: 'application/json',
-            ...(extraHeaders || {}),
           },
         },
         (res) => {
@@ -164,16 +152,11 @@ export class JiraConnectionService {
               reject(new Error(`Jira API error ${res.statusCode}${snippet ? `: ${snippet}` : ''}`));
               return;
             }
-
             resolve(data);
           });
         }
       );
-
       req.on('error', reject);
-      if (payload && method === 'POST') {
-        req.write(payload);
-      }
       req.end();
     });
   }

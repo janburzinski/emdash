@@ -15,9 +15,7 @@ import { events } from '@main/lib/events';
 import { log } from '@main/lib/logger';
 import { extractGhCliToken } from './gh-cli-token';
 
-// ---------------------------------------------------------------------------
 // Types
-// ---------------------------------------------------------------------------
 
 export type AuthResult = GitHubConnectResponse;
 
@@ -31,21 +29,15 @@ export interface DeviceCodeResult {
   error?: string;
 }
 
-/**
- * Manages GitHub authentication tokens regardless of how they were obtained
- * (Emdash Account OAuth, Device Flow, PAT, or extracted from gh CLI).
- */
 export type TokenSource = 'secure_storage' | 'cli' | null;
 
 export interface GitHubConnectionService {
   getToken(): Promise<string | null>;
-  getTokenSource(): Promise<TokenSource>;
   getStatus(): Promise<{
     authenticated: boolean;
     user: GitHubUser | null;
     tokenSource: TokenSource;
   }>;
-  isAuthenticated(): Promise<boolean>;
   getCurrentUser(): Promise<GitHubUser | null>;
   getUserInfo(token: string): Promise<GitHubUser | null>;
   startOAuthFlow(authServerBaseUrl: string): Promise<AuthResult>;
@@ -156,12 +148,6 @@ export class GitHubConnectionServiceImpl implements GitHubConnectionService {
     return token;
   }
 
-  async getTokenSource(): Promise<TokenSource> {
-    const { token, source } = await this.resolveTokenRecord();
-    if (!token) return null;
-    return source ?? 'secure_storage';
-  }
-
   async getStatus(): Promise<{
     authenticated: boolean;
     user: GitHubUser | null;
@@ -178,11 +164,6 @@ export class GitHubConnectionServiceImpl implements GitHubConnectionService {
       user,
       tokenSource: source ?? 'secure_storage',
     };
-  }
-
-  async isAuthenticated(): Promise<boolean> {
-    const token = await this.getToken();
-    return token !== null;
   }
 
   async getCurrentUser(): Promise<GitHubUser | null> {

@@ -188,11 +188,6 @@ export class SshTerminalProvider implements TerminalProvider {
     this.sessions.set(sessionId, pty);
   }
 
-  /**
-   * Re-spawn all terminals whose sessions are no longer active (e.g. after
-   * an SSH reconnect). Skips user-deleted terminals and terminals that are
-   * already running.
-   */
   async rehydrate(): Promise<void> {
     const terminals = Array.from(this.terminals.values());
     await Promise.all(

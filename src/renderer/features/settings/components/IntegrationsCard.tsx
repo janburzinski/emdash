@@ -13,7 +13,6 @@ import { useGithubContext } from '@renderer/lib/providers/github-context-provide
 import { Button } from '@renderer/lib/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@renderer/lib/ui/tooltip';
 
-/** Light mode: original SVG colors. Dark / dark-black: primary colour. */
 const SvgLogo = ({ raw }: { raw: string }) => {
   const { effectiveTheme } = useTheme();
   const isDark = effectiveTheme === 'emdark';

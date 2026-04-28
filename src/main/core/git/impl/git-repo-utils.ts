@@ -1,23 +1,8 @@
-/**
- * Standalone git utility functions for repository-level operations that don't
- * belong on the path-scoped GitService (e.g. cloning, initial project setup,
- * fetching PR refs).
- *
- * All functions accept an ExecFn + FileSystemProvider so they remain testable
- * without touching the real filesystem or spawning real processes.
- */
-
 import type { FileSystemProvider } from '@main/core/fs/types';
 import type { ExecFn } from '@main/core/utils/exec';
 
-// ---------------------------------------------------------------------------
 // cloneRepository
-// ---------------------------------------------------------------------------
 
-/**
- * Clone a git repository to a local path.
- * The caller is responsible for ensuring the parent directory exists.
- */
 export async function cloneRepository(
   repoUrl: string,
   localPath: string,
@@ -34,9 +19,7 @@ export async function cloneRepository(
   }
 }
 
-// ---------------------------------------------------------------------------
 // initializeNewProject
-// ---------------------------------------------------------------------------
 
 export interface InitializeNewProjectParams {
   repoUrl: string;
@@ -45,15 +28,6 @@ export interface InitializeNewProjectParams {
   description?: string;
 }
 
-/**
- * Initialize a freshly-cloned (empty) project with a README and initial commit.
- *
- * Steps:
- *  1. Write a README.md
- *  2. `git add README.md`
- *  3. `git commit -m "Initial commit"`
- *  4. `git push -u origin main` (falls back to `master` if `main` fails)
- */
 export async function initializeNewProject(
   params: InitializeNewProjectParams,
   exec: ExecFn,

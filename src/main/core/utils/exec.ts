@@ -21,7 +21,6 @@ function resolveGitBin(): string {
   return 'git';
 }
 
-/** Resolved path to the `git` binary — use for `spawn` when local exec is bypassed. */
 export const GIT_EXECUTABLE = resolveGitBin();
 
 export type ExecFn = (

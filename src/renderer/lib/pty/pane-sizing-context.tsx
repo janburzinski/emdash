@@ -1,28 +1,3 @@
-/**
- * PaneSizingContext — owns PTY resize for every session that belongs to a pane.
- *
- * The active TerminalPane calls reportDimensions(cols, rows) whenever its
- * terminal resizes.  The provider then forwards that resize to ALL registered
- * sessions (active + background), so background agents always have the correct
- * terminal width even when they are off-screen.
- *
- * Each provider renders a wrapper <div> that fills its parent and registers
- * itself in the module-level paneRegistry under its paneId.  This lets any
- * code outside the React tree (e.g. hover pre-warm, cross-pane coordination)
- * call getPaneContainer(paneId) to measure the pane's pixel dimensions without
- * needing a mounted terminal.
- *
- * Usage:
- *   <PaneSizingProvider paneId="conversations" sessionIds={allConversationSessionIds}>
- *     ...
- *     <TerminalPane sessionId={activeSessionId} />
- *   </PaneSizingProvider>
- *
- * For split panes (e.g. conversation pane + right-panel terminal pane), each
- * pane gets its own <PaneSizingProvider> with a distinct paneId.  No other
- * changes required.
- */
-
 import {
   createContext,
   ReactNode,
@@ -39,67 +14,32 @@ const PTY_RESIZE_DEBOUNCE_MS = 60;
 const MIN_TERMINAL_COLS = 2;
 const MIN_TERMINAL_ROWS = 1;
 
-// ── Module-level pane registry ────────────────────────────────────────────────
 // Maps paneId → the provider's container HTMLDivElement.  Survives renders and
 // is accessible from anywhere in the renderer process (e.g. sidebar hover
 // handlers, cross-pane coordinators).
 const paneRegistry = new Map<string, HTMLDivElement>();
 
-/**
- * Returns the container element for the given pane, or null if the pane is not
- * currently mounted.  Use this to measure pane pixel dimensions from outside
- * the React tree.
- */
 export function getPaneContainer(paneId: string): HTMLDivElement | null {
   return paneRegistry.get(paneId) ?? null;
 }
 
-// ── Context interface ─────────────────────────────────────────────────────────
-
 export interface PaneSizingContextValue {
-  /**
-   * Called by the active terminal after every resize.  Broadcasts the
-   * dimensions to all registered sessions (active + background) after a short
-   * debounce.
-   */
   reportDimensions: (cols: number, rows: number) => void;
-  /**
-   * Returns the last dimensions reported to this pane, or null if no terminal
-   * has reported dimensions yet.  Used as a fallback when cell metrics are
-   * unavailable (very first mount).
-   */
   getCurrentDimensions: () => { cols: number; rows: number } | null;
-  /**
-   * Ref to the provider's own wrapper div.  Always reflects the pane's current
-   * pixel size; suitable as the container argument to measureDimensions().
-   */
   containerRef: React.RefObject<HTMLDivElement | null>;
-  /**
-   * Measures the pane container using the provided cell metrics and returns
-   * cols/rows, or null if the container is not yet sized.  More accurate than
-   * getCurrentDimensions() when cell metrics are available because it reads the
-   * live DOM instead of a cached value.
-   */
   measureCurrentDimensions: (cellWidth: number, cellHeight: number) => TerminalDimensions | null;
 }
 
 const PaneSizingContext = createContext<PaneSizingContextValue | null>(null);
 
-/**
- * Returns the nearest PaneSizingContext value, or null when the terminal is
- * not inside a PaneSizingProvider (e.g. standalone chat terminals).
- */
 export function usePaneSizingContext(): PaneSizingContextValue | null {
   return useContext(PaneSizingContext);
 }
-
-// ── Provider ──────────────────────────────────────────────────────────────────
 
 interface PaneSizingProviderProps {
   /** Stable identifier for this pane.  Used to register in the module-level
    *  paneRegistry so code outside the React tree can measure this pane. */
   paneId: string;
-  /** All session IDs that belong to this pane (active + background). */
   sessionIds: string[];
   children: ReactNode;
 }

@@ -1,6 +1,5 @@
 import type {
   Branch,
-  BranchesPayload,
   CreateBranchError,
   DeleteBranchError,
   FetchError,
@@ -45,32 +44,6 @@ export class GitRepositoryService {
       ? (headState.headName ?? null)
       : await this.git.getCurrentBranch();
     return { isUnborn: headState.isUnborn, currentBranch };
-  }
-
-  async getBranchesPayload(): Promise<BranchesPayload> {
-    const remotes = await this.git.getRemotes();
-    const remote = await this.getConfiguredRemote();
-    const branches = await this.git.getBranches();
-    const gitDefaultBranch = await this.git.getDefaultBranch(remote);
-
-    if (branches.length === 0) {
-      const headState = await this.git.getHeadState();
-      return {
-        branches: [],
-        currentBranch: headState.headName ?? null,
-        isUnborn: headState.isUnborn,
-        gitDefaultBranch,
-        remotes,
-      };
-    }
-    const currentBranch = await this.git.getCurrentBranch();
-    return {
-      branches,
-      currentBranch,
-      isUnborn: false,
-      gitDefaultBranch,
-      remotes,
-    };
   }
 
   async getRemotes(): Promise<{ name: string; url: string }[]> {

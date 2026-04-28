@@ -6,8 +6,6 @@ import type { PrStore } from '@renderer/features/tasks/stores/pr-store';
 import { Snapshottable } from '@renderer/lib/stores/snapshottable';
 import { GitStore } from './git-store';
 
-export const MAX_STACKED_FILES = 8;
-
 const VALID_OBJECT_REF_KINDS = new Set(['branch', 'commit', 'tag']);
 
 function isValidGitObjectRef(raw: unknown): raw is GitObjectRef {
@@ -27,12 +25,6 @@ export class DiffViewStore implements Snapshottable<DiffViewSnapshot> {
 
   readonly changesView: ChangesViewStore;
 
-  /**
-   * Index of the override file within its source list at the time it was set.
-   * Used as a position hint when the file disappears so we can select a neighbor
-   * rather than always falling back to the first file. Not observable — always
-   * updated atomically with activeFileOverride inside setActiveFile.
-   */
   private _activeFileOverrideIndex = -1;
 
   private _disposeReactions: Array<() => void> = [];
@@ -77,12 +69,6 @@ export class DiffViewStore implements Snapshottable<DiffViewSnapshot> {
     );
   }
 
-  /**
-   * The effective active file. Derived from activeFileOverride by validating it
-   * against the current working-tree lists. Falls back to a neighbor or the
-   * default file when the override is stale. Always consistent with observable
-   * state — no reaction needed.
-   */
   get activeFile(): ActiveFile | null {
     const override = this.activeFileOverride;
     if (!override) return this._defaultActiveFile;

@@ -1,17 +1,12 @@
 import { ComponentType, createContext, useCallback, useContext, type ReactNode } from 'react';
 import type { ViewId, WrapParams } from '@renderer/app/view-registry';
 
-/**
- * NavArgs makes the params argument optional when all fields are optional,
- * and omits it entirely for views with no params (home, skills).
- */
 export type NavArgs<TId extends ViewId> = keyof WrapParams<TId> extends never
   ? [viewId: TId]
   : Partial<WrapParams<TId>> extends WrapParams<TId>
     ? [viewId: TId, params?: WrapParams<TId>]
     : [viewId: TId, params: WrapParams<TId>];
 
-/** Higher-rank navigate function — generic at the call site, not at the hook call site. */
 export type NavigateFnTyped = <TId extends ViewId>(...args: NavArgs<TId>) => void;
 
 export type UpdateViewParamsFn = <TId extends ViewId>(

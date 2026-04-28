@@ -5,8 +5,6 @@ import { useIntegrationsContext } from '@renderer/features/integrations/integrat
 import { ISSUE_PROVIDER_ORDER } from '@renderer/features/integrations/issue-provider-meta';
 import { useIssues } from '@renderer/features/integrations/use-issues';
 
-export type UseIssueSearchResult = ReturnType<typeof useIssueSearch>;
-
 function isProviderUsable(
   status: ConnectionStatus | undefined,
   context: { projectPath?: string; nameWithOwner?: string }

@@ -1,6 +1,6 @@
 import { exec } from 'node:child_process';
 import { eq } from 'drizzle-orm';
-import { clipboard, dialog, shell } from 'electron';
+import { dialog, shell } from 'electron';
 import { appPasteChannel, appRedoChannel, appUndoChannel } from '@shared/events/appEvents';
 import {
   getAppById,
@@ -151,11 +151,6 @@ class AppService {
       );
     }
     await shell.openExternal(url);
-  }
-
-  clipboardWriteText(text: string): void {
-    if (typeof text !== 'string') throw new Error('Invalid clipboard text');
-    clipboard.writeText(text);
   }
 
   async openIn(args: {

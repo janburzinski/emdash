@@ -2,10 +2,6 @@ import { useHotkey } from '@tanstack/react-hotkeys';
 import { useAppSettingsKey } from '@renderer/features/settings/use-app-settings-key';
 import { getEffectiveHotkey, getHotkeyRegistration } from './useKeyboardShortcuts';
 
-/**
- * Minimal interface required for tab navigation shortcuts.
- * Both TabViewProvider stores and EditorViewStore satisfy this shape.
- */
 export interface TabNavigationProvider {
   setNextTabActive: () => void;
   setPreviousTabActive: () => void;
@@ -14,29 +10,9 @@ export interface TabNavigationProvider {
 }
 
 export interface UseTabShortcutsOptions {
-  /**
-   * When false, all tab shortcuts are disabled. Use this to scope shortcuts
-   * to a specific panel so they only fire when that panel is focused.
-   * Defaults to true (always enabled when store is present).
-   */
   focused?: boolean;
 }
 
-/**
- * Registers keyboard shortcuts for tab navigation within any TabNavigationProvider.
- *
- * Shortcuts:
- *   tabNext   (default Mod+Alt+ArrowRight)  — next tab
- *   tabPrev   (default Mod+Alt+ArrowLeft)  — previous tab
- *   tabClose  (default Mod+W)      — close active tab
- *   Mod+1–9                        — jump to tab by index (not configurable)
- *
- * Note: Mod+] and Mod+[ are reserved for task-level navigation
- * (nextProject / prevProject) in useKeyboardShortcuts.ts.
- *
- * Pass `focused: false` to disable shortcuts when the panel is not focused,
- * preventing conflicts when multiple tab panels are mounted simultaneously.
- */
 export function useTabShortcuts(
   store: TabNavigationProvider | undefined,
   options?: UseTabShortcutsOptions

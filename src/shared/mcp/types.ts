@@ -1,4 +1,3 @@
-/** Canonical MCP server — the normalized shape Emdash uses internally */
 export interface McpServer {
   name: string;
   transport: 'stdio' | 'http';
@@ -13,13 +12,11 @@ export interface McpServer {
   providers: string[];
 }
 
-/** Credential key with required/optional distinction */
 export interface CredentialKey {
   key: string;
   required: boolean;
 }
 
-/** Display metadata for a catalog server */
 export interface McpCatalogEntry {
   key: string;
   name: string;
@@ -29,13 +26,10 @@ export interface McpCatalogEntry {
   credentialKeys: CredentialKey[];
 }
 
-/** Raw server entry as stored in agent config files */
 export type RawServerEntry = Record<string, unknown>;
 
-/** Map of server name → raw config */
 export type ServerMap = Record<string, RawServerEntry>;
 
-/** Agent MCP config metadata — how to navigate each agent's config file */
 export interface AgentMcpMeta {
   agentId: string;
   configPath: string;

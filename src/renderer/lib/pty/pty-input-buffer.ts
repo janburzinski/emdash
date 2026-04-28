@@ -1,12 +1,3 @@
-/**
- * One-shot capture of the user's first "real" terminal message.
- *
- * Accumulates keystrokes, strips ANSI escapes, handles backspace,
- * and fires the `onCapture` callback once when a confirmed submit
- * passes validation. After firing, the buffer disables itself.
- */
-
-/** Strings that look like non-task-related input (confirmations, slash commands, etc.) */
 const SKIP_PATTERNS = [
   /^\//,
   /^y(es)?$/i,
@@ -244,7 +235,6 @@ export class SubmittedInputBuffer {
   }
 }
 
-/** Returns true if the message looks like a real task description. */
 export function isRealTaskInput(message: string): boolean {
   const trimmed = message.trim();
   if (!trimmed || trimmed.length < MIN_MESSAGE_LENGTH) return false;
@@ -265,7 +255,6 @@ export class TerminalInputBuffer {
     this.onCapture = onCapture;
   }
 
-  /** Feed raw terminal input data (keystrokes). */
   feed(data: string): void {
     if (this.captured) return;
     const submittedMessages = this.submittedInput.feed(data);
@@ -274,10 +263,6 @@ export class TerminalInputBuffer {
     }
   }
 
-  /**
-   * Called when PTY output indicates the agent is "busy" (processing).
-   * If we have a pending message that passes validation, fire the callback.
-   */
   confirmSubmit(): void {
     if (this.captured) return;
     if (!this.pendingMessage) return;
@@ -294,7 +279,6 @@ export class TerminalInputBuffer {
     }
   }
 
-  /** Whether the buffer has already fired its callback. */
   get isComplete(): boolean {
     return this.captured;
   }

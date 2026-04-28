@@ -9,13 +9,6 @@ import {
 import { useNavigate } from '@renderer/lib/layout/navigation-provider';
 import { useTaskViewNavigation } from './use-task-view-navigation';
 
-/**
- * Mounts keyboard shortcuts that are scoped to the active task view:
- * - Switch between task sub-views (conversations, diff, editor)
- * - Navigate to the next / previous task within the same project
- *
- * Must be called inside a component that has access to TaskViewContext.
- */
 export function useTaskViewShortcuts() {
   const { value: keyboard } = useAppSettingsKey('keyboard');
   const { projectId, taskId } = useTaskViewContext();

@@ -1,8 +1,3 @@
-export interface GeneralSession {
-  type: 'general';
-  config: GeneralSessionConfig;
-}
-
 export interface GeneralSessionConfig {
   taskId?: string;
   cwd: string;

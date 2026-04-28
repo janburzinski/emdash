@@ -10,8 +10,6 @@ import {
   ComboboxList,
 } from './combobox';
 
-// ─── Public types ─────────────────────────────────────────────────────────────
-
 export interface ComboboxSelectOption {
   value: string;
   label: string;
@@ -25,7 +23,6 @@ export interface ComboboxAction {
 }
 
 export interface ComboboxPopoverProps<T extends ComboboxSelectOption> {
-  /** The trigger element — should be a ComboboxTrigger */
   trigger: ReactNode;
   items: T[];
   actions?: ComboboxAction[];
@@ -35,8 +32,6 @@ export interface ComboboxPopoverProps<T extends ComboboxSelectOption> {
   placeholder?: string;
   contentClassName?: string;
 }
-
-// ─── Internals ────────────────────────────────────────────────────────────────
 
 // Action items get a `value` field (required by ComboboxItem) and a `_type`
 // discriminator so the filter and onValueChange can tell them apart from options.
@@ -75,8 +70,6 @@ function isActionItem(item: unknown): item is ActionItem {
     (item as ActionItem)._type === 'action'
   );
 }
-
-// ─── Component ────────────────────────────────────────────────────────────────
 
 export function ComboboxPopover<T extends ComboboxSelectOption>({
   trigger,

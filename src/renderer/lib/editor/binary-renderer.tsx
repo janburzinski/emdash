@@ -5,7 +5,6 @@ interface BinaryRendererProps {
   file: ManagedFile;
 }
 
-/** Shown for binary or otherwise unsupported files. */
 export function BinaryRenderer({ file }: BinaryRendererProps) {
   const fileName = file.path.split('/').pop() ?? file.path;
   const ext = file.path.split('.').pop()?.toUpperCase();

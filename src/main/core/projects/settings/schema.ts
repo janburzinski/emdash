@@ -7,8 +7,6 @@ export const defaultBranchSettingSchema = z.union([
   z.object({ name: z.string(), remote: z.literal(true) }),
 ]);
 
-export type DefaultBranchSetting = z.infer<typeof defaultBranchSettingSchema>;
-
 export const projectSettingsSchema = z.object({
   preservePatterns: z
     .array(z.string())

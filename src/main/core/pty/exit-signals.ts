@@ -69,38 +69,3 @@ export function normalizeSignal(raw: number | string | null | undefined): PtySig
   const canonical = raw.startsWith('SIG') ? raw : `SIG${raw}`;
   return KNOWN_SIGNAL_NAMES.has(canonical) ? (canonical as PtySignal) : undefined;
 }
-
-export const EXIT_CODE_MEANINGS: Readonly<Record<number, string>> = {
-  0: 'Success',
-  1: 'General error',
-  2: 'Misuse of shell built-in',
-  126: 'Command not executable (permission denied)',
-  127: 'Command not found',
-  128: 'Invalid argument to exit()',
-  129: 'Terminated by SIGHUP (PTY closed)',
-  130: 'Terminated by SIGINT (Ctrl+C)',
-  131: 'Terminated by SIGQUIT (Ctrl+\\)',
-  134: 'Terminated by SIGABRT',
-  137: 'Killed by SIGKILL (force kill / OOM)',
-  139: 'Terminated by SIGSEGV (segfault)',
-  141: 'Terminated by SIGPIPE (broken pipe)',
-  143: 'Terminated by SIGTERM (graceful stop)',
-};
-
-export function getExitCodeMeaning(exitCode: number): string {
-  const knownExitCode = EXIT_CODE_MEANINGS[exitCode];
-  if (knownExitCode) {
-    return knownExitCode;
-  }
-  if (signalFromExitCode(exitCode)) {
-    return `Terminated by ${signalFromExitCode(exitCode)}`;
-  }
-  return `Unknown exit code: ${exitCode}`;
-}
-
-function signalFromExitCode(exitCode: number): PtySignal | undefined {
-  if (exitCode > 128 && exitCode <= 159) {
-    return SIGNAL_BY_NUMBER[exitCode - 128];
-  }
-  return undefined;
-}

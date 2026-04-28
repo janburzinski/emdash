@@ -5,9 +5,6 @@ import { sshCredentialService } from '@main/core/ssh/ssh-credential-service';
 import { resolveIdentityAgent } from '@main/core/ssh/sshConfigParser';
 import type { SshConnectionRow } from '@main/db/schema';
 
-/**
- * Build an ssh2 `ConnectConfig` from a stored `SshConnectionRow`.
- */
 export async function buildConnectConfigFromRow(
   row: SshConnectionRow
 ): Promise<ConnectConfig | undefined> {

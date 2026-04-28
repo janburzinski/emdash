@@ -9,15 +9,6 @@ export function addTabId(state: TabOrderState, id: string): void {
   }
 }
 
-export function removeTabId(state: TabOrderState, id: string): void {
-  const idx = state.tabOrder.indexOf(id);
-  if (idx === -1) return;
-  state.tabOrder.splice(idx, 1);
-  if (state.activeTabId === id) {
-    state.activeTabId = state.tabOrder[idx] ?? state.tabOrder[idx - 1];
-  }
-}
-
 export function setTabActive(state: TabOrderState, id: string): void {
   state.activeTabId = id;
 }

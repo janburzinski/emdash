@@ -6,9 +6,6 @@ import { APP_SETTINGS_SCHEMA_MAP } from './schema';
 import { getDefaultForKey } from './settings-registry';
 import { computeDelta, computeTrueOverrides, isDeepEqual, isPlainObject, mergeDeep } from './utils';
 
-export type { AppSettings, AppSettingsKey } from '@shared/app-settings';
-export { AppSettingsKeys } from '@shared/app-settings';
-
 export class SettingsStore {
   private cache: Partial<AppSettings> = {};
 

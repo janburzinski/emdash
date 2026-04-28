@@ -20,10 +20,6 @@ interface InitOptions {
   installSource?: string;
 }
 
-// ---------------------------------------------------------------------------
-// Module-level state
-// ---------------------------------------------------------------------------
-
 let enabled = true;
 let apiKey: string | undefined;
 let host: string | undefined;
@@ -89,10 +85,6 @@ function getBaseProps() {
   };
 }
 
-/**
- * Sanitize event properties to prevent PII leakage.
- * Simple allowlist approach: only allow safe property names and primitive types.
- */
 function sanitizeEventAndProps(_event: TelemetryEvent, props: Record<string, unknown> | undefined) {
   const sanitized: Record<string, unknown> = {};
 
@@ -193,10 +185,6 @@ function normalizeHost(h: string | undefined): string | undefined {
   return s.replace(/\/+$/, '');
 }
 
-// ---------------------------------------------------------------------------
-// PostHog transport
-// ---------------------------------------------------------------------------
-
 async function posthogCapture(
   event: TelemetryEvent,
   properties?: Record<string, unknown>
@@ -249,10 +237,6 @@ async function posthogIdentify(username: string, accountId?: string): Promise<vo
   }
 }
 
-// ---------------------------------------------------------------------------
-// Daily active user
-// ---------------------------------------------------------------------------
-
 async function checkDailyActiveUser(): Promise<void> {
   if (!isEnabled()) return;
   try {
@@ -270,10 +254,6 @@ async function checkDailyActiveUser(): Promise<void> {
     // Never let telemetry errors crash the app
   }
 }
-
-// ---------------------------------------------------------------------------
-// Public API
-// ---------------------------------------------------------------------------
 
 export async function init(options?: InitOptions): Promise<void> {
   const env = process.env;
@@ -361,11 +341,6 @@ export async function init(options?: InitOptions): Promise<void> {
   }, 60_000);
 }
 
-/**
- * Associate the current anonymous session with a known identity. Call this
- * whenever authentication succeeds — pass the GitHub username and, optionally,
- * the emdash account ID so both are linked in PostHog.
- */
 export function identify(username: string, accountId?: string): void {
   if (!username) return;
   cachedGithubUsername = username;
@@ -393,25 +368,6 @@ export function capture<E extends TelemetryEvent>(
   });
 }
 
-/**
- * Capture an exception for PostHog error tracking.
- */
-export function captureException(
-  error: Error | unknown,
-  additionalProperties?: Record<string, unknown>
-): void {
-  if (!isEnabled()) return;
-
-  const errorObj = error instanceof Error ? error : new Error(String(error));
-
-  void posthogCapture('$exception', {
-    $exception_message: errorObj.message || 'Unknown error',
-    $exception_type: errorObj.name || 'Error',
-    $exception_stack_trace_raw: errorObj.stack || '',
-    ...additionalProperties,
-  });
-}
-
 export function shutdown(): void {
   // Stop the heartbeat interval.
   if (heartbeatInterval !== undefined) {
@@ -422,10 +378,6 @@ export function shutdown(): void {
   // and won't emit a synthetic crash app_closed event.
   void telemetryKV.del('lastSessionId');
   void telemetryKV.del('lastHeartbeatTs');
-}
-
-export function isTelemetryEnabled(): boolean {
-  return isEnabled();
 }
 
 export function getTelemetryStatus() {
@@ -442,11 +394,6 @@ export function getTelemetryStatus() {
 export function setTelemetryEnabledViaUser(enabledFlag: boolean): void {
   userOptOut = !enabledFlag;
   telemetryKV.set('enabled', String(enabledFlag));
-}
-
-export function setOnboardingSeen(flag: boolean): void {
-  onboardingSeen = Boolean(flag);
-  telemetryKV.set('onboardingSeen', String(onboardingSeen));
 }
 
 export async function checkAndReportDailyActiveUser(): Promise<void> {

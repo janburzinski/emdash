@@ -10,13 +10,6 @@ interface PrefetchEntry {
   gitUris: string[];
 }
 
-/**
- * Returns a stable callback that pre-warms Monaco models on hover so that when the user
- * clicks to open a diff the models are already loaded. Models are unregistered on unmount.
- * TTL eviction (60 s after last subscriber leaves) handles any remaining cleanup.
- *
- * Pass `modifiedRef` for the 'pr' group to pre-warm the PR head SHA instead of HEAD.
- */
 export function usePrefetchDiffModels(
   projectId: string,
   workspaceId: string,

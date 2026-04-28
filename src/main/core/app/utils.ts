@@ -48,8 +48,6 @@ export const execFileCommand = (
 export const escapeAppleScriptString = (value: string): string =>
   value.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
 
-// ─── Font discovery ───────────────────────────────────────────────────────────
-
 const dedupeAndSortFonts = (fonts: string[]): string[] => {
   const unique = Array.from(new Set(fonts.map((f) => f.trim()).filter(Boolean)));
   return unique.sort((a, b) => a.localeCompare(b));
@@ -114,8 +112,6 @@ export const listInstalledFontsAll = async (): Promise<string[]> => {
   }
 };
 
-// ─── App version ─────────────────────────────────────────────────────────────
-
 const readPackageVersion = async (packageJsonPath: string): Promise<string | null> => {
   try {
     const packageJson = JSON.parse(await readFile(packageJsonPath, 'utf-8'));
@@ -153,8 +149,6 @@ export const resolveAppVersion = async (): Promise<string> => {
     return UNKNOWN_VERSION;
   }
 };
-
-// ─── Installed-app detection ─────────────────────────────────────────────────
 
 export const checkCommand = (cmd: string): Promise<boolean> =>
   new Promise((resolve) => {

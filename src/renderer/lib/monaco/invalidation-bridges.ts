@@ -5,7 +5,6 @@ import { HEAD_REF, STAGED_REF } from '@shared/git';
 import { events } from '@renderer/lib/ipc';
 import type { MonacoModelRegistry } from './monaco-model-registry';
 
-/** Disk models for paths affected by a watch event (atomic saves often use create/delete, not modify). */
 function diskUrisForFsWatchEvent(
   registry: MonacoModelRegistry,
   workspaceId: string,
@@ -28,12 +27,6 @@ function diskUrisForFsWatchEvent(
   return [];
 }
 
-/**
- * Wire all three invalidation bridges for the given registry. Returns a
- * teardown function that removes all event subscriptions.
- *
- * Call once in `bootstrap()` after Monaco pool initialization.
- */
 export function wireModelRegistryInvalidation(registry: MonacoModelRegistry): () => void {
   // Disk file modifications → invalidate matching disk:// models.
   const unsubFs = events.on(fsWatchEventChannel, ({ workspaceId, events: fsEvents }) => {

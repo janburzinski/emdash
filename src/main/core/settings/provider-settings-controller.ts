@@ -3,11 +3,6 @@ import type { ProviderCustomConfig } from '@shared/app-settings';
 import { providerOverrideSettings } from './provider-settings-service';
 
 export const providerSettingsController = createRPCController({
-  getAll: (): Promise<Record<string, ProviderCustomConfig>> => providerOverrideSettings.getAll(),
-
-  getItem: (id: string): Promise<ProviderCustomConfig | undefined> =>
-    providerOverrideSettings.getItem(id),
-
   getItemWithMeta: (
     id: string
   ): Promise<{
@@ -20,6 +15,4 @@ export const providerSettingsController = createRPCController({
     providerOverrideSettings.updateItem(id, config),
 
   resetItem: (id: string): Promise<void> => providerOverrideSettings.resetItem(id),
-
-  resetAll: (): Promise<void> => providerOverrideSettings.resetAll(),
 });

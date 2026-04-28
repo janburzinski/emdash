@@ -37,7 +37,7 @@ import {
 } from '@renderer/lib/ui/context-menu';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@renderer/lib/ui/tooltip';
 import { cn } from '@renderer/utils/utils';
-import { SidebarItemMiniButton, SidebarMenuButton, SidebarMenuRow } from './sidebar-primitives';
+import { SidebarItemMiniButton, SidebarMenuRow } from './sidebar-primitives';
 
 const UNREGISTERED_PHASE_LABEL: Record<UnregisteredProject['phase'], string> = {
   'creating-repo': 'Creating repository…',
@@ -240,17 +240,3 @@ export const SidebarProjectItem = observer(function SidebarProjectItem({
     </ContextMenu>
   );
 });
-
-interface BaseProjectItemProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  isActive: boolean;
-}
-
-export function BaseProjectItem({ isActive, className, ...props }: BaseProjectItemProps) {
-  return (
-    <SidebarMenuButton
-      className={cn('justify-between flex item px-1 py-1', className)}
-      isActive={isActive}
-      {...props}
-    />
-  );
-}

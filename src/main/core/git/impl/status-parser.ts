@@ -1,9 +1,3 @@
-/**
- * Incremental NUL-delimited parser for `git status -z` output (porcelain v1, z mode).
- * Matches the structure of VSCode's GitStatusParser.
- */
-
-/** Max entries before we signal `tooManyFiles` and callers should kill `git status`. */
 export const MAX_STATUS_FILES = 10_000;
 
 export class TooManyFilesChangedError extends Error {
@@ -16,7 +10,6 @@ export class TooManyFilesChangedError extends Error {
 export interface IFileStatus {
   x: string;
   y: string;
-  /** For rename/copy — the path before rename (second segment). */
   rename?: string;
   path: string;
 }
@@ -30,9 +23,6 @@ export class StatusParser {
     return this.result;
   }
 
-  /**
-   * Feed raw string chunks from `git status -z` stdout. Incomplete tail bytes are buffered.
-   */
   update(chunk: string): void {
     let raw = this.lastRaw + chunk;
     let i = 0;
@@ -51,9 +41,6 @@ export class StatusParser {
     this.lastRaw = raw.slice(i);
   }
 
-  /**
-   * Parse one complete entry starting at `i`. Returns index after the entry, or `undefined` if truncated.
-   */
   private parseEntry(raw: string, i: number): number | undefined {
     if (i + 4 > raw.length) {
       return undefined;

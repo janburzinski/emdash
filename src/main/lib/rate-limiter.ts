@@ -1,10 +1,3 @@
-/**
- * Token-bucket rate limiter.
- *
- * Tokens refill at `refillRate` per second up to `capacity`.
- * Each `acquire()` call consumes one token; if none are available the call
- * waits until one becomes available.
- */
 export class RateLimiter {
   private tokens: number;
   private lastRefill: number;
@@ -40,5 +33,4 @@ export class RateLimiter {
   }
 }
 
-/** Shared rate limiter for GitHub API calls: burst of 20, sustained 10/sec. */
 export const githubRateLimiter = new RateLimiter(20, 10);

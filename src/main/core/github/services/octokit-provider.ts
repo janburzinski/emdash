@@ -13,8 +13,3 @@ export async function getOctokit(): Promise<Octokit> {
   }
   return cachedOctokit!;
 }
-
-export function clearOctokitCache(): void {
-  cachedOctokit = null;
-  cachedToken = null;
-}

@@ -50,7 +50,6 @@ export interface TabBarProps<TEntity> {
   renderTabSuffix?: (entity: TEntity) => React.ReactNode;
   onRename?: (id: string, newName: string) => void;
   onReorder?: (fromIndex: number, toIndex: number) => void;
-  /** Rendered in the right-side area. Caller is responsible for all buttons and their click handlers. */
   actions?: React.ReactNode;
 }
 

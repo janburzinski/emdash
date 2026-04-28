@@ -84,7 +84,6 @@ export function wireTerminalDevServerWatcher({
   pty: Pty;
   scopeId: string;
   terminalId: string;
-  /** Set to false for SSH sessions where remote ports are not locally reachable */
   probe?: boolean;
 }): void {
   let buffer = '';

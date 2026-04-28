@@ -3,10 +3,6 @@ import { ownerFromUrl, type PullRequest } from '@shared/pull-requests';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@renderer/lib/ui/tooltip';
 import { cn } from '@renderer/utils/utils';
 
-/**
- * Renders the GitHub-style merge summary line, e.g.:
- * "lucasmerlin wants to merge into generalaction:main from lucasmerlin:feat/my-branch"
- */
 export function PrMergeLine({ pr, className }: { pr: PullRequest; className?: string }) {
   const author = pr.author?.userName;
   const baseOwner = ownerFromUrl(pr.repositoryUrl);

@@ -13,9 +13,6 @@ import { RelativeTime } from '@renderer/lib/ui/relative-time';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@renderer/lib/ui/tooltip';
 import { getSortInstant } from './sidebar-store';
 
-/**
- * Sidebar tail: spinner while bootstrapping, otherwise aggregate agent status indicator.
- */
 export const TaskSidebarAgentStatus = observer(function TaskSidebarAgentStatus({
   task,
 }: {

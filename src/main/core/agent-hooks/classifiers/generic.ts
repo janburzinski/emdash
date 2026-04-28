@@ -1,9 +1,5 @@
 import { createProviderClassifier, type ClassificationResult } from './base';
 
-/**
- * Generic fallback classifier for providers without specific patterns.
- * Uses common patterns across most CLI agents.
- */
 export function createGenericClassifier() {
   return createProviderClassifier((text: string): ClassificationResult => {
     const tail = text.slice(-500);

@@ -83,48 +83,19 @@ function getWindowsEssentialEnv(resolvedPath: string): Record<string, string> {
 }
 
 export interface AgentEnvOptions {
-  /**
-   * Pass through AGENT_ENV_VARS from process.env.
-   * Defaults to true — set false only for tests or sandboxed environments.
-   */
   agentApiVars?: boolean;
 
-  /**
-   * Include SHELL in the env (needed for shell-wrapper spawns so the shell
-   * can reconstruct login env via -il flags).
-   */
   includeShellVar?: boolean;
 
-  /**
-   * Emdash hook server connection details.  When set, injects
-   * EMDASH_HOOK_PORT, EMDASH_PTY_ID, and EMDASH_HOOK_TOKEN so agent CLIs
-   * can call back on lifecycle events.
-   */
   hook?: {
     port: number;
     ptyId: string;
     token: string;
   };
 
-  /**
-   * Per-provider custom env vars configured by the user.
-   * Keys are validated against ^[A-Za-z_][A-Za-z0-9_]*$.
-   */
   customVars?: Record<string, string>;
 }
 
-/**
- * Build an environment for a user-facing interactive terminal session.
- *
- * Unlike buildAgentEnv, this inherits process.env wholesale so the terminal
- * feels identical to one opened in Ghostty or Terminal.app — the user's
- * EDITOR, MANPATH, JAVA_HOME, custom vars, etc. are all present.
- *
- * TERM, COLORTERM, TERM_PROGRAM, and SHELL are always set or overridden so
- * the shell and programs inside it report the correct terminal identity.
- * SSH_AUTH_SOCK is injected via the same cached detector used for agents,
- * since GUI-launched apps often don't inherit it from the user's login shell.
- */
 export function buildTerminalEnv(): Record<string, string> {
   // Inherit the full process environment, stripping undefined values.
   const env: Record<string, string> = {};
@@ -151,14 +122,6 @@ export function buildTerminalEnv(): Record<string, string> {
   return env;
 }
 
-/**
- * Build a clean, minimal PTY environment from scratch.
- *
- * Does NOT inherit process.env wholesale — only well-known variables are
- * forwarded.  Login shells (-il) will rebuild PATH, NVM, etc. from the user's
- * shell config files.  Direct spawns (no shell) receive PATH so the CLI can
- * find its own dependencies.
- */
 export function buildAgentEnv(options: AgentEnvOptions = {}): Record<string, string> {
   const { agentApiVars = true, includeShellVar = false, hook, customVars } = options;
 

@@ -4,7 +4,6 @@ import { Button } from '@renderer/lib/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@renderer/lib/ui/tooltip';
 
 interface ResetToDefaultButtonProps {
-  /** Optional label shown in the tooltip: "Reset to default: <label>" */
   defaultLabel?: string;
   onReset: () => void;
   disabled?: boolean;

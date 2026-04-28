@@ -1,12 +1,3 @@
-/**
- * Tiny external store for panel-drag state, compatible with useSyncExternalStore.
- *
- * Written to by layout-provider.tsx (via handleDragging) and read by
- * use-terminals.ts so terminals can suppress fitAddon.fit() during a drag and
- * fire exactly one fit+PTY-resize when the drag ends — without a global window
- * event.
- */
-
 type Listener = () => void;
 
 let isDragging = false;

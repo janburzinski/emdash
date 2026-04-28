@@ -95,7 +95,6 @@ export class RepositoryStore {
     return this.localData.data?.currentBranch ?? null;
   }
 
-  /** Combined local + remote branches, preserving the same shape as the old BranchesPayload.branches. */
   get branches(): (LocalBranch | RemoteBranch)[] {
     return [...this.localBranches, ...this.remoteBranches];
   }
@@ -121,16 +120,11 @@ export class RepositoryStore {
     return this.remoteData.data?.remotes ?? [];
   }
 
-  /** True when the configured remote points to a GitHub.com repository. */
   get isGitHubRemote(): boolean {
     const url = this.configuredRemote.url;
     return !!url && isGitHubUrl(url);
   }
 
-  /**
-   * The normalised HTTPS GitHub URL for the configured remote
-   * (e.g. `https://github.com/owner/repo`), or `null` if not a GitHub remote.
-   */
   get repositoryUrl(): string | null {
     const url = this.configuredRemote.url;
     if (!url || !isGitHubUrl(url)) return null;
@@ -188,7 +182,6 @@ export class RepositoryStore {
     this.remoteData.invalidate();
   }
 
-  /** Refresh both — for call-sites that don't know which half changed. */
   refresh(): void {
     this.localData.invalidate();
     this.remoteData.invalidate();

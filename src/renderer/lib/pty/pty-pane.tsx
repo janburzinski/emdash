@@ -5,17 +5,12 @@ import type { FrontendPty, SessionTheme } from './pty';
 import { usePty } from './use-pty';
 
 type Props = {
-  /**
-   * Deterministic PTY session ID: `makePtySessionId(projectId, scopeId, leafId)`.
-   */
   sessionId: string;
-  /** Pre-connected FrontendPty owned by the entity's PtySession store. */
   pty: FrontendPty;
   className?: string;
   themeOverride?: SessionTheme['override'];
   contentFilter?: string;
   mapShiftEnterToCtrlJ?: boolean;
-  /** SSH connection ID — used for remote file drag-and-drop only. */
   remoteConnectionId?: string;
   onActivity?: () => void;
   onExit?: (info: { exitCode: number | undefined; signal?: number }) => void;
