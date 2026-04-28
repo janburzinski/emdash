@@ -80,7 +80,7 @@ export interface UseTerminalReturn {
  * React hook that manages a full xterm.js terminal instance attached to
  * `containerRef`, wired to a PTY session via the deterministic `sessionId`.
  *
- * Each session owns a persistent FrontendPty (terminal + Canvas2D renderer)
+ * Each session owns a persistent FrontendPty (terminal + WebGL renderer)
  * for its full lifetime.  On unmount the terminal's ownedContainer is
  * reparented to the off-screen xterm host rather than disposed, so scrollback
  * is preserved across tab switches.
@@ -483,13 +483,15 @@ export function usePty(
 
       // ── ptyStartedRef — detect first PTY output ────────────────────────────
       // FrontendPty owns the data subscription and writes directly to the
-      // terminal.  We add a lightweight IPC listener here solely to flip the
-      // ptyStartedRef flag, which is used to suppress focus-reporting escape
-      // sequences before the PTY shell has initialised.
+      // terminal. This listener exists solely to flip ptyStartedRef on the
+      // first event (used to suppress focus-reporting escape sequences before
+      // the PTY shell has initialised) and unsubscribes itself afterwards so
+      // subsequent IPC events don't fan out to a no-op handler.
       const offPtyData = events.on(
         ptyDataChannel,
         () => {
           ptyStartedRef.current = true;
+          offPtyData();
         },
         sessionId
       );

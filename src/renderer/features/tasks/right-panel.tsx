@@ -41,8 +41,8 @@ export const TaskRightSidebar = observer(function TaskRightSidebar() {
   const active = taskView.rightPanelView;
 
   return (
-    <div className="flex h-full w-full flex-col overflow-hidden">
-      <div className="flex h-10 shrink-0 items-center justify-between border-b border-border bg-background-secondary pl-1 pr-1 dark:bg-background">
+    <div className="flex h-full w-full flex-col overflow-hidden bg-background-tertiary text-foreground-tertiary-muted">
+      <div className="flex h-10 shrink-0 items-center justify-between pl-1 pr-1">
         <div className="flex items-center gap-0.5">
           {TABS.map((tab) => {
             const isActive = active === tab.id;
@@ -54,8 +54,8 @@ export const TaskRightSidebar = observer(function TaskRightSidebar() {
                     className={cn(
                       'flex h-7 items-center gap-1.5 rounded-md px-2 text-xs transition-colors',
                       isActive
-                        ? 'bg-background-2 text-foreground'
-                        : 'text-foreground-muted hover:bg-background-2/60 hover:text-foreground'
+                        ? 'bg-background-tertiary-2 text-foreground-tertiary'
+                        : 'text-foreground-tertiary-muted hover:bg-background-tertiary-1 hover:text-foreground-tertiary'
                     )}
                   >
                     {tab.icon}
@@ -79,7 +79,7 @@ export const TaskRightSidebar = observer(function TaskRightSidebar() {
                       taskView.conversationTabs.setActiveTab(conversationId),
                   })
                 }
-                className="flex h-7 items-center gap-1.5 rounded-md px-2 text-xs text-foreground-muted transition-colors hover:bg-background-2/60 hover:text-foreground"
+                className="flex h-7 items-center gap-1.5 rounded-md px-2 text-xs text-foreground-tertiary-muted transition-colors hover:bg-background-tertiary-1 hover:text-foreground-tertiary"
               >
                 <FileMagnifyingGlass className="size-3.5" />
                 <span>Review</span>
@@ -90,7 +90,7 @@ export const TaskRightSidebar = observer(function TaskRightSidebar() {
           <Popover>
             <Tooltip>
               <TooltipTrigger>
-                <PopoverTrigger className="flex size-7 items-center justify-center rounded-md text-foreground-muted hover:bg-background-2 hover:text-foreground">
+                <PopoverTrigger className="flex size-7 items-center justify-center rounded-md text-foreground-tertiary-muted transition-colors hover:bg-background-tertiary-1 hover:text-foreground-tertiary">
                   <Plus className="size-3.5" />
                 </PopoverTrigger>
               </TooltipTrigger>

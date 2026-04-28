@@ -1,4 +1,4 @@
-import { action, computed, makeObservable, observable, onBecomeObserved, runInAction } from 'mobx';
+import { action, computed, makeObservable, observable, runInAction } from 'mobx';
 import { Conversation, CreateConversationParams } from '@shared/conversations';
 import {
   agentEventChannel,
@@ -14,7 +14,6 @@ import { soundPlayer } from '@renderer/utils/soundPlayer';
 export type AgentStatus = 'idle' | 'working' | 'awaiting-input' | 'error' | 'completed';
 
 export class ConversationManagerStore {
-  private _loaded = false;
   private offAgentEvents: (() => void) | null = null;
   private offSessionExited: (() => void) | null = null;
   conversations = observable.map<string, ConversationStore>();
@@ -27,10 +26,9 @@ export class ConversationManagerStore {
       conversations: observable,
       taskStatus: computed,
     });
-    onBecomeObserved(this, 'conversations', () => {
-      if (this._loaded) return;
-      this.load();
-    });
+    // Kick off the conversation-list fetch immediately so it overlaps with the
+    // rest of the task-mount work instead of blocking the first observer read.
+    void this.load();
     this.offAgentEvents = this.listenToAgentEvents();
     this.offSessionExited = this.listenToSessionExited();
   }
@@ -85,7 +83,6 @@ export class ConversationManagerStore {
   }
 
   async load() {
-    this._loaded = true;
     const conversations = await rpc.conversations.getConversationsForTask(
       this.projectId,
       this.taskId

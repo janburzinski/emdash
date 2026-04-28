@@ -26,6 +26,15 @@ export class PtySessionRegistry {
     const flush = () => {
       if (buffer) {
         events.emit(ptyDataChannel, buffer, sessionId);
+        // Ring buffer is updated here (not per-chunk) so high-throughput streams
+        // don't allocate a new string on every PTY chunk. Late-connecting
+        // renderers receive at most one flush interval (~16ms) of older state,
+        // which is imperceptible.
+        let rb = (this.ringBuffers.get(sessionId) ?? '') + buffer;
+        // Slice lazily: only trim when significantly over cap, so steady-state
+        // buffers don't reslice on every flush.
+        if (rb.length > RING_BUFFER_CAP * 1.5) rb = rb.slice(-RING_BUFFER_CAP);
+        this.ringBuffers.set(sessionId, rb);
         buffer = '';
       }
       flushTimer = null;
@@ -36,10 +45,6 @@ export class PtySessionRegistry {
       if (!flushTimer) {
         flushTimer = setTimeout(flush, FLUSH_INTERVAL_MS);
       }
-      // Accumulate into ring buffer for late-connecting renderers
-      let rb = (this.ringBuffers.get(sessionId) ?? '') + data;
-      if (rb.length > RING_BUFFER_CAP) rb = rb.slice(-RING_BUFFER_CAP);
-      this.ringBuffers.set(sessionId, rb);
     });
 
     pty.onExit((info) => {

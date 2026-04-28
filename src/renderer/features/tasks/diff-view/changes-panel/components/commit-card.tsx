@@ -79,18 +79,18 @@ export const CommitCard = observer(function CommitCard({ autoStage = false }: Co
   const diffView = provisioned.taskView.diffView;
 
   return (
-    <div className="shrink-0 mx-2 mb-2 flex flex-col gap-2 items-center justify-between rounded-xl border border-border bg-background-1 p-2">
+    <div className="shrink-0 mx-2 mb-2 flex flex-col gap-2 items-center justify-between rounded-xl border border-border bg-background-tertiary-1 p-2">
       <Input
         placeholder="Commit message"
         autoFocus
-        className="w-full bg-background"
+        className="w-full bg-background-tertiary"
         value={commitMessage}
         onChange={(e) => setCommitMessage(e.target.value)}
         disabled={isInFlight}
       />
       <Textarea
         placeholder="Description"
-        className="w-full bg-background"
+        className="w-full bg-background-tertiary"
         value={description}
         onChange={(e) => setDescription(e.target.value)}
         disabled={isInFlight}
@@ -123,7 +123,7 @@ export const CommitCard = observer(function CommitCard({ autoStage = false }: Co
 
 function StatusRow({ icon, label }: { icon: React.ReactNode; label: string }) {
   return (
-    <div className="flex w-full items-center justify-center gap-2 py-1 text-sm text-foreground-muted">
+    <div className="flex w-full items-center justify-center gap-2 py-1 text-sm text-foreground-tertiary-muted">
       {icon}
       <span>{label}</span>
     </div>

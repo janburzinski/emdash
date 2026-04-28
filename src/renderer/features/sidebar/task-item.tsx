@@ -51,6 +51,15 @@ export const SidebarTaskItem = observer(function SidebarTaskItem({
     taskManager?.provisionTask(taskId);
   };
 
+  // Hover prefetch: provisionTask is idempotent (gated by an in-flight promise
+  // map), so kicking it off when the user moves their pointer over the row
+  // gives ~80–200ms of head start before the click. By the time they actually
+  // click, the IPC roundtrip is often already settled.
+  const handlePointerEnter = () => {
+    if (task.state !== 'unprovisioned' || task.phase !== 'idle') return;
+    taskManager?.provisionTask(taskId);
+  };
+
   const handleArchive = () => {
     if (isActive) navigate('project', { projectId });
     void taskManager?.archiveTask(taskId);
@@ -89,6 +98,7 @@ export const SidebarTaskItem = observer(function SidebarTaskItem({
         )}
         isActive={isActive}
         onMouseDown={(e) => e.preventDefault()}
+        onPointerEnter={handlePointerEnter}
         onClick={() => {
           handleProvision();
           navigate('task', { projectId, taskId });

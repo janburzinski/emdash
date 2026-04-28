@@ -1,5 +1,5 @@
-import { CanvasAddon } from '@xterm/addon-canvas';
 import { WebLinksAddon } from '@xterm/addon-web-links';
+import { WebglAddon } from '@xterm/addon-webgl';
 import { Terminal, type ITerminalOptions } from '@xterm/xterm';
 import { ptyDataChannel } from '@shared/events/ptyEvents';
 import { events, rpc } from '@renderer/lib/ipc';
@@ -90,15 +90,18 @@ export class FrontendPty {
       theme: buildTheme(theme),
     });
 
-    const canvasAddon = new CanvasAddon();
+    const webglAddon = new WebglAddon();
+    // GPU context loss (driver crash, system sleep, tab backgrounded too long):
+    // dispose so xterm transparently falls back to its DOM renderer.
+    webglAddon.onContextLoss(() => webglAddon.dispose());
     const webLinksAddon = new WebLinksAddon((event, uri) => {
       event.preventDefault();
       rpc.app.openExternal(uri).catch(() => {});
     });
 
-    this.terminal.loadAddon(canvasAddon);
-    this.terminal.loadAddon(webLinksAddon);
     this.terminal.open(this.ownedContainer);
+    this.terminal.loadAddon(webglAddon);
+    this.terminal.loadAddon(webLinksAddon);
 
     const el = (this.terminal as unknown as { element?: HTMLElement }).element;
     if (el) {
@@ -146,7 +149,7 @@ export class FrontendPty {
       this.terminal.resize(targetDims.cols, targetDims.rows);
     }
     mountTarget.appendChild(this.ownedContainer);
-    // Force a Canvas2D repaint after reparenting in the DOM.
+    // Force a renderer repaint after reparenting in the DOM.
     const t = this.terminal;
     requestAnimationFrame(() => {
       try {

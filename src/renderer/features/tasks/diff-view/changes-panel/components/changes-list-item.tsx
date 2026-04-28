@@ -25,8 +25,9 @@ export const ChangesListItem = forwardRef<HTMLButtonElement, ChangesListItemProp
     return (
       <button
         className={cn(
-          'group/item w-full flex items-center gap-2 justify-between px-2 py-1 hover:bg-background-1 h-7 rounded-md',
-          isActive && 'bg-background-2 hover:bg-background-2',
+          'group/item w-full flex items-center gap-2 justify-between px-2 py-1 text-foreground-tertiary-muted hover:bg-background-tertiary-1 hover:text-foreground-tertiary h-7 rounded-md transition-colors',
+          isActive &&
+            'bg-background-tertiary-2 text-foreground-tertiary hover:bg-background-tertiary-2',
           className
         )}
         ref={ref}
@@ -35,7 +36,9 @@ export const ChangesListItem = forwardRef<HTMLButtonElement, ChangesListItemProp
         <div className="flex items-center gap-1.5 min-w-0">
           <FileIcon filename={filename} size={12} />
           <span className="text-sm truncate">{filename}</span>
-          {directory && <span className="text-xs text-foreground-muted truncate">{directory}</span>}
+          {directory && (
+            <span className="text-xs text-foreground-tertiary-passive truncate">{directory}</span>
+          )}
         </div>
         <div className="relative size-4 shrink-0 flex items-center justify-center">
           <span
