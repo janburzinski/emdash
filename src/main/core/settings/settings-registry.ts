@@ -49,6 +49,11 @@ export const SETTINGS_DEFAULTS = {
   browserPreview: {
     enabled: true,
   },
+  remote: {
+    enabled: false,
+    bindAddress: '127.0.0.1',
+    port: 7798,
+  },
 } satisfies SettingsDefaultsMap;
 
 export function getDefaultForKey<K extends AppSettingsKey>(key: K): AppSettings[K] {

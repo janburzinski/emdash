@@ -17,6 +17,7 @@ import { plainController } from './core/plain/controller';
 import { projectController } from './core/projects/controller';
 import { ptyController } from './core/pty/controller';
 import { pullRequestController } from './core/pull-requests/controller';
+import { remoteController } from './core/remote/controller';
 import { repositoryController } from './core/repository/controller';
 import { appSettingsController } from './core/settings/controller';
 import { providerSettingsController } from './core/settings/provider-settings-controller';
@@ -59,6 +60,7 @@ export const rpcRouter = createRPCRouter({
   telemetry: telemetryController,
   pullRequests: pullRequestController,
   viewState: viewStateController,
+  remote: remoteController,
 });
 
 export type RpcRouter = typeof rpcRouter;

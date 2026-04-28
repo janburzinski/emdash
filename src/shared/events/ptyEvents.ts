@@ -9,3 +9,8 @@ export const ptyExitChannel = defineEvent<{
 }>('pty:exit');
 
 export const ptyInputChannel = defineEvent<string>('pty:input');
+
+export const ptyResizeChannel = defineEvent<{
+  cols: number;
+  rows: number;
+}>('pty:resize');

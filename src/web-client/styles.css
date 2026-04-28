@@ -1,0 +1,260 @@
+@import '@xterm/xterm/css/xterm.css';
+
+:root {
+  color-scheme: dark;
+  --bg: #0b0d10;
+  --bg-elev-1: #0f1116;
+  --bg-elev-2: #14171e;
+  --border: #1c1f27;
+  --fg: #e5e7eb;
+  --fg-muted: #8b93a1;
+  --fg-subtle: #5a6271;
+  --accent: #7ee787;
+  --accent-dim: #4d7d56;
+  --error: #ff7b72;
+  --warn: #f0b400;
+  --xterm-bg: #0b0d10;
+  --xterm-fg: #e5e7eb;
+  --mono:
+    ui-monospace, SFMono-Regular, 'JetBrains Mono', 'Fira Code', Menlo, Consolas, 'Liberation Mono',
+    monospace;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  margin: 0;
+  height: 100dvh;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--mono);
+  font-size: 13px;
+  font-variant-ligatures: none;
+}
+
+button {
+  font-family: inherit;
+  font-size: inherit;
+}
+
+.app {
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+  width: 100vw;
+}
+
+.titlebar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 12px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-elev-1);
+  min-height: 28px;
+  font-size: 12px;
+  user-select: none;
+}
+
+.titlebar .prompt {
+  color: var(--accent-dim);
+}
+
+.titlebar .task-name {
+  color: var(--fg);
+  font-weight: 500;
+}
+
+.titlebar .sep {
+  color: var(--fg-subtle);
+}
+
+.titlebar .task-branch {
+  color: var(--fg-muted);
+}
+
+.titlebar .status {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--fg-muted);
+  text-transform: lowercase;
+  letter-spacing: 0.02em;
+}
+
+.status-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--fg-subtle);
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.02);
+}
+.status-dot.ok {
+  background: var(--accent);
+  box-shadow: 0 0 6px rgba(126, 231, 135, 0.5);
+}
+.status-dot.warn {
+  background: var(--warn);
+}
+.status-dot.err {
+  background: var(--error);
+}
+
+.tabs {
+  display: flex;
+  gap: 0;
+  padding: 0;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+  overflow-x: auto;
+  scrollbar-width: thin;
+  font-size: 12px;
+}
+
+.tab {
+  padding: 6px 12px;
+  background: transparent;
+  border: 0;
+  border-right: 1px solid var(--border);
+  border-bottom: 1px solid transparent;
+  color: var(--fg-muted);
+  cursor: pointer;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--mono);
+  font-size: 12px;
+  transition: color 0.1s ease;
+}
+
+.tab:hover {
+  color: var(--fg);
+  background: var(--bg-elev-1);
+}
+
+.tab.active {
+  color: var(--fg);
+  background: var(--xterm-bg);
+  border-bottom-color: var(--xterm-bg);
+  border-top: 1px solid var(--accent-dim);
+  padding-top: 5px;
+}
+
+.tab .kind {
+  font-size: 10px;
+  color: var(--fg-subtle);
+  letter-spacing: 0.04em;
+}
+
+.tab .kind::before {
+  content: '[';
+}
+.tab .kind::after {
+  content: ']';
+}
+
+.tab.active .kind {
+  color: var(--accent-dim);
+}
+
+.panel {
+  flex: 1;
+  position: relative;
+  background: var(--xterm-bg);
+  overflow: hidden;
+}
+
+.pane {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.pane.hidden {
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.pane-host {
+  flex: 1;
+  min-height: 0;
+  padding: 8px 10px 4px 10px;
+  /* The xterm grid is sized to the local Emdash app's PTY (cols × rows),
+     not the browser viewport. Allow scrolling when the local grid is larger
+     than this client's window. */
+  overflow: auto;
+  scrollbar-width: thin;
+}
+
+/* xterm internal cursor + selection accents tuned to our palette. */
+.xterm .xterm-cursor-block {
+  background: var(--accent) !important;
+  border-color: var(--accent) !important;
+}
+
+.center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  text-align: center;
+  padding: 24px;
+  gap: 12px;
+  font-family: var(--mono);
+}
+
+.center .title {
+  font-size: 15px;
+  color: var(--fg);
+}
+
+.center .body {
+  color: var(--fg-muted);
+  max-width: 480px;
+  line-height: 1.6;
+  font-size: 12px;
+}
+
+.center code {
+  background: var(--bg-elev-2);
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-size: 12px;
+  color: var(--accent);
+}
+
+.error {
+  color: var(--error);
+}
+
+.empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: var(--fg-muted);
+  font-family: var(--mono);
+  font-size: 12px;
+}
+
+@media (max-width: 640px) {
+  .titlebar {
+    padding: 6px 10px;
+    gap: 8px;
+  }
+  .tab {
+    padding: 6px 10px;
+  }
+  .tab .kind {
+    display: none;
+  }
+}

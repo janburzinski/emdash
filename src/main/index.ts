@@ -15,6 +15,7 @@ import { editorBufferService } from './core/editor/editor-buffer-service';
 import { githubConnectionService } from './core/github/services/github-connection-service';
 import { projectManager } from './core/projects/project-manager';
 import { prSyncScheduler } from './core/pull-requests/pr-sync-scheduler';
+import { defaultWebRoot, remoteServer } from './core/remote/remote-server';
 import { appSettingsService } from './core/settings/settings-service';
 import { updateService } from './core/updates/update-service';
 import { initializeDatabase } from './db/initialize';
@@ -96,6 +97,24 @@ app.whenReady().then(async () => {
     log.error('Failed to start agent event service:', e);
   });
 
+  appSettingsService
+    .get('remote')
+    .then((remote) => {
+      if (!remote.enabled) return;
+      return remoteServer
+        .start({
+          bindAddress: remote.bindAddress,
+          port: remote.port,
+          webRoot: defaultWebRoot(),
+        })
+        .catch((e) => {
+          log.error('Failed to start remote server:', e);
+        });
+    })
+    .catch((e) => {
+      log.warn('Failed to read remote settings:', e);
+    });
+
   emdashAccountService.loadSessionToken().catch((e) => {
     log.warn('Failed to load account session token:', e);
   });
@@ -127,6 +146,9 @@ app.on('before-quit', () => {
 
   agentHookService.stop();
   updateService.shutdown();
+  remoteServer.stop().catch((e) => {
+    log.error('Failed to shutdown remote server:', e);
+  });
   projectManager.shutdown().catch((e) => {
     log.error('Failed to shutdown project manager:', e);
   });

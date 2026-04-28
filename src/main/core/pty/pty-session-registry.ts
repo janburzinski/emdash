@@ -1,4 +1,9 @@
-import { ptyDataChannel, ptyExitChannel, ptyInputChannel } from '@shared/events/ptyEvents';
+import {
+  ptyDataChannel,
+  ptyExitChannel,
+  ptyInputChannel,
+  ptyResizeChannel,
+} from '@shared/events/ptyEvents';
 import { events } from '@main/lib/events';
 import type { Pty } from './pty';
 
@@ -10,6 +15,7 @@ export class PtySessionRegistry {
   private ptyInputSubscriptions: Map<string, () => void> = new Map();
   private ringBuffers: Map<string, string> = new Map();
   private activeConsumers: Set<string> = new Set();
+  private dimensions: Map<string, { cols: number; rows: number }> = new Map();
 
   register(sessionId: string, pty: Pty, options?: { preserveBufferOnExit?: boolean }): void {
     const preserveBufferOnExit = options?.preserveBufferOnExit ?? false;
@@ -76,6 +82,25 @@ export class PtySessionRegistry {
     this.ptyInputSubscriptions.delete(sessionId);
     this.ringBuffers.delete(sessionId);
     this.activeConsumers.delete(sessionId);
+    this.dimensions.delete(sessionId);
+  }
+
+  /**
+   * Record the size that was just sent to the underlying PTY. Other consumers
+   * (notably the remote-share WS bridge) listen on `ptyResizeChannel` so they
+   * can mirror the size into their own xterm instances without ever calling
+   * `Pty.resize` themselves — only the local Emdash app is allowed to do that.
+   */
+  setDimensions(sessionId: string, cols: number, rows: number): void {
+    if (!Number.isFinite(cols) || !Number.isFinite(rows)) return;
+    const prev = this.dimensions.get(sessionId);
+    if (prev && prev.cols === cols && prev.rows === rows) return;
+    this.dimensions.set(sessionId, { cols, rows });
+    events.emit(ptyResizeChannel, { cols, rows }, sessionId);
+  }
+
+  getDimensions(sessionId: string): { cols: number; rows: number } | undefined {
+    return this.dimensions.get(sessionId);
   }
 
   get(sessionId: string): Pty | undefined {

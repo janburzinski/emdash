@@ -19,6 +19,7 @@ export const ptyController = createRPCController({
     const pty = ptySessionRegistry.get(sessionId);
     if (!pty) return err({ type: 'not_found' as const });
     pty.resize(cols, rows);
+    ptySessionRegistry.setDimensions(sessionId, cols, rows);
     return ok();
   },
 

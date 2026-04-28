@@ -10,6 +10,7 @@ import HiddenToolsSettingsCard from './HiddenToolsSettingsCard';
 import IntegrationsCard from './IntegrationsCard';
 import KeyboardSettingsCard from './KeyboardSettingsCard';
 import NotificationSettingsCard from './NotificationSettingsCard';
+import RemoteAccessSettingsCard from './RemoteAccessSettingsCard';
 import RepositorySettingsCard from './RepositorySettingsCard';
 import { ReviewPromptResetButton, ReviewPromptSettingsCard } from './ReviewPromptSettingsCard';
 import { AutoGenerateTaskNamesRow, AutoTrustWorktreesRow } from './TaskSettingsRows';
@@ -124,6 +125,7 @@ export function SettingsPage({
       sections: [
         { component: <ThemeCard /> },
         { component: <TerminalSettingsCard /> },
+        { title: 'Remote access', component: <RemoteAccessSettingsCard /> },
         { title: 'Keyboard shortcuts', component: <KeyboardSettingsCard /> },
         {
           title: 'Tools',

@@ -1,15 +1,16 @@
 import { runInAction } from 'mobx';
 import {
-  ComponentType,
   Fragment,
   useCallback,
   useEffect,
   useMemo,
   useState,
   useTransition,
+  type ComponentType,
   type ReactNode,
 } from 'react';
 import {
+  isViewId,
   views,
   type ViewDefinition,
   type ViewId,
@@ -101,6 +102,10 @@ export function WorkspaceViewProvider({ children }: { children: ReactNode }) {
   const navigate = useCallback(
     (...args: unknown[]) => {
       const [viewId, params] = args as [ViewId, Record<string, unknown> | undefined];
+      if (!isViewId(viewId)) {
+        return;
+      }
+
       if (viewId !== currentViewId) {
         const transition = focusTracker.transition(
           viewId === 'task'
@@ -147,9 +152,10 @@ export function WorkspaceViewProvider({ children }: { children: ReactNode }) {
   ) as UpdateViewParamsFn;
 
   const slotsValue = useMemo((): SlotsContextValue => {
-    const def = (views as unknown as Record<string, ViewDefinition<Record<string, unknown>>>)[
-      currentViewId
-    ];
+    const def =
+      (views as unknown as Record<string, ViewDefinition<Record<string, unknown>>>)[
+        currentViewId
+      ] ?? views.home;
     return {
       WrapView: (def.WrapView ?? Fragment) as ComponentType<
         { children: ReactNode } & Record<string, unknown>

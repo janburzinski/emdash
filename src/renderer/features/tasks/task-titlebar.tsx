@@ -10,6 +10,7 @@ import {
   MessageSquare,
   Pin,
   RefreshCcw,
+  Share2,
   Terminal,
 } from 'lucide-react';
 import { observer } from 'mobx-react-lite';
@@ -25,10 +26,11 @@ import {
   taskViewKind,
 } from '@renderer/features/tasks/stores/task-selectors';
 import { useProvisionedTask, useTaskViewContext } from '@renderer/features/tasks/task-view-context';
-import { RightPanelView } from '@renderer/features/tasks/types';
+import { type RightPanelView } from '@renderer/features/tasks/types';
 import { OpenInMenu } from '@renderer/lib/components/titlebar/open-in-menu';
 import { Titlebar } from '@renderer/lib/components/titlebar/Titlebar';
 import { useDelayedBoolean } from '@renderer/lib/hooks/use-delay-boolean';
+import { useShowModal } from '@renderer/lib/modal/modal-provider';
 import { Badge } from '@renderer/lib/ui/badge';
 import { Button } from '@renderer/lib/ui/button';
 import { MicroLabel } from '@renderer/lib/ui/label';
@@ -116,6 +118,8 @@ const ActiveTaskTitlebar = observer(function ActiveTaskTitlebar({
   const projectName = projectDisplayName(getProjectStore(projectId));
 
   const isRemoteProject = projectStore?.data.type === 'ssh';
+  const showShareModal = useShowModal('shareTaskModal');
+  const taskName = taskDisplayName(taskStore) ?? 'Task';
   return (
     <Titlebar
       leftSlot={
@@ -278,6 +282,19 @@ const ActiveTaskTitlebar = observer(function ActiveTaskTitlebar({
       rightSlot={
         <div className="flex items-center gap-2 mr-2">
           <DevServerPills projectId={projectId} taskId={taskId} />
+          <Tooltip>
+            <TooltipTrigger>
+              <Button
+                variant="outline"
+                size="icon-sm"
+                onClick={() => showShareModal({ taskId, taskName })}
+                aria-label="Share task"
+              >
+                <Share2 className="size-3.5" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Share task remotely</TooltipContent>
+          </Tooltip>
           {!isRemoteProject && (
             <OpenInMenu path={provisionedTask.path} className="h-7  bg-background" />
           )}

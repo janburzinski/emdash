@@ -346,6 +346,26 @@ export const appSecrets = sqliteTable(
   })
 );
 
+export const remoteShares = sqliteTable(
+  'remote_shares',
+  {
+    id: text('id').primaryKey(),
+    taskId: text('task_id')
+      .notNull()
+      .references(() => tasks.id, { onDelete: 'cascade' }),
+    tokenHash: text('token_hash').notNull(),
+    label: text('label'),
+    createdAt: text('created_at')
+      .notNull()
+      .default(sql`CURRENT_TIMESTAMP`),
+    revokedAt: text('revoked_at'),
+  },
+  (table) => ({
+    tokenHashIdx: uniqueIndex('idx_remote_shares_token_hash').on(table.tokenHash),
+    taskIdIdx: index('idx_remote_shares_task_id').on(table.taskId),
+  })
+);
+
 export type KvRow = typeof kv.$inferSelect;
 export type KvInsert = typeof kv.$inferInsert;
 export type AppSecretRow = typeof appSecrets.$inferSelect;
@@ -395,3 +415,5 @@ export type TerminalRow = typeof terminals.$inferSelect;
 export type MessageRow = typeof messages.$inferSelect;
 export type EditorBufferRow = typeof editorBuffers.$inferSelect;
 export type EditorBufferInsert = typeof editorBuffers.$inferInsert;
+export type RemoteShareRow = typeof remoteShares.$inferSelect;
+export type RemoteShareInsert = typeof remoteShares.$inferInsert;

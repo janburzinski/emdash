@@ -28,6 +28,10 @@ type Views = typeof views;
 
 export type ViewId = keyof Views;
 
+export function isViewId(viewId: string): viewId is ViewId {
+  return Object.prototype.hasOwnProperty.call(views, viewId);
+}
+
 export type WrapParams<TId extends ViewId> = Views[TId] extends {
   WrapView: ComponentType<infer P>;
 }
