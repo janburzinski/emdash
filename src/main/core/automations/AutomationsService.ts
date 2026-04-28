@@ -49,6 +49,7 @@ import {
 import {
   assertSupportedTriggerType,
   enrichPromptWithEvent,
+  issueHasStableId,
   issueToRawEvent,
   isSupportedTriggerType,
   listUnsupportedFilters,
@@ -596,7 +597,9 @@ export class AutomationsService {
       );
     }
 
-    return result.issues.map((issue) => issueToRawEvent(issue, triggerType));
+    return result.issues
+      .filter(issueHasStableId)
+      .map((issue) => issueToRawEvent(issue, triggerType));
   }
 
   private async resolveNameWithOwner(projectId: string): Promise<string | null> {
@@ -673,7 +676,9 @@ export class AutomationsService {
         return;
       }
 
-      this.commitPendingTriggerEvent(runLogId, automation.id);
+      await dataMutex.run(async () => {
+        this.commitPendingTriggerEvent(runLogId, automation.id);
+      });
 
       // Register pending run so agent exit listener finalizes it
       this.pendingRunsByTaskId.set(taskId, {
@@ -731,7 +736,6 @@ export class AutomationsService {
   ): Promise<void> {
     const pending = this.pendingRunsByTaskId.get(taskId);
     if (!pending) return;
-    this.pendingRunsByTaskId.delete(taskId);
 
     const nowIso = new Date().toISOString();
     const isSuccess = exitCode === 0;
@@ -757,8 +761,13 @@ export class AutomationsService {
       });
       log.info(`[Automations] Run ${pending.runLogId} finalized: ${status} (task ${taskId})`);
     } catch (err) {
+      // Leave pending entry untouched on failure so a future retry/exit can
+      // re-attempt finalization. failStaleRunningLogs will eventually mark
+      // the orphaned 'running' row as failed if no retry comes.
       log.error('[Automations] Failed to finalize run log on agent exit:', err);
+      return;
     }
+    this.pendingRunsByTaskId.delete(taskId);
   }
 
   // -------------------------------------------------------------------
@@ -938,6 +947,12 @@ export class AutomationsService {
     if (nextMode === 'schedule') {
       validateSchedule(nextSchedule);
     }
+    // Schedule serialization is canonical (fixed key order), so byte-equality
+    // is a safe deep-equal here. Used to skip recomputing nextRunAt on no-op
+    // saves from the editor's debounced auto-save.
+    const scheduleChanged =
+      input.schedule !== undefined &&
+      serializeSchedule(input.schedule) !== serializeSchedule(current.schedule);
     const nextUpdatedAt = new Date().toISOString();
     const isTrigger = nextMode === 'trigger';
     const nextProjectId = input.projectId ?? current.projectId;
@@ -982,7 +997,7 @@ export class AutomationsService {
             : null,
       nextRunAt: isTrigger
         ? null
-        : input.schedule || current.mode !== 'schedule' || current.nextRunAt === null
+        : scheduleChanged || current.mode !== 'schedule' || current.nextRunAt === null
           ? computeNextRun(nextSchedule, new Date(nextUpdatedAt), new Date(nextUpdatedAt))
           : current.nextRunAt,
       updatedAt: nextUpdatedAt,
@@ -1043,6 +1058,9 @@ export class AutomationsService {
     this.inFlightRuns.delete(id);
     for (const [runLogId, pending] of this.pendingTriggerEventsByRunId) {
       if (pending.automationId === id) this.pendingTriggerEventsByRunId.delete(runLogId);
+    }
+    for (const [taskId, pending] of this.pendingRunsByTaskId) {
+      if (pending.automationId === id) this.pendingRunsByTaskId.delete(taskId);
     }
     this.seedingAutomations.delete(id);
     this.warnedUnsupportedFilters.delete(id);
@@ -1142,8 +1160,13 @@ export class AutomationsService {
 
     const automation = mapAutomationRow(row);
     const runLogId = generateId('run');
-    const nowIso = new Date().toISOString();
+    const now = new Date();
+    const nowIso = now.toISOString();
     const nextRunCount = automation.runCount + 1;
+    const nextRunAt =
+      automation.mode === 'schedule'
+        ? computeNextRun(automation.schedule, now, new Date(automation.createdAt))
+        : automation.nextRunAt;
 
     await dataMutex.run(async () => {
       if (this.inFlightRuns.has(automation.id)) {
@@ -1154,7 +1177,7 @@ export class AutomationsService {
         automationId: automation.id,
         nowIso,
         runCount: nextRunCount,
-        nextRunAt: automation.nextRunAt,
+        nextRunAt,
         runLogId,
       });
 
@@ -1166,6 +1189,7 @@ export class AutomationsService {
       ...automation,
       lastRunAt: nowIso,
       runCount: nextRunCount,
+      nextRunAt,
       updatedAt: nowIso,
     };
 
@@ -1239,6 +1263,7 @@ export class AutomationsService {
 
       this.inFlightRuns.delete(row.automationId);
       this.pendingTriggerEventsByRunId.delete(row.id);
+      if (row.taskId) this.pendingRunsByTaskId.delete(row.taskId);
       affectedErrors.set(row.automationId, errMsg);
     }
 

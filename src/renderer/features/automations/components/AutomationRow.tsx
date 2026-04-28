@@ -48,6 +48,7 @@ export const AutomationRow: React.FC<Props> = ({
     <div
       role="button"
       tabIndex={0}
+      aria-label={`Edit ${automation.name}`}
       onClick={onEdit}
       onKeyDown={(e) => {
         if (e.currentTarget !== e.target) return;

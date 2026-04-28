@@ -32,13 +32,15 @@ export const AutomationsView: React.FC = () => {
   const [busyId, setBusyId] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [createMode, setCreateMode] = useState<CreateMode>({ open: false });
-  const [seedVersion, setSeedVersion] = useState(0);
+  // Bumped on each openCreate to force AutomationForm to remount with the new
+  // seed (used as `key`). It only feeds React's reconciler, so a ref is plenty.
+  const seedVersionRef = useRef(0);
   const newAutomationButtonRef = useRef<HTMLButtonElement | null>(null);
   const pendingFocusAfterDeleteRef = useRef(false);
 
   const openCreate = (seed?: AutomationTemplate['seed']) => {
+    seedVersionRef.current += 1;
     setCreateMode({ open: true, seed });
-    setSeedVersion((v) => v + 1);
   };
 
   const closeCreate = () => {
@@ -77,6 +79,25 @@ export const AutomationsView: React.FC = () => {
     const action = automation.status === 'paused' ? resumeAutomation : pauseAutomation;
     return withBusy(automation.id, () => action(automation.id));
   };
+
+  const confirmDelete = (automation: Automation, beforeDelete?: () => void) => {
+    showConfirmModal({
+      title: 'Delete automation?',
+      description: `"${automation.name}" will be removed along with its run history. This cannot be undone.`,
+      confirmLabel: 'Delete',
+      variant: 'destructive',
+      onSuccess: () => {
+        beforeDelete?.();
+        void withBusy(automation.id, () => deleteAutomation(automation.id));
+      },
+    });
+  };
+
+  const handleTriggerNow = (automation: Automation) =>
+    withBusy(automation.id, () => triggerNow(automation.id));
+
+  const handleShowLogs = (automation: Automation) =>
+    showRunLogsModal({ automationId: automation.id, automationName: automation.name });
 
   useEffect(() => {
     if (editingId && !automations.some((a) => a.id === editingId)) setEditingId(null);
@@ -138,20 +159,11 @@ export const AutomationsView: React.FC = () => {
           onBack={() => setEditingId(null)}
           onUpdate={(input) => updateAutomation(input)}
           onToggle={() => setPaused(editingAutomation)}
-          onTriggerNow={() =>
-            withBusy(editingAutomation.id, () => triggerNow(editingAutomation.id))
-          }
+          onTriggerNow={() => handleTriggerNow(editingAutomation)}
           onDelete={() =>
-            showConfirmModal({
-              title: 'Delete automation?',
-              description: `"${editingAutomation.name}" will be removed along with its run history. This cannot be undone.`,
-              confirmLabel: 'Delete',
-              variant: 'destructive',
-              onSuccess: () => {
-                pendingFocusAfterDeleteRef.current = true;
-                setEditingId(null);
-                void withBusy(editingAutomation.id, () => deleteAutomation(editingAutomation.id));
-              },
+            confirmDelete(editingAutomation, () => {
+              pendingFocusAfterDeleteRef.current = true;
+              setEditingId(null);
             })
           }
           isBusy={busyId === editingAutomation.id}
@@ -244,7 +256,7 @@ export const AutomationsView: React.FC = () => {
                 className="overflow-hidden rounded-lg border border-border/60 bg-muted/10 shadow-sm"
               >
                 <AutomationForm
-                  key={`seed-${seedVersion}`}
+                  key={`seed-${seedVersionRef.current}`}
                   initialSeed={createMode.seed}
                   isSubmitting={isCreating}
                   onCancel={closeCreate}
@@ -263,83 +275,30 @@ export const AutomationsView: React.FC = () => {
                 ) : (
                   <div className="space-y-6">
                     {activeAutomations.length > 0 && (
-                      <Section label="Active" count={activeAutomations.length}>
-                        {activeAutomations.map((automation, i) => (
-                          <StaggeredRow
-                            key={automation.id}
-                            index={i}
-                            shouldReduceMotion={shouldReduceMotion ?? false}
-                          >
-                            <AutomationRow
-                              automation={automation}
-                              busy={busyId === automation.id}
-                              onToggle={() => setPaused(automation)}
-                              onDelete={() =>
-                                showConfirmModal({
-                                  title: 'Delete automation?',
-                                  description: `"${automation.name}" will be removed along with its run history. This cannot be undone.`,
-                                  confirmLabel: 'Delete',
-                                  variant: 'destructive',
-                                  onSuccess: () =>
-                                    void withBusy(automation.id, () =>
-                                      deleteAutomation(automation.id)
-                                    ),
-                                })
-                              }
-                              onTriggerNow={() =>
-                                withBusy(automation.id, () => triggerNow(automation.id))
-                              }
-                              onShowLogs={() =>
-                                showRunLogsModal({
-                                  automationId: automation.id,
-                                  automationName: automation.name,
-                                })
-                              }
-                              onEdit={() => openEditor(automation)}
-                            />
-                          </StaggeredRow>
-                        ))}
-                      </Section>
+                      <AutomationGroup
+                        label="Active"
+                        automations={activeAutomations}
+                        busyId={busyId}
+                        shouldReduceMotion={shouldReduceMotion ?? false}
+                        onEdit={openEditor}
+                        onToggle={setPaused}
+                        onDelete={confirmDelete}
+                        onTriggerNow={handleTriggerNow}
+                        onShowLogs={handleShowLogs}
+                      />
                     )}
-
                     {pausedAutomations.length > 0 && (
-                      <Section label="Paused" count={pausedAutomations.length}>
-                        {pausedAutomations.map((automation, i) => (
-                          <StaggeredRow
-                            key={automation.id}
-                            index={i}
-                            shouldReduceMotion={shouldReduceMotion ?? false}
-                          >
-                            <AutomationRow
-                              automation={automation}
-                              busy={busyId === automation.id}
-                              onToggle={() => setPaused(automation)}
-                              onDelete={() =>
-                                showConfirmModal({
-                                  title: 'Delete automation?',
-                                  description: `"${automation.name}" will be removed along with its run history. This cannot be undone.`,
-                                  confirmLabel: 'Delete',
-                                  variant: 'destructive',
-                                  onSuccess: () =>
-                                    void withBusy(automation.id, () =>
-                                      deleteAutomation(automation.id)
-                                    ),
-                                })
-                              }
-                              onTriggerNow={() =>
-                                withBusy(automation.id, () => triggerNow(automation.id))
-                              }
-                              onShowLogs={() =>
-                                showRunLogsModal({
-                                  automationId: automation.id,
-                                  automationName: automation.name,
-                                })
-                              }
-                              onEdit={() => openEditor(automation)}
-                            />
-                          </StaggeredRow>
-                        ))}
-                      </Section>
+                      <AutomationGroup
+                        label="Paused"
+                        automations={pausedAutomations}
+                        busyId={busyId}
+                        shouldReduceMotion={shouldReduceMotion ?? false}
+                        onEdit={openEditor}
+                        onToggle={setPaused}
+                        onDelete={confirmDelete}
+                        onTriggerNow={handleTriggerNow}
+                        onShowLogs={handleShowLogs}
+                      />
                     )}
                   </div>
                 )}
@@ -359,6 +318,48 @@ export const AutomationsView: React.FC = () => {
     </TooltipProvider>
   );
 };
+
+type AutomationGroupProps = {
+  label: string;
+  automations: Automation[];
+  busyId: string | null;
+  shouldReduceMotion: boolean;
+  onEdit: (automation: Automation) => void;
+  onToggle: (automation: Automation) => void;
+  onDelete: (automation: Automation) => void;
+  onTriggerNow: (automation: Automation) => void;
+  onShowLogs: (automation: Automation) => void;
+};
+
+function AutomationGroup({
+  label,
+  automations,
+  busyId,
+  shouldReduceMotion,
+  onEdit,
+  onToggle,
+  onDelete,
+  onTriggerNow,
+  onShowLogs,
+}: AutomationGroupProps) {
+  return (
+    <Section label={label} count={automations.length}>
+      {automations.map((automation, i) => (
+        <StaggeredRow key={automation.id} index={i} shouldReduceMotion={shouldReduceMotion}>
+          <AutomationRow
+            automation={automation}
+            busy={busyId === automation.id}
+            onToggle={() => onToggle(automation)}
+            onDelete={() => onDelete(automation)}
+            onTriggerNow={() => onTriggerNow(automation)}
+            onShowLogs={() => onShowLogs(automation)}
+            onEdit={() => onEdit(automation)}
+          />
+        </StaggeredRow>
+      ))}
+    </Section>
+  );
+}
 
 function Section({
   label,

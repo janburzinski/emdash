@@ -1,6 +1,6 @@
 import { mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { homedir } from 'node:os';
-import { join, resolve } from 'node:path';
+import { isAbsolute, join, relative, resolve } from 'node:path';
 import { app } from 'electron';
 import { log } from '@main/lib/logger';
 
@@ -33,9 +33,13 @@ current state) over transcripts. Prune anything that is no longer true.
 
 export function getAutomationMemoryDir(automationId: string): string {
   assertSafeAutomationId(automationId);
-  const dir = resolve(automationsRoot(), automationId);
   const base = automationsRoot();
-  if (dir !== base && !dir.startsWith(`${base}/`) && !dir.startsWith(`${base}\\`)) {
+  const dir = resolve(base, automationId);
+  // Cross-platform containment: dir must be at base or strictly inside it.
+  // path.relative returns '' for equal paths and a non-`..`, non-absolute
+  // string for descendants; anything else means we escaped.
+  const rel = relative(base, dir);
+  if (rel !== '' && (rel.startsWith('..') || isAbsolute(rel))) {
     throw new Error(`Automation memory path escapes base: ${dir}`);
   }
   return dir;
@@ -55,8 +59,16 @@ export async function loadAutomationMemory(
     const content = await readFile(path, 'utf8');
     return { path, content };
   } catch {
-    await writeFile(path, MEMORY_SEED, 'utf8');
-    return { path, content: MEMORY_SEED };
+    // First-touch: write the seed, but tolerate a concurrent loader that
+    // beat us to it (wx fails if the file already exists, in which case we
+    // re-read instead of clobbering).
+    try {
+      await writeFile(path, MEMORY_SEED, { encoding: 'utf8', flag: 'wx' });
+      return { path, content: MEMORY_SEED };
+    } catch {
+      const content = await readFile(path, 'utf8');
+      return { path, content };
+    }
   }
 }
 

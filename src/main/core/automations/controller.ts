@@ -1,15 +1,26 @@
+import { homedir } from 'node:os';
 import type { CreateAutomationInput, UpdateAutomationInput } from '@shared/automations/types';
 import { createRPCController } from '@shared/ipc/rpc';
 import { err, ok, type Result } from '@shared/result';
 import { automationsService } from '@main/core/automations/AutomationsService';
 import { log } from '@main/lib/logger';
 
+const HOME_DIR = homedir();
+
+// Strip the user's home path from outbound error strings so IPC consumers
+// (and any logs they end up in) don't see absolute filesystem paths.
+function scrubErrorMessage(message: string): string {
+  if (!HOME_DIR) return message;
+  return message.split(HOME_DIR).join('~');
+}
+
 async function wrap<T>(scope: string, fn: () => Promise<T>): Promise<Result<T, string>> {
   try {
     return ok(await fn());
   } catch (error) {
     log.error(`[Automations.${scope}]`, error);
-    return err(error instanceof Error ? error.message : String(error));
+    const raw = error instanceof Error ? error.message : String(error);
+    return err(scrubErrorMessage(raw));
   }
 }
 

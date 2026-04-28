@@ -17,7 +17,7 @@ import {
   XCircle,
   Zap,
 } from 'lucide-react';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { AGENT_PROVIDERS } from '@shared/agent-provider-registry';
 import type {
   Automation,
@@ -59,6 +59,7 @@ import {
   formatDateTime,
   formatRelative,
   formatRelativeFuture,
+  isAutomationDraftReady,
   TRIGGER_TYPE_LABELS,
 } from './utils';
 
@@ -96,15 +97,7 @@ function editorStatesEqual(a: EditorState, b: EditorState): boolean {
   return true;
 }
 
-function canAutoSaveEditorState(form: EditorState): boolean {
-  return Boolean(
-    form.name.trim() &&
-      form.prompt.trim() &&
-      form.projectId &&
-      form.agentId &&
-      (form.mode !== 'schedule' || form.scheduleType !== 'custom' || form.customRRule.trim())
-  );
-}
+const canAutoSaveEditorState = isAutomationDraftReady;
 
 const STATE_DEFAULTS = { hour: 9, minute: 0, dayOfWeek: 'mon', dayOfMonth: 1 } as const;
 
@@ -143,9 +136,7 @@ export const AutomationEditor: React.FC<Props> = ({
 }) => {
   const [form, setForm] = useState<EditorState>(() => automationToState(automation));
   const formRef = useRef(form);
-  useEffect(() => {
-    formRef.current = form;
-  }, [form]);
+  formRef.current = form;
   const remoteSnapshotRef = useRef<EditorState>(automationToState(automation));
   const { flushPendingChanges, hasUnsavedChanges, replaceSavedValue, saveState } =
     useDebouncedAutoSave<EditorState>({
@@ -172,21 +163,19 @@ export const AutomationEditor: React.FC<Props> = ({
     });
 
   const hasUnsavedChangesRef = useRef(hasUnsavedChanges);
+  hasUnsavedChangesRef.current = hasUnsavedChanges;
   const replaceSavedValueRef = useRef(replaceSavedValue);
+  replaceSavedValueRef.current = replaceSavedValue;
   const saveStateRef = useRef(saveState);
-  useEffect(() => {
-    hasUnsavedChangesRef.current = hasUnsavedChanges;
-    replaceSavedValueRef.current = replaceSavedValue;
-    saveStateRef.current = saveState;
-  }, [hasUnsavedChanges, replaceSavedValue, saveState]);
+  saveStateRef.current = saveState;
 
-  const handleBack = async () => {
+  const handleBack = useCallback(async () => {
     try {
       await flushPendingChanges();
     } finally {
       onBack();
     }
-  };
+  }, [flushPendingChanges, onBack]);
 
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
@@ -197,7 +186,7 @@ export const AutomationEditor: React.FC<Props> = ({
 
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  });
+  }, [handleBack]);
 
   const { data: projects = [] } = useQuery({
     queryKey: ['projects', 'list'],
@@ -502,28 +491,26 @@ export const AutomationEditor: React.FC<Props> = ({
           </SidebarRow>
 
           {form.mode === 'trigger' && (
-            <>
-              <SidebarRow label="Trigger">
-                <Popover>
-                  <PopoverTrigger
-                    render={
-                      <SidebarValueButton
-                        icon={
-                          <TriggerTypeIcon triggerType={form.triggerType} className="h-3.5 w-3.5" />
-                        }
-                        label={TRIGGER_TYPE_LABELS[form.triggerType]}
-                      />
-                    }
-                  />
-                  <PopoverContent align="end" className="w-[18rem] p-0 overflow-hidden">
-                    <TriggerPopoverBody
-                      value={form}
-                      onChange={(next) => setForm((prev) => ({ ...prev, ...next }))}
+            <SidebarRow label="Trigger">
+              <Popover>
+                <PopoverTrigger
+                  render={
+                    <SidebarValueButton
+                      icon={
+                        <TriggerTypeIcon triggerType={form.triggerType} className="h-3.5 w-3.5" />
+                      }
+                      label={TRIGGER_TYPE_LABELS[form.triggerType]}
                     />
-                  </PopoverContent>
-                </Popover>
-              </SidebarRow>
-            </>
+                  }
+                />
+                <PopoverContent align="end" className="w-[18rem] p-0 overflow-hidden">
+                  <TriggerPopoverBody
+                    value={form}
+                    onChange={(next) => setForm((prev) => ({ ...prev, ...next }))}
+                  />
+                </PopoverContent>
+              </Popover>
+            </SidebarRow>
           )}
         </Section>
 

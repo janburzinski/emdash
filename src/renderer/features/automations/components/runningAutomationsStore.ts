@@ -4,6 +4,7 @@ import { events } from '@renderer/lib/ipc';
 const activeRunLogsByAutomation = new Map<string, Set<string>>();
 const listeners = new Set<() => void>();
 const endedCallbacks = new Set<(automationId: string) => void>();
+const startedCallbacks = new Set<(automationId: string) => void>();
 
 let unsubscribe: (() => void) | null = null;
 let cachedSnapshot: ReadonlySet<string> = new Set();
@@ -43,6 +44,7 @@ export function startRunningAutomationsStore(): () => void {
   const off = events.on(automationRunStatusChannel, (payload) => {
     if (payload.status === 'started') {
       addRunningRun(payload.automationId, payload.runLogId);
+      for (const cb of startedCallbacks) cb(payload.automationId);
     } else {
       removeRunningRun(payload.automationId, payload.runLogId);
       for (const cb of endedCallbacks) cb(payload.automationId);
@@ -85,5 +87,18 @@ export function onAnyRunEnded(cb: (automationId: string) => void): () => void {
   endedCallbacks.add(cb);
   return () => {
     endedCallbacks.delete(cb);
+  };
+}
+
+/**
+ * Register a callback invoked whenever any automation run starts. Lets
+ * consumers refresh derived state (run logs, last-run cells) the moment a
+ * run kicks off rather than waiting for the next polling tick.
+ */
+export function onAnyRunStarted(cb: (automationId: string) => void): () => void {
+  startRunningAutomationsStore();
+  startedCallbacks.add(cb);
+  return () => {
+    startedCallbacks.delete(cb);
   };
 }

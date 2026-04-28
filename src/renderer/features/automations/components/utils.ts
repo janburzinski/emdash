@@ -1,11 +1,36 @@
 import { formatDistanceToNowStrict } from 'date-fns';
 import {
   TRIGGER_TYPE_LABELS,
+  type AutomationMode,
   type AutomationSchedule,
   type TriggerType,
 } from '@shared/automations/types';
+import type { ScheduleFormValue } from './schedule-controls';
 
 export { TRIGGER_TYPE_LABELS };
+
+export type AutomationDraft = ScheduleFormValue & {
+  name: string;
+  prompt: string;
+  projectId: string;
+  agentId: string;
+  mode: AutomationMode;
+};
+
+/**
+ * Shared validity check for a creatable/auto-savable automation draft. Used
+ * by both the create form and the editor's debounced auto-save predicate so
+ * the rules stay in lockstep.
+ */
+export function isAutomationDraftReady(draft: AutomationDraft): boolean {
+  return Boolean(
+    draft.name.trim() &&
+      draft.prompt.trim() &&
+      draft.projectId &&
+      draft.agentId &&
+      (draft.mode !== 'schedule' || draft.scheduleType !== 'custom' || draft.customRRule.trim())
+  );
+}
 
 export const EASE_OUT = [0.23, 1, 0.32, 1] as const;
 

@@ -2,19 +2,9 @@ import {
   TRIGGER_INTEGRATION_MAP,
   TRIGGER_TYPE_LABELS,
   type TriggerConfig,
-  type TriggerIntegrationId,
   type TriggerType,
 } from '@shared/automations/types';
 import type { Issue } from '@shared/tasks';
-
-const PROVIDER_TO_ISSUE_PROVIDER: Record<TriggerIntegrationId, Issue['provider']> = {
-  github: 'github',
-  linear: 'linear',
-  jira: 'jira',
-  gitlab: 'gitlab',
-  forgejo: 'forgejo',
-  plain: 'plain',
-};
 
 export interface RawEvent {
   id: string;
@@ -50,7 +40,18 @@ export function assertSupportedTriggerType(triggerType: TriggerType): void {
 }
 
 export function resolveIssueProviderType(triggerType: TriggerType): Issue['provider'] {
-  return PROVIDER_TO_ISSUE_PROVIDER[TRIGGER_INTEGRATION_MAP[triggerType]];
+  // TriggerIntegrationId and Issue['provider'] currently share the same
+  // string union; this assignment keeps the structural invariant explicit.
+  return TRIGGER_INTEGRATION_MAP[triggerType];
+}
+
+/**
+ * True iff the issue carries enough identity for a stable RawEvent id.
+ * Without identifier or url, multiple events would collapse to the same id
+ * (`provider-undefined`) and trip dedup tracking.
+ */
+export function issueHasStableId(issue: Issue): boolean {
+  return Boolean(issue.identifier || issue.url);
 }
 
 export function issueToRawEvent(issue: Issue, triggerType: TriggerType): RawEvent {

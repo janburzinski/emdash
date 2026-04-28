@@ -19,6 +19,7 @@ import {
   getRunningSnapshot,
   isAutomationRunning,
   onAnyRunEnded,
+  onAnyRunStarted,
   subscribe as subscribeRunning,
 } from './runningAutomationsStore';
 
@@ -64,10 +65,16 @@ export function useAutomations() {
   const queryClient = useQueryClient();
 
   useEffect(() => {
-    return onAnyRunEnded((automationId) => {
+    const invalidate = (automationId: string) => {
       queryClient.invalidateQueries({ queryKey: LIST_KEY });
       queryClient.invalidateQueries({ queryKey: runLogsKey(automationId) });
-    });
+    };
+    const offEnded = onAnyRunEnded(invalidate);
+    const offStarted = onAnyRunStarted(invalidate);
+    return () => {
+      offEnded();
+      offStarted();
+    };
   }, [queryClient]);
 
   const {
@@ -77,7 +84,7 @@ export function useAutomations() {
   } = useQuery({
     queryKey: LIST_KEY,
     queryFn: async () => unwrap(await rpc.automations.list(), 'Failed to load automations'),
-    refetchInterval: 15_000,
+    refetchInterval: 60_000,
   });
 
   const createMutation = useMutation(
@@ -151,7 +158,7 @@ export function useRunLogs(automationId: string | null, limit = 20) {
       );
     },
     enabled: !!automationId,
-    refetchInterval: 30_000,
+    refetchInterval: 60_000,
   });
 }
 

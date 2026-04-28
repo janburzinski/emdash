@@ -32,7 +32,7 @@ import {
   TriggerTypeIcon,
   type TriggerFormValue,
 } from './trigger-controls';
-import { EASE_OUT, TRIGGER_TYPE_LABELS } from './utils';
+import { EASE_OUT, isAutomationDraftReady, TRIGGER_TYPE_LABELS } from './utils';
 
 type FormState = ScheduleFormValue &
   TriggerFormValue & {
@@ -153,15 +153,7 @@ export const AutomationForm: React.FC<Props> = (props) => {
   const patch = <K extends keyof FormState>(key: K, value: FormState[K]) =>
     setAndSaveForm((prev) => ({ ...prev, [key]: value }));
 
-  const canSubmit =
-    form.name.trim().length > 0 &&
-    form.prompt.trim().length > 0 &&
-    form.projectId.length > 0 &&
-    form.agentId.length > 0 &&
-    (form.mode !== 'schedule' ||
-      form.scheduleType !== 'custom' ||
-      form.customRRule.trim().length > 0) &&
-    !props.isSubmitting;
+  const canSubmit = isAutomationDraftReady(form) && !props.isSubmitting;
 
   const handleSubmit = async () => {
     if (!canSubmit) return;
@@ -185,7 +177,6 @@ export const AutomationForm: React.FC<Props> = (props) => {
       };
       await props.onCreate(input);
       clearDraft();
-      setForm(DEFAULT_STATE);
     } catch {
       // toast handled in hook
     }
@@ -195,15 +186,11 @@ export const AutomationForm: React.FC<Props> = (props) => {
     props.onCancel();
   };
 
+  // Escape is owned by the parent view's window listener so the two handlers
+  // don't fight; we only handle the form-local Cmd/Ctrl+Enter shortcut here.
   const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
     if (e.defaultPrevented) return;
     if (e.target instanceof Node && !e.currentTarget.contains(e.target)) return;
-
-    if (e.key === 'Escape') {
-      e.preventDefault();
-      handleCancel();
-      return;
-    }
     if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
       e.preventDefault();
       void handleSubmit();

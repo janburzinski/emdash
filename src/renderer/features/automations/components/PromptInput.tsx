@@ -58,7 +58,10 @@ const MENTION_TOKENS = new Set(MENTION_PROVIDERS.map((p) => p.token));
 // Enough trailing spaces so the raw textarea text is always wider than the
 // rendered chip. The chip is clamped to this width so the caret stays aligned.
 const MENTION_LAYOUT_PADDING = '            ';
-const MENTION_SCAN_REGEX = /\$([a-zA-Z][a-zA-Z0-9_-]*)( {0,12})/g;
+const MENTION_SCAN_REGEX = new RegExp(
+  `\\$([a-zA-Z][a-zA-Z0-9_-]*)( {0,${MENTION_LAYOUT_PADDING.length}})`,
+  'g'
+);
 
 type Segment =
   | { kind: 'text'; text: string }
@@ -193,17 +196,38 @@ const MIRROR_PROPS = [
   'wordBreak',
 ] as const;
 
+let cachedMirror: HTMLDivElement | null = null;
+function getMirrorElement(): HTMLDivElement {
+  if (cachedMirror) return cachedMirror;
+  const el = document.createElement('div');
+  el.setAttribute('aria-hidden', 'true');
+  const s = el.style;
+  s.position = 'absolute';
+  s.visibility = 'hidden';
+  s.top = '0';
+  s.left = '-9999px';
+  s.whiteSpace = 'pre-wrap';
+  s.wordWrap = 'break-word';
+  document.body.appendChild(el);
+  cachedMirror = el;
+  return el;
+}
+
+function resolveLineHeight(computed: CSSStyleDeclaration): number {
+  const lh = computed.lineHeight;
+  const fontSize = parseFloat(computed.fontSize) || 16;
+  if (!lh || lh === 'normal') return fontSize * 1.2;
+  const n = parseFloat(lh);
+  if (Number.isNaN(n)) return fontSize * 1.2;
+  // Unitless line-heights (e.g. '1.5') resolve as a multiplier of fontSize.
+  if (lh.trim() === String(n)) return n * fontSize;
+  return n;
+}
+
 function getCaretCoordinates(ta: HTMLTextAreaElement, position: number) {
-  const mirror = document.createElement('div');
-  mirror.setAttribute('aria-hidden', 'true');
-  const style = mirror.style;
+  const mirror = getMirrorElement();
   const computed = window.getComputedStyle(ta);
-  style.position = 'absolute';
-  style.visibility = 'hidden';
-  style.top = '0';
-  style.left = '-9999px';
-  style.whiteSpace = 'pre-wrap';
-  style.wordWrap = 'break-word';
+  const style = mirror.style;
   for (const prop of MIRROR_PROPS) {
     style[prop as never] = computed[prop as never];
   }
@@ -211,13 +235,12 @@ function getCaretCoordinates(ta: HTMLTextAreaElement, position: number) {
   const marker = document.createElement('span');
   marker.textContent = ta.value.substring(position) || '.';
   mirror.appendChild(marker);
-  document.body.appendChild(mirror);
   const coords = {
     top: marker.offsetTop - ta.scrollTop,
     left: marker.offsetLeft - ta.scrollLeft,
-    height: parseInt(computed.lineHeight, 10) || 20,
+    height: resolveLineHeight(computed),
   };
-  document.body.removeChild(mirror);
+  mirror.textContent = '';
   return coords;
 }
 
@@ -270,15 +293,17 @@ export const PromptInput: React.FC<Props> = ({
     if (match) {
       const query = match[2];
       const triggerStart = caret - query.length - 1;
+      const lowerQuery = query.toLowerCase();
+      const matchedCount = MENTION_PROVIDERS.reduce(
+        (acc, p) => (p.token.startsWith(lowerQuery) ? acc + 1 : acc),
+        0
+      );
       const ta = textareaRef.current;
       if (ta) {
         const coords = getCaretCoordinates(ta, triggerStart);
         const rect = ta.getBoundingClientRect();
         const caretLineTop = rect.top + coords.top;
         const caretLineBottom = caretLineTop + coords.height;
-        const matchedCount = MENTION_PROVIDERS.filter((p) =>
-          p.token.startsWith(query.toLowerCase())
-        ).length;
         const estHeight = 28 + matchedCount * 32;
         const spaceBelow = window.innerHeight - caretLineBottom;
         const placement: 'above' | 'below' =
@@ -295,14 +320,7 @@ export const PromptInput: React.FC<Props> = ({
         query,
         hoverIdx:
           prev.open && prev.triggerStart === triggerStart
-            ? Math.min(
-                prev.hoverIdx,
-                Math.max(
-                  0,
-                  MENTION_PROVIDERS.filter((p) => p.token.startsWith(query.toLowerCase())).length -
-                    1
-                )
-              )
+            ? Math.min(prev.hoverIdx, Math.max(0, matchedCount - 1))
             : 0,
       }));
     } else if (picker.open) {
@@ -379,8 +397,7 @@ export const PromptInput: React.FC<Props> = ({
         value={value}
         onChange={handleChange}
         onKeyDown={handleKeyDown}
-        onKeyUp={handleSelectionChange}
-        onClick={handleSelectionChange}
+        onSelect={handleSelectionChange}
         onBlur={() => setPicker(CLOSED)}
         placeholder={placeholder}
         spellCheck={false}
