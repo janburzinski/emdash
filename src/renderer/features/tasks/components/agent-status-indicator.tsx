@@ -28,7 +28,7 @@ export function AgentStatusIndicator({
   const renderIndicator = () => {
     switch (status) {
       case 'working':
-        return <CLISpinner />;
+        return <CLISpinner variant="random" />;
       case 'awaiting-input':
         return (
           <span
