@@ -137,7 +137,8 @@ export const APP_SHORTCUTS = defineShortcuts({
   newConversation: {
     defaultHotkey: 'Mod+Shift+C',
     label: 'New Conversation',
-    description: 'Create a new conversation in the current task',
+    description:
+      'Create a new agent conversation in the current task (usable from Agents, Diff, or Editor)',
     category: 'Task View',
   },
   newTerminal: {

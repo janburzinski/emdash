@@ -25,7 +25,7 @@ import {
   taskViewKind,
 } from '@renderer/features/tasks/stores/task-selectors';
 import { useProvisionedTask, useTaskViewContext } from '@renderer/features/tasks/task-view-context';
-import { RightPanelView } from '@renderer/features/tasks/types';
+import { type RightPanelView } from '@renderer/features/tasks/types';
 import { OpenInMenu } from '@renderer/lib/components/titlebar/open-in-menu';
 import { Titlebar } from '@renderer/lib/components/titlebar/Titlebar';
 import { useDelayedBoolean } from '@renderer/lib/hooks/use-delay-boolean';
@@ -302,6 +302,8 @@ const ActiveTaskTitlebar = observer(function ActiveTaskTitlebar({
                 <div className="flex flex-col gap-1">
                   <span>Conversations view</span>
                   <ShortcutHint settingsKey="taskViewAgents" />
+                  <span className="text-muted-foreground">New conversation</span>
+                  <ShortcutHint settingsKey="newConversation" />
                 </div>
               </TooltipContent>
             </Tooltip>

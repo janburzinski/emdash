@@ -1,23 +1,17 @@
-import { useHotkey } from '@tanstack/react-hotkeys';
 import { MessageSquare } from 'lucide-react';
 import { observer } from 'mobx-react-lite';
 import { useEffect, useState } from 'react';
 import { asMounted, getProjectStore } from '@renderer/features/projects/stores/project-selectors';
-import { useAppSettingsKey } from '@renderer/features/settings/use-app-settings-key';
 import { useIsActiveTask } from '@renderer/features/tasks/hooks/use-is-active-task';
 import { TabbedPtyPanel } from '@renderer/features/tasks/tabbed-pty-panel';
 import { useProvisionedTask, useTaskViewContext } from '@renderer/features/tasks/task-view-context';
-import {
-  getEffectiveHotkey,
-  getHotkeyRegistration,
-} from '@renderer/lib/hooks/useKeyboardShortcuts';
 import { useTabShortcuts } from '@renderer/lib/hooks/useTabShortcuts';
 import { useShowModal } from '@renderer/lib/modal/modal-provider';
 import { Button } from '@renderer/lib/ui/button';
 import { EmptyState } from '@renderer/lib/ui/empty-state';
 import { ShortcutHint } from '@renderer/lib/ui/shortcut-hint';
 import { ContextBar } from './context-bar';
-import { ConversationStore } from './conversation-manager';
+import { type ConversationStore } from './conversation-manager';
 import { ConversationsTabs } from './conversation-tabs';
 
 export const ConversationsPanel = observer(function ConversationsPanel() {
@@ -25,15 +19,12 @@ export const ConversationsPanel = observer(function ConversationsPanel() {
   const provisioned = useProvisionedTask();
   const conversationTabs = provisioned.taskView.conversationTabs;
   const showCreateConversationModal = useShowModal('createConversationModal');
-  const { value: keyboard } = useAppSettingsKey('keyboard');
   const isActive = useIsActiveTask(taskId);
   const [isPanelFocused, setIsPanelFocused] = useState(false);
   const mountedProject = asMounted(getProjectStore(projectId));
   const shouldSetWorkingOnEnter = mountedProject?.data.type !== 'ssh';
   const remoteConnectionId =
     mountedProject?.data.type === 'ssh' ? mountedProject.data.connectionId : undefined;
-  const newConversationHotkey = getEffectiveHotkey('newConversation', keyboard);
-
   const autoFocus = isActive && provisioned.taskView.focusedRegion === 'main';
 
   const handleCreate = () =>
@@ -48,9 +39,6 @@ export const ConversationsPanel = observer(function ConversationsPanel() {
     });
 
   useTabShortcuts(conversationTabs, { focused: isPanelFocused });
-  useHotkey(getHotkeyRegistration('newConversation', keyboard), handleCreate, {
-    enabled: newConversationHotkey !== null,
-  });
 
   useEffect(() => {
     conversationTabs.setVisible(isActive);
