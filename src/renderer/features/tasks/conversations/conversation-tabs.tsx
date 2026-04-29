@@ -1,9 +1,14 @@
-import { Plus } from 'lucide-react';
+import { Plus, Terminal } from 'lucide-react';
 import { observer } from 'mobx-react-lite';
 import { asMounted, getProjectStore } from '@renderer/features/projects/stores/project-selectors';
 import { AgentStatusIndicator } from '@renderer/features/tasks/components/agent-status-indicator';
 import { ConversationStore } from '@renderer/features/tasks/conversations/conversation-manager';
 import { useProvisionedTask } from '@renderer/features/tasks/task-view-context';
+import {
+  TerminalStore,
+  type TerminalManagerStore,
+} from '@renderer/features/tasks/terminals/terminal-manager';
+import type { TerminalTabViewStore } from '@renderer/features/tasks/terminals/terminal-tab-view-store';
 import AgentLogo from '@renderer/lib/components/agent-logo';
 import { useShowModal } from '@renderer/lib/modal/modal-provider';
 import { ShortcutHint } from '@renderer/lib/ui/shortcut-hint';
@@ -15,9 +20,13 @@ import { formatConversationTitleForDisplay } from './conversation-title-utils';
 export const ConversationsTabs = observer(function ConversationsTabs({
   projectId,
   taskId,
+  terminalMgr,
+  terminalTabs,
 }: {
   projectId: string;
   taskId: string;
+  terminalMgr: TerminalManagerStore;
+  terminalTabs: TerminalTabViewStore;
 }) {
   const provisioned = useProvisionedTask();
   const conversationMgr = provisioned.conversations;
@@ -27,17 +36,31 @@ export const ConversationsTabs = observer(function ConversationsTabs({
   const connectionId =
     mountedProject?.data.type === 'ssh' ? mountedProject.data.connectionId : undefined;
 
+  const tabs = [...conversationTabs.tabs, ...terminalTabs.tabs];
+
   return (
-    <TabBar<ConversationStore>
-      tabs={conversationTabs.tabs}
+    <TabBar<ConversationStore | TerminalStore>
+      tabs={tabs}
       activeTabId={conversationTabs.activeTabId}
       getId={(s) => s.data.id}
-      getLabel={(s) => formatConversationTitleForDisplay(s.data.providerId, s.data.title)}
-      onSelect={(id) => conversationTabs.setActiveTab(id)}
+      getLabel={(s) =>
+        s instanceof ConversationStore
+          ? formatConversationTitleForDisplay(s.data.providerId, s.data.title)
+          : s.data.name
+      }
+      onSelect={(id) => {
+        conversationTabs.setActiveTab(id);
+        if (terminalMgr.terminals.has(id)) terminalTabs.setActiveTab(id);
+      }}
       onRemove={(id) => {
-        conversationTabs.removeTab(id);
+        if (terminalMgr.terminals.has(id)) {
+          terminalTabs.removeTab(id);
+        } else {
+          conversationTabs.removeTab(id);
+        }
       }}
       renderTabPrefix={(s) => {
+        if (s instanceof TerminalStore) return <Terminal className="size-3" />;
         const config = agentConfig[s.data.providerId];
         return (
           <AgentLogo
@@ -49,8 +72,18 @@ export const ConversationsTabs = observer(function ConversationsTabs({
           />
         );
       }}
-      renderTabSuffix={(s) => <AgentStatusIndicator status={s.indicatorStatus} disableTooltip />}
-      onRename={(id, name) => void conversationMgr.renameConversation(id, name)}
+      renderTabSuffix={(s) =>
+        s instanceof ConversationStore ? (
+          <AgentStatusIndicator status={s.indicatorStatus} disableTooltip />
+        ) : null
+      }
+      onRename={(id, name) => {
+        if (terminalMgr.terminals.has(id)) {
+          void terminalMgr.renameTerminal(id, name);
+        } else {
+          void conversationMgr.renameConversation(id, name);
+        }
+      }}
       onReorder={(from, to) => conversationTabs.reorderTabs(from, to)}
       actions={
         <Tooltip>
@@ -62,7 +95,14 @@ export const ConversationsTabs = observer(function ConversationsTabs({
                   connectionId,
                   projectId,
                   taskId,
-                  onSuccess: ({ conversationId }) => conversationTabs.setActiveTab(conversationId),
+                  onSuccess: (result) => {
+                    if (result.type === 'conversation') {
+                      conversationTabs.setActiveTab(result.conversationId);
+                    } else {
+                      conversationTabs.setActiveTab(result.terminalId);
+                      terminalTabs.setActiveTab(result.terminalId);
+                    }
+                  },
                 })
               }
             >
@@ -70,7 +110,7 @@ export const ConversationsTabs = observer(function ConversationsTabs({
             </button>
           </TooltipTrigger>
           <TooltipContent>
-            Create conversation
+            Create session
             <ShortcutHint settingsKey="newConversation" />
           </TooltipContent>
         </Tooltip>

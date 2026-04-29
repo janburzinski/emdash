@@ -7,6 +7,7 @@ import { useAppSettingsKey } from '@renderer/features/settings/use-app-settings-
 import { useIsActiveTask } from '@renderer/features/tasks/hooks/use-is-active-task';
 import { TabbedPtyPanel } from '@renderer/features/tasks/tabbed-pty-panel';
 import { useProvisionedTask, useTaskViewContext } from '@renderer/features/tasks/task-view-context';
+import type { TerminalStore } from '@renderer/features/tasks/terminals/terminal-manager';
 import {
   getEffectiveHotkey,
   getHotkeyRegistration,
@@ -24,6 +25,8 @@ export const ConversationsPanel = observer(function ConversationsPanel() {
   const { projectId, taskId } = useTaskViewContext();
   const provisioned = useProvisionedTask();
   const conversationTabs = provisioned.taskView.conversationTabs;
+  const terminalTabs = provisioned.taskView.terminalTabs;
+  const terminalMgr = provisioned.terminals;
   const showCreateConversationModal = useShowModal('createConversationModal');
   const { value: keyboard } = useAppSettingsKey('keyboard');
   const isActive = useIsActiveTask(taskId);
@@ -41,13 +44,66 @@ export const ConversationsPanel = observer(function ConversationsPanel() {
       connectionId: remoteConnectionId,
       projectId,
       taskId,
-      onSuccess: ({ conversationId }) => {
-        conversationTabs.setActiveTab(conversationId);
+      onSuccess: (result) => {
+        if (result.type === 'conversation') {
+          conversationTabs.setActiveTab(result.conversationId);
+        } else {
+          conversationTabs.setActiveTab(result.terminalId);
+          terminalTabs.setActiveTab(result.terminalId);
+        }
         provisioned.taskView.setFocusedRegion('main');
       },
     });
 
-  useTabShortcuts(conversationTabs, { focused: isPanelFocused });
+  const sessionTabs = {
+    get tabs() {
+      return [...conversationTabs.tabs, ...terminalTabs.tabs];
+    },
+    get activeTabId() {
+      return conversationTabs.activeTabId;
+    },
+    get activeTab() {
+      const activeId = conversationTabs.activeTabId;
+      if (!activeId) return undefined;
+      return conversationTabs.activeTab ?? terminalMgr.terminals.get(activeId);
+    },
+    setActiveTab(id: string) {
+      conversationTabs.setActiveTab(id);
+      if (terminalMgr.terminals.has(id)) terminalTabs.setActiveTab(id);
+    },
+    removeTab(id: string) {
+      if (terminalMgr.terminals.has(id)) {
+        terminalTabs.removeTab(id);
+      } else {
+        conversationTabs.removeTab(id);
+      }
+    },
+    reorderTabs(from: number, to: number) {
+      conversationTabs.reorderTabs(from, to);
+    },
+    setNextTabActive() {
+      const tabs = this.tabs;
+      const index = tabs.findIndex((tab) => tab.data.id === this.activeTabId);
+      const next = tabs[index + 1];
+      if (next) this.setActiveTab(next.data.id);
+    },
+    setPreviousTabActive() {
+      const tabs = this.tabs;
+      const index = tabs.findIndex((tab) => tab.data.id === this.activeTabId);
+      const previous = tabs[index - 1];
+      if (previous) this.setActiveTab(previous.data.id);
+    },
+    setTabActiveIndex(index: number) {
+      const tab = this.tabs[index];
+      if (tab) this.setActiveTab(tab.data.id);
+    },
+    closeActiveTab() {
+      if (this.activeTabId) this.removeTab(this.activeTabId);
+    },
+    addTab() {},
+  };
+
+  useTabShortcuts(sessionTabs, { focused: isPanelFocused });
   useHotkey(getHotkeyRegistration('newConversation', keyboard), handleCreate, {
     enabled: newConversationHotkey !== null,
   });
@@ -62,20 +118,35 @@ export const ConversationsPanel = observer(function ConversationsPanel() {
   return (
     <div className="flex h-full flex-col">
       <div className="min-h-0 flex-1">
-        <TabbedPtyPanel<ConversationStore>
+        <TabbedPtyPanel<ConversationStore | TerminalStore>
           autoFocus={autoFocus}
           onFocusChange={(focused) => {
             setIsPanelFocused(focused);
             if (focused) provisioned.taskView.setFocusedRegion('main');
           }}
-          store={conversationTabs}
+          store={sessionTabs}
           paneId="conversations"
           getSession={(s) => s.session}
-          onEnterPress={shouldSetWorkingOnEnter ? (s) => s.setWorking() : undefined}
-          onInterruptPress={(s) => s.clearWorking()}
+          onEnterPress={
+            shouldSetWorkingOnEnter
+              ? (s) => {
+                  if (s instanceof ConversationStore) s.setWorking();
+                }
+              : undefined
+          }
+          onInterruptPress={(s) => {
+            if (s instanceof ConversationStore) s.clearWorking();
+          }}
           mapShiftEnterToCtrlJ
           remoteConnectionId={remoteConnectionId}
-          tabBar={<ConversationsTabs projectId={projectId} taskId={taskId} />}
+          tabBar={
+            <ConversationsTabs
+              projectId={projectId}
+              taskId={taskId}
+              terminalTabs={terminalTabs}
+              terminalMgr={terminalMgr}
+            />
+          }
           emptyState={
             <EmptyState
               icon={<MessageSquare className="h-5 w-5 text-muted-foreground" />}
@@ -88,7 +159,7 @@ export const ConversationsPanel = observer(function ConversationsPanel() {
                   onClick={handleCreate}
                   className="flex items-center gap-2"
                 >
-                  Create conversation
+                  Create session
                   <ShortcutHint settingsKey="newConversation" />
                 </Button>
               }
