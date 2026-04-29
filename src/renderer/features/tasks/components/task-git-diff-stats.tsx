@@ -3,6 +3,13 @@ import type { TaskStore } from '@renderer/features/tasks/stores/task';
 import { asProvisioned } from '@renderer/features/tasks/stores/task-selectors';
 import { cn } from '@renderer/utils/utils';
 
+function formatLineCount(n: number): string {
+  if (n < 1000) return String(n);
+  const tenths = Math.floor(n / 100) / 10;
+  if (tenths >= 100) return `${Math.floor(tenths)}k`;
+  return `${tenths}k`;
+}
+
 /**
  * Working-tree line add/remove totals for a provisioned task (same source as GitStore / diff UI).
  * Renders nothing when unprovisioned, loading, in error, or clean.
@@ -29,10 +36,12 @@ export const TaskGitDiffStats = observer(function TaskGitDiffStats({
       )}
       aria-label={`${linesAdded} lines added, ${linesDeleted} lines removed`}
     >
-      {linesAdded > 0 ? <span className="text-foreground-diff-added">+{linesAdded}</span> : null}
+      {linesAdded > 0 ? (
+        <span className="text-foreground-diff-added">+{formatLineCount(linesAdded)}</span>
+      ) : null}
       {linesAdded > 0 && linesDeleted > 0 ? ' ' : null}
       {linesDeleted > 0 ? (
-        <span className="text-foreground-diff-deleted">-{linesDeleted}</span>
+        <span className="text-foreground-diff-deleted">-{formatLineCount(linesDeleted)}</span>
       ) : null}
     </span>
   );
