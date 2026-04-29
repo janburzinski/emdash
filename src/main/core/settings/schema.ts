@@ -1,5 +1,6 @@
 import z from 'zod';
 import { AGENT_PROVIDER_IDS, AGENT_PROVIDERS } from '@shared/agent-provider-registry';
+import { COMMIT_MESSAGE_AGENT_IDS } from '@shared/commit-message';
 import { openInAppIdSchema } from '@shared/openInApps';
 import { DEFAULT_AGENT_ID, DEFAULT_REVIEW_PROMPT } from './settings-registry';
 
@@ -104,6 +105,13 @@ export const interfaceSettingsSchema = z.object({
 
 export const browserPreviewSettingsSchema = z.object({ enabled: z.boolean() });
 
+export const commitMessageSettingsSchema = z.object({
+  agent: z.enum(COMMIT_MESSAGE_AGENT_IDS).nullable(),
+  model: z.string().nullable(),
+  reasoning: z.string().nullable(),
+  instructions: z.string(),
+});
+
 export const openInSettingsSchema = z.object({
   default: openInAppIdSchema,
   hidden: z.array(openInAppIdSchema),
@@ -122,6 +130,7 @@ export const APP_SETTINGS_SCHEMA_MAP = {
   interface: interfaceSettingsSchema,
   terminal: terminalSettingsSchema,
   browserPreview: browserPreviewSettingsSchema,
+  commitMessage: commitMessageSettingsSchema,
 } as const;
 
 export const appSettingsSchema = z.object({
@@ -137,4 +146,5 @@ export const appSettingsSchema = z.object({
   interface: interfaceSettingsSchema,
   terminal: terminalSettingsSchema,
   browserPreview: browserPreviewSettingsSchema,
+  commitMessage: commitMessageSettingsSchema,
 });

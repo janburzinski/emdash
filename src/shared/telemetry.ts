@@ -87,6 +87,11 @@ export type TelemetryEventProperties = {
   vcs_files_staged: { count: number; scope: 'single' | 'multiple' | 'all' };
   vcs_files_unstaged: { count: number; scope: 'single' | 'multiple' | 'all' };
   vcs_files_discarded: { count: number; scope: 'single' | 'multiple' | 'all' };
+  vcs_commit_message_generated: {
+    success: boolean;
+    agent: 'codex' | 'claude' | 'opencode';
+    error_type?: string;
+  };
 
   user_signed_in: EmptyProps;
   user_signed_out: EmptyProps;

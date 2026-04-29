@@ -49,6 +49,12 @@ export const SETTINGS_DEFAULTS = {
   browserPreview: {
     enabled: true,
   },
+  commitMessage: {
+    agent: null,
+    model: null,
+    reasoning: null,
+    instructions: '',
+  },
 } satisfies SettingsDefaultsMap;
 
 export function getDefaultForKey<K extends AppSettingsKey>(key: K): AppSettings[K] {

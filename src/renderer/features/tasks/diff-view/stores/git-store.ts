@@ -304,6 +304,10 @@ export class GitStore {
     }
   }
 
+  async generateCommitMessage() {
+    return rpc.git.generateCommitMessage(this.projectId, this.workspaceId);
+  }
+
   async commit(message: string) {
     const result = await rpc.git.commit(this.projectId, this.workspaceId, message);
     if (result.success) {

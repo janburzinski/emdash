@@ -1,8 +1,10 @@
 import type { DiffMode, GitObjectRef, GitRef, MergeBaseRange } from '@shared/git';
 import { createRPCController } from '@shared/ipc/rpc';
 import { err, ok } from '@shared/result';
+import { generateCommitMessage } from '@main/core/git/commit-message-generator';
 import { TooManyFilesChangedError } from '@main/core/git/impl/status-parser';
 import { resolveWorkspace } from '@main/core/projects/utils';
+import { appSettingsService } from '@main/core/settings/settings-service';
 import { log } from '@main/lib/logger';
 import { capture } from '@main/lib/telemetry';
 
@@ -301,6 +303,29 @@ export const gitController = createRPCController({
       log.error('gitCtrl.revertAllFiles failed', { projectId, workspaceId, error: e });
       return err({ type: 'git_error' as const, message: String(e) });
     }
+  },
+
+  generateCommitMessage: async (projectId: string, workspaceId: string) => {
+    const env = resolveWorkspace(projectId, workspaceId);
+    if (!env) return err({ type: 'not_found' as const });
+    const settings = await appSettingsService.get('commitMessage');
+    if (!settings.agent) return err({ type: 'not_configured' as const });
+    const result = await generateCommitMessage(
+      env.path,
+      settings.agent,
+      settings.instructions,
+      settings.model,
+      settings.reasoning
+    );
+    capture('vcs_commit_message_generated', {
+      success: result.ok,
+      agent: settings.agent,
+      project_id: projectId,
+      task_id: workspaceId,
+      ...(result.ok ? {} : { error_type: result.error.type }),
+    });
+    if (!result.ok) return err(result.error);
+    return ok(result.data);
   },
 
   commit: async (projectId: string, workspaceId: string, message: string) => {

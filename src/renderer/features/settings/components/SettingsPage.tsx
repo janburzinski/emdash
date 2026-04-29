@@ -5,6 +5,7 @@ import { Separator } from '@renderer/lib/ui/separator';
 import { cn } from '@renderer/utils/utils';
 import { AccountTab } from './AccountTab';
 import { CliAgentsList } from './CliAgentsList';
+import { CommitMessageSettingsCard } from './CommitMessageSettingsCard';
 import DefaultAgentSettingsCard from './DefaultAgentSettingsCard';
 import HiddenToolsSettingsCard from './HiddenToolsSettingsCard';
 import IntegrationsCard from './IntegrationsCard';
@@ -93,6 +94,10 @@ export function SettingsPage({
       description: 'Manage CLI agents and model configurations.',
       sections: [
         { component: <DefaultAgentSettingsCard /> },
+        {
+          title: 'Commit messages',
+          component: <CommitMessageSettingsCard />,
+        },
         {
           title: 'Review Prompt',
           action: <ReviewPromptResetButton />,
