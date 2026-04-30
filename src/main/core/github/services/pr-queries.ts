@@ -156,6 +156,17 @@ export const GET_PR_BY_NUMBER_QUERY = `
   ${PR_SUMMARY_FRAGMENT}
 `;
 
+export const GET_PRS_BY_HEAD_REF_QUERY = `
+  query getPullRequestsByHeadRef($owner: String!, $repo: String!, $headRefName: String!) {
+    repository(owner: $owner, name: $repo) {
+      pullRequests(states: OPEN, first: 10, headRefName: $headRefName, orderBy: { field: UPDATED_AT, direction: DESC }) {
+        nodes { ...PrSummaryFields }
+      }
+    }
+  }
+  ${PR_SUMMARY_FRAGMENT}
+`;
+
 export const GET_PR_CHECK_RUNS_BY_URL_QUERY = `
   query getPrCheckRunsByUrl($owner: String!, $repo: String!, $number: Int!, $cursor: String) {
     repository(owner: $owner, name: $repo) {

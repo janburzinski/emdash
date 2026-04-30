@@ -55,6 +55,7 @@ export const pullRequestController = createRPCController({
         return { success: true as const, prs: [], taskBranch: null };
       }
 
+      await prSyncEngine.syncBranch(capability.repositoryUrl, taskRow.taskBranch);
       const prs = await prQueryService.getTaskPullRequests(
         projectId,
         taskRow.taskBranch,
@@ -158,8 +159,14 @@ export const pullRequestController = createRPCController({
   }) => {
     try {
       const result = await prSyncEngine.createPullRequest(params);
-      // Sync the newly created PR into the DB
-      void prSyncEngine.syncSingle(params.repositoryUrl, result.number);
+      // Sync the newly created PR into the DB so the prUpdatedChannel event
+      // fires before we return — otherwise the sidebar badge can lag or never
+      // appear if the background sync fails silently.
+      try {
+        await prSyncEngine.syncSingle(params.repositoryUrl, result.number);
+      } catch (e) {
+        log.warn('PR created but initial sync failed', { error: String(e) });
+      }
       capture('pr_created', { is_draft: params.draft });
       return { success: true as const, url: result.url, number: result.number };
     } catch (error) {

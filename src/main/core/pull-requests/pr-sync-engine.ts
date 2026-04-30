@@ -13,6 +13,7 @@ import { getOctokit } from '@main/core/github/services/octokit-provider';
 import {
   GET_PR_BY_NUMBER_QUERY,
   GET_PR_CHECK_RUNS_BY_URL_QUERY,
+  GET_PRS_BY_HEAD_REF_QUERY,
   INCREMENTAL_SYNC_PRS_QUERY,
   SYNC_PRS_QUERY,
 } from '@main/core/github/services/pr-queries';
@@ -471,6 +472,7 @@ export class PrSyncEngine {
 
   /** Sync a single PR by number. Deduplicated — awaits any in-flight call for the same PR. */
   async syncSingle(repositoryUrl: string, prNumber: number): Promise<PullRequest | null> {
+    repositoryUrl = normalizeGitHubUrl(repositoryUrl);
     const key = `single:${repositoryUrl}:${prNumber}`;
     if (this._singleInflight.has(key)) {
       await this._singleInflight.get(key);
@@ -489,6 +491,39 @@ export class PrSyncEngine {
           log.error('PrSyncEngine: syncSingle failed', {
             repositoryUrl,
             prNumber,
+            error: String(e),
+          });
+        }
+      })
+      .finally(() => {
+        this._singleInflight.delete(key);
+      });
+
+    this._singleInflight.set(key, promise);
+    await promise;
+    return result;
+  }
+
+  async syncBranch(repositoryUrl: string, headRefName: string): Promise<PullRequest[]> {
+    repositoryUrl = normalizeGitHubUrl(repositoryUrl);
+    const key = `branch:${repositoryUrl}:${headRefName}`;
+    if (this._singleInflight.has(key)) {
+      await this._singleInflight.get(key);
+      return [];
+    }
+
+    const ctrl = new AbortController();
+    let result: PullRequest[] = [];
+
+    const promise = this._runSyncBranch(repositoryUrl, headRefName, ctrl.signal)
+      .then((prs) => {
+        result = prs;
+      })
+      .catch((e: unknown) => {
+        if ((e as { name?: string }).name !== 'AbortError') {
+          log.error('PrSyncEngine: syncBranch failed', {
+            repositoryUrl,
+            headRefName,
             error: String(e),
           });
         }
@@ -530,6 +565,38 @@ export class PrSyncEngine {
 
     this._emitProgress({ remoteUrl: repositoryUrl, kind: 'single', status: 'done', synced: 1 });
     return pr ?? null;
+  }
+
+  private async _runSyncBranch(
+    repositoryUrl: string,
+    headRefName: string,
+    signal: AbortSignal
+  ): Promise<PullRequest[]> {
+    if (signal.aborted) return [];
+
+    const { owner, repo } = splitNormalizedUrl(repositoryUrl);
+    const octokit = await this.getOctokit();
+
+    const response = await withRetry(() =>
+      githubRateLimiter.acquire().then(() =>
+        octokit.graphql<{
+          repository: { pullRequests: { nodes: GqlPrNode[] } };
+        }>(GET_PRS_BY_HEAD_REF_QUERY, { owner, repo, headRefName })
+      )
+    );
+
+    const prs = await this._upsertBatch(repositoryUrl, response.repository.pullRequests.nodes);
+    if (prs.length > 0) {
+      events.emit(prUpdatedChannel, { prs });
+    }
+
+    this._emitProgress({
+      remoteUrl: repositoryUrl,
+      kind: 'single',
+      status: 'done',
+      synced: prs.length,
+    });
+    return prs;
   }
 
   // ── Check runs sync ────────────────────────────────────────────────────────
@@ -989,7 +1056,7 @@ export class PrSyncEngine {
     body?: string;
     draft: boolean;
   }): Promise<{ url: string; number: number }> {
-    const { owner, repo } = splitNormalizedUrl(params.repositoryUrl);
+    const { owner, repo } = splitNormalizedUrl(normalizeGitHubUrl(params.repositoryUrl));
     const octokit = await this.getOctokit();
     const response = await octokit.rest.pulls.create({
       owner,

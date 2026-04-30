@@ -3,7 +3,10 @@ import { observer } from 'mobx-react-lite';
 import { useState } from 'react';
 import type { Branch } from '@shared/git';
 import { getRepositoryStore } from '@renderer/features/projects/stores/project-selectors';
-import { getRegisteredTaskData } from '@renderer/features/tasks/stores/task-selectors';
+import {
+  getRegisteredTaskData,
+  getTaskManagerStore,
+} from '@renderer/features/tasks/stores/task-selectors';
 import { useTaskViewContext } from '@renderer/features/tasks/task-view-context';
 import { BranchDisplay } from '@renderer/lib/components/branch-display';
 import { ProjectBranchSelector } from '@renderer/lib/components/project-branch-selector';
@@ -94,6 +97,9 @@ export const CreatePrModal = observer(function CreatePrModal({
       });
 
       if (result.success) {
+        // Force-refresh the task's PRs so the sidebar badge updates even if
+        // the prUpdatedChannel event filter misses (e.g. URL/branch drift).
+        await getTaskManagerStore(projectId)?.reloadPrsForTask(taskId);
         onSuccess();
       } else {
         setError(result.error);

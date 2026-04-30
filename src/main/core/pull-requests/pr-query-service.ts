@@ -23,7 +23,7 @@ export type ProjectRemoteCapability =
 // Helpers
 // ---------------------------------------------------------------------------
 
-async function fetchRelated(rows: PrRow[]): Promise<PullRequest[]> {
+export async function fetchRelated(rows: PrRow[]): Promise<PullRequest[]> {
   if (rows.length === 0) return [];
 
   const urls = rows.map((r) => r.url);
