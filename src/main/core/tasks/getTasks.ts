@@ -46,10 +46,8 @@ export async function getTasks(projectId?: string): Promise<Task[]> {
 }
 
 /**
- * Bulk-load PRs for the given task rows, grouped by task id.
- *
- * Eager-loads on the initial getTasks call so the sidebar can render PR badges
- * on first paint instead of flashing in after per-task reloads.
+ * Eager-loads PRs in the same trip as getTasks so the sidebar can render PR
+ * badges on first paint instead of flashing in after per-task reloads.
  */
 async function loadPrsByTask(
   rows: (typeof tasks.$inferSelect)[]

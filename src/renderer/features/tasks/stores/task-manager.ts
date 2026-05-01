@@ -78,8 +78,6 @@ export class TaskManagerStore {
   private _unsubPrUpdated: (() => void) | null = null;
   private _unsubPrSyncProgress: (() => void) | null = null;
   private _disposeRepositoryReaction: (() => void) | null = null;
-  private _prPollHandle: ReturnType<typeof setInterval> | null = null;
-  private _prPollInFlight = false;
 
   tasks = observable.map<string, TaskStore>();
 
@@ -100,32 +98,13 @@ export class TaskManagerStore {
 
     this._unsubPrUpdated = events.on(prUpdatedChannel, ({ prs }) => {
       const repoUrl = this._repository.repositoryUrl;
-      console.debug('[pr:updated] received', {
-        prCount: prs.length,
-        repoUrl,
-        prRepoUrls: prs.map((p) => p.repositoryUrl),
-        prHeadRefs: prs.map((p) => p.headRefName),
-      });
       if (!repoUrl) return;
       for (const pr of prs) {
-        if (pr.repositoryUrl !== repoUrl) {
-          console.debug('[pr:updated] skipped (repo mismatch)', {
-            prRepoUrl: pr.repositoryUrl,
-            expectedRepoUrl: repoUrl,
-          });
-          continue;
-        }
-        let matchedAnyTask = false;
+        if (pr.repositoryUrl !== repoUrl) continue;
         for (const [, store] of this.tasks) {
           if (!isRegistered(store)) continue;
           const task = store.data as Task;
           if (task.taskBranch !== pr.headRefName) continue;
-          matchedAnyTask = true;
-          console.debug('[pr:updated] applying to task', {
-            taskId: task.id,
-            taskBranch: task.taskBranch,
-            prHeadRef: pr.headRefName,
-          });
           runInAction(() => {
             const idx = task.prs.findIndex((p) => p.url === pr.url);
             if (idx >= 0) {
@@ -135,20 +114,11 @@ export class TaskManagerStore {
             }
           });
         }
-        if (!matchedAnyTask) {
-          const knownBranches = [...this.tasks.values()]
-            .filter(isRegistered)
-            .map((s) => (s.data as Task).taskBranch);
-          console.debug('[pr:updated] no task matched headRefName', {
-            prHeadRef: pr.headRefName,
-            knownBranches,
-          });
-        }
       }
     });
 
     this._unsubPrSyncProgress = events.on(prSyncProgressChannel, (progress) => {
-      if (progress.status !== 'done') return;
+      if (progress.status !== 'done' || progress.kind === 'single') return;
       const repoUrl = this._repository.repositoryUrl;
       if (!repoUrl || progress.remoteUrl !== repoUrl) return;
       for (const [, store] of this.tasks) {
@@ -168,25 +138,6 @@ export class TaskManagerStore {
         }
       }
     );
-
-    this._prPollHandle = setInterval(() => {
-      void this._pollTaskPullRequests();
-    }, 15_000);
-  }
-
-  private async _pollTaskPullRequests(): Promise<void> {
-    if (this._prPollInFlight || !this._repository.repositoryUrl) return;
-    const stores = [...this.tasks.values()].filter(
-      (store) => isRegistered(store) && Boolean((store.data as Task).taskBranch)
-    );
-    if (stores.length === 0) return;
-
-    this._prPollInFlight = true;
-    try {
-      await Promise.all(stores.map((store) => this._reloadPrsForTask(store)));
-    } finally {
-      this._prPollInFlight = false;
-    }
   }
 
   private async _reloadPrsForTask(store: TaskStore): Promise<void> {
@@ -458,9 +409,5 @@ export class TaskManagerStore {
     this._unsubPrSyncProgress = null;
     this._disposeRepositoryReaction?.();
     this._disposeRepositoryReaction = null;
-    if (this._prPollHandle) {
-      clearInterval(this._prPollHandle);
-      this._prPollHandle = null;
-    }
   }
 }

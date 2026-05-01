@@ -473,59 +473,52 @@ export class PrSyncEngine {
   /** Sync a single PR by number. Deduplicated — awaits any in-flight call for the same PR. */
   async syncSingle(repositoryUrl: string, prNumber: number): Promise<PullRequest | null> {
     repositoryUrl = normalizeGitHubUrl(repositoryUrl);
-    const key = `single:${repositoryUrl}:${prNumber}`;
-    if (this._singleInflight.has(key)) {
-      await this._singleInflight.get(key);
-      return null;
-    }
-
-    const ctrl = new AbortController();
-    let result: PullRequest | null = null;
-
-    const promise = this._runSyncSingle(repositoryUrl, prNumber, ctrl.signal)
-      .then((pr) => {
-        result = pr;
-      })
-      .catch((e: unknown) => {
-        if ((e as { name?: string }).name !== 'AbortError') {
-          log.error('PrSyncEngine: syncSingle failed', {
-            repositoryUrl,
-            prNumber,
-            error: String(e),
-          });
-        }
-      })
-      .finally(() => {
-        this._singleInflight.delete(key);
-      });
-
-    this._singleInflight.set(key, promise);
-    await promise;
-    return result;
+    return this._runDeduped(
+      `single:${repositoryUrl}:${prNumber}`,
+      null,
+      (signal) => this._runSyncSingle(repositoryUrl, prNumber, signal),
+      'PrSyncEngine: syncSingle failed',
+      { repositoryUrl, prNumber }
+    );
   }
 
   async syncBranch(repositoryUrl: string, headRefName: string): Promise<PullRequest[]> {
     repositoryUrl = normalizeGitHubUrl(repositoryUrl);
-    const key = `branch:${repositoryUrl}:${headRefName}`;
+    return this._runDeduped<PullRequest[]>(
+      `branch:${repositoryUrl}:${headRefName}`,
+      [],
+      (signal) => this._runSyncBranch(repositoryUrl, headRefName, signal),
+      'PrSyncEngine: syncBranch failed',
+      { repositoryUrl, headRefName }
+    );
+  }
+
+  /**
+   * Wraps an async sync operation with in-flight deduplication, abort handling,
+   * and AbortError-aware error logging. Returns `fallback` on dedupe-hit or error.
+   */
+  private async _runDeduped<T>(
+    key: string,
+    fallback: T,
+    work: (signal: AbortSignal) => Promise<T>,
+    errorContext: string,
+    errorMeta: Record<string, unknown>
+  ): Promise<T> {
     if (this._singleInflight.has(key)) {
       await this._singleInflight.get(key);
-      return [];
+      return fallback;
     }
 
     const ctrl = new AbortController();
-    let result: PullRequest[] = [];
+    let result: T = fallback;
 
-    const promise = this._runSyncBranch(repositoryUrl, headRefName, ctrl.signal)
-      .then((prs) => {
-        result = prs;
+    const promise = work(ctrl.signal)
+      .then((value) => {
+        result = value;
       })
       .catch((e: unknown) => {
         if ((e as { name?: string }).name !== 'AbortError') {
-          log.error('PrSyncEngine: syncBranch failed', {
-            repositoryUrl,
-            headRefName,
-            error: String(e),
-          });
+          log.error(errorContext, { ...errorMeta, error: String(e) });
         }
       })
       .finally(() => {
