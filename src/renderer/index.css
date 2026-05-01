@@ -122,6 +122,16 @@
   height: 0 !important;
 }
 
+/* Smooth crossfade when toggling between light/dark/system themes.
+   Uses the View Transitions API — the theme provider wraps the class swap
+   in document.startViewTransition() and the browser snapshots the old/new
+   visual state and crossfades between them (default animation). */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 260ms;
+  animation-timing-function: ease;
+}
+
 @layer base {
   .emlight {
     --background: color(display-p3 0.988 0.988 0.988);

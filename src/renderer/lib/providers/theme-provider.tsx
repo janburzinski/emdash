@@ -1,10 +1,14 @@
-import { createContext, useEffect, useLayoutEffect, type ReactNode } from 'react';
+import { createContext, useEffect, useLayoutEffect, useRef, type ReactNode } from 'react';
 import type { Theme } from '@shared/app-settings';
 import { useAppSettingsKey } from '@renderer/features/settings/use-app-settings-key';
 import { useLocalStorage } from '@renderer/lib/hooks/useLocalStorage';
 import { applyThemeToAll } from '@renderer/lib/pty/pty';
 
 type EffectiveTheme = 'emlight' | 'emdark';
+
+type DocumentWithViewTransitions = Document & {
+  startViewTransition?: (callback: () => void) => { finished: Promise<void> };
+};
 
 function getSystemTheme(): EffectiveTheme {
   if (typeof window === 'undefined') return 'emlight';
@@ -16,6 +20,23 @@ function applyTheme(effective: EffectiveTheme) {
   const root = document.documentElement;
   root.classList.remove('emlight', 'emdark');
   root.classList.add(effective);
+}
+
+function applyThemeAnimated(effective: EffectiveTheme) {
+  if (typeof document === 'undefined') return;
+  const doc = document as DocumentWithViewTransitions;
+  const swap = () => {
+    applyTheme(effective);
+    // Update xterm theme inside the transition callback so the "after"
+    // snapshot includes the new terminal colors instead of snapping a
+    // frame later.
+    applyThemeToAll();
+  };
+  if (typeof doc.startViewTransition !== 'function') {
+    swap();
+    return;
+  }
+  doc.startViewTransition(swap);
 }
 
 interface ThemeContextType {
@@ -30,13 +51,19 @@ export const ThemeContext = createContext<ThemeContextType | undefined>(undefine
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const { value: themeValue, isLoading, update } = useAppSettingsKey('theme');
   const [, setCachedTheme] = useLocalStorage<Theme>('emdash-theme', null);
+  const hasMountedRef = useRef(false);
 
   const theme: Theme = themeValue ?? null;
   const effectiveTheme: EffectiveTheme = theme ?? getSystemTheme();
 
   useLayoutEffect(() => {
     if (isLoading) return;
-    applyTheme(effectiveTheme);
+    if (!hasMountedRef.current) {
+      hasMountedRef.current = true;
+      applyTheme(effectiveTheme);
+      return;
+    }
+    applyThemeAnimated(effectiveTheme);
   }, [effectiveTheme, isLoading]);
 
   useEffect(() => {
@@ -52,7 +79,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     const handler = () => {
       if (isLoading) return;
       const newEffective = mq.matches ? 'emdark' : 'emlight';
-      applyTheme(newEffective);
+      applyThemeAnimated(newEffective);
       applyThemeToAll();
     };
     mq.addEventListener('change', handler);
