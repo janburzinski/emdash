@@ -17,6 +17,7 @@ const config: Configuration = {
       provider: 'generic',
       url: R2_BASE_URL,
       channel: UPDATE_CHANNEL,
+      useMultipleRangeRequest: false,
     },
   ],
   generateUpdatesFilesForAllChannels: false,
