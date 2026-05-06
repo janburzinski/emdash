@@ -22,6 +22,10 @@ export function useGitActions(projectId: string, taskId: string) {
     mutationFn: () => git.publishBranch(),
   });
 
+  const gitDirectMergeMutation = useMutation({
+    mutationFn: () => git.mergeIntoDefaultBranch(),
+  });
+
   return {
     hasUpstream,
     aheadCount: git.aheadCount,
@@ -34,5 +38,7 @@ export function useGitActions(projectId: string, taskId: string) {
     isPulling: gitPullMutation.isPending,
     push: () => gitPushMutation.mutate(),
     isPushing: gitPushMutation.isPending,
+    directMerge: () => gitDirectMergeMutation.mutate(),
+    isDirectMerging: gitDirectMergeMutation.isPending,
   };
 }

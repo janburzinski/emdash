@@ -84,6 +84,7 @@ export type TelemetryEventProperties = {
   vcs_fetch: { success: boolean; error_type?: string };
   vcs_push: { success: boolean; error_type?: string };
   vcs_pull: { success: boolean; strategy?: string; conflicts?: boolean; error_type?: string };
+  vcs_direct_merge: { success: boolean; branch?: string; error_type?: string };
   vcs_files_staged: { count: number; scope: 'single' | 'multiple' | 'all' };
   vcs_files_unstaged: { count: number; scope: 'single' | 'multiple' | 'all' };
   vcs_files_discarded: { count: number; scope: 'single' | 'multiple' | 'all' };

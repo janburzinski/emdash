@@ -363,6 +363,21 @@ export const gitController = createRPCController({
     return ok({ output: result.data.output });
   },
 
+  mergeIntoDefaultBranch: async (projectId: string, workspaceId: string) => {
+    const env = resolveWorkspace(projectId, workspaceId);
+    if (!env) return err({ type: 'error' as const, message: 'Workspace not found' });
+    const targetBranch = await env.repository.getDefaultBranchName();
+    const result = await env.git.mergeIntoDefaultBranch(targetBranch);
+    capture('vcs_direct_merge', {
+      success: result.success,
+      project_id: projectId,
+      task_id: workspaceId,
+      ...(result.success ? { branch: result.data.branch } : { error_type: result.error.type }),
+    });
+    if (!result.success) return err(result.error);
+    return ok({ branch: result.data.branch, output: result.data.output });
+  },
+
   softReset: async (projectId: string, workspaceId: string) => {
     const env = resolveWorkspace(projectId, workspaceId);
     if (!env) return err({ type: 'not_found' as const });

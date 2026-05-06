@@ -279,6 +279,74 @@ describe('GitService.getDefaultBranch', () => {
   });
 });
 
+describe('GitService.mergeIntoDefaultBranch', () => {
+  it('merges into the provided target branch worktree', async () => {
+    const calls: string[] = [];
+    const exec: MockExec = async (_cmd, args = []) => {
+      const key = args.join(' ');
+      calls.push(key);
+      if (key === 'rev-parse --symbolic-full-name HEAD')
+        return { stdout: 'refs/heads/feature', stderr: '' };
+      if (key === 'worktree list --porcelain') {
+        return {
+          stdout:
+            'worktree /repo\nbranch refs/heads/main\n\nworktree /repo-dev\nbranch refs/heads/develop\n',
+          stderr: '',
+        };
+      }
+      if (key === '-C /repo-dev status --porcelain') return { stdout: '', stderr: '' };
+      if (key === '-C /repo-dev merge --no-ff feature') {
+        return { stdout: 'Merge made by the ort strategy.', stderr: '' };
+      }
+      throw Object.assign(new Error(`Unexpected git command: git ${key}`), {
+        stdout: '',
+        stderr: 'fatal: not expected',
+      });
+    };
+
+    const result = await makeService(exec).mergeIntoDefaultBranch('develop');
+
+    expect(result).toEqual({
+      success: true,
+      data: { branch: 'develop', output: 'Merge made by the ort strategy.' },
+    });
+    expect(calls).not.toContain('symbolic-ref refs/remotes/origin/HEAD --short');
+  });
+
+  it('aborts the target worktree merge when conflicts occur', async () => {
+    const calls: string[] = [];
+    const exec: MockExec = async (_cmd, args = []) => {
+      const key = args.join(' ');
+      calls.push(key);
+      if (key === 'rev-parse --symbolic-full-name HEAD')
+        return { stdout: 'refs/heads/feature', stderr: '' };
+      if (key === 'worktree list --porcelain') {
+        return { stdout: 'worktree /repo\nbranch refs/heads/main\n', stderr: '' };
+      }
+      if (key === '-C /repo status --porcelain') return { stdout: '', stderr: '' };
+      if (key === '-C /repo merge --no-ff feature') {
+        throw Object.assign(new Error('merge conflict'), {
+          stdout: 'Automatic merge failed; fix conflicts and then commit the result.',
+          stderr: 'CONFLICT (content): Merge conflict in file.txt',
+        });
+      }
+      if (key === '-C /repo merge --abort') return { stdout: '', stderr: '' };
+      throw Object.assign(new Error(`Unexpected git command: git ${key}`), {
+        stdout: '',
+        stderr: 'fatal: not expected',
+      });
+    };
+
+    const result = await makeService(exec).mergeIntoDefaultBranch('main');
+
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error.type).toBe('conflict');
+    }
+    expect(calls).toContain('-C /repo merge --abort');
+  });
+});
+
 // ---------------------------------------------------------------------------
 // computeBaseRef() — pure utility, no mocking needed
 // ---------------------------------------------------------------------------

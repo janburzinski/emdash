@@ -2,13 +2,28 @@ import { computed, makeObservable } from 'mobx';
 import { toast } from 'sonner';
 import { fsWatchEventChannel } from '@shared/events/fsEvents';
 import { gitWorkspaceChangedChannel } from '@shared/events/gitEvents';
-import type { FullGitStatus, GitChange } from '@shared/git';
+import type { DirectMergeError, FullGitStatus, GitChange } from '@shared/git';
 import { err, ok } from '@shared/result';
 import type { RepositoryStore } from '@renderer/features/projects/stores/repository-store';
 import { events, rpc } from '@renderer/lib/ipc';
 import { Resource } from '@renderer/lib/stores/resource';
 
 const TOO_MANY_FILES_MSG = 'Too many files changed to display';
+
+function directMergeErrorMessage(error: DirectMergeError): string {
+  switch (error.type) {
+    case 'dirty_target':
+      return `The ${error.branch} worktree has uncommitted changes. Commit, stash, or discard them before merging into it.`;
+    case 'default_worktree_not_found':
+      return `The ${error.branch} worktree is not checked out. Open or create that worktree first.`;
+    case 'same_branch':
+      return `You are already on ${error.branch}.`;
+    case 'conflict':
+      return `Merge conflicts while merging into ${error.branch}. Resolve them in that worktree.`;
+    case 'error':
+      return error.message;
+  }
+}
 
 export class GitStore {
   readonly fullStatus: Resource<FullGitStatus>;
@@ -379,6 +394,19 @@ export class GitStore {
       return ok();
     } else {
       toast.error(`Failed to pull changes: ${result.error.type} `);
+      return err(result.error);
+    }
+  }
+
+  async mergeIntoDefaultBranch() {
+    const result = await rpc.git.mergeIntoDefaultBranch(this.projectId, this.workspaceId);
+    if (result.success) {
+      toast.success(`Merged into ${result.data.branch}`);
+      this.repositoryStore.refreshLocal();
+      return ok();
+    } else {
+      const detail = directMergeErrorMessage(result.error);
+      toast.error(`Failed to merge into default branch: ${detail}`);
       return err(result.error);
     }
   }

@@ -4,6 +4,7 @@ import type {
   CommitFile,
   DiffMode,
   DiffResult,
+  DirectMergeError,
   FetchError,
   FullGitStatus,
   GitChange,
@@ -67,5 +68,8 @@ export interface WorkspaceGitProvider {
     remote?: string
   ): Promise<Result<{ output: string }, PushError>>;
   pull(): Promise<Result<{ output: string }, PullError>>;
+  mergeIntoDefaultBranch(
+    targetBranch: string
+  ): Promise<Result<{ branch: string; output: string }, DirectMergeError>>;
   softReset(): Promise<Result<{ subject: string; body: string }, SoftResetError>>;
 }

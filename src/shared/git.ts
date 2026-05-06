@@ -280,3 +280,10 @@ export type PullError =
   | { type: 'auth_failed'; message: string }
   | { type: 'network_error'; message: string }
   | { type: 'error'; message: string };
+
+export type DirectMergeError =
+  | { type: 'same_branch'; branch: string }
+  | { type: 'default_worktree_not_found'; branch: string }
+  | { type: 'dirty_target'; branch: string; path?: string; message: string }
+  | { type: 'conflict'; branch: string; message: string }
+  | { type: 'error'; message: string };

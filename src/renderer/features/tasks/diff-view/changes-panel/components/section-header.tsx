@@ -1,8 +1,14 @@
-import { ChevronDown, Plus, RefreshCw } from 'lucide-react';
+import { ChevronDown, GitMerge, Plus, RefreshCw } from 'lucide-react';
 import { type SelectionState } from '@renderer/features/tasks/diff-view/stores/changes-view-store';
 import { Badge } from '@renderer/lib/ui/badge';
 import { Button } from '@renderer/lib/ui/button';
 import { Checkbox } from '@renderer/lib/ui/checkbox';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@renderer/lib/ui/dropdown-menu';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@renderer/lib/ui/tooltip';
 import { cn } from '@renderer/utils/utils';
 
@@ -60,16 +66,20 @@ export function PullRequestSectionHeader({
   onToggleCollapsed,
   hasOpenPr,
   onCreatePr,
+  onDirectMerge,
   onRefresh,
   isRefreshing,
+  isDirectMerging,
 }: {
   count: number;
   collapsed?: boolean;
   onToggleCollapsed?: () => void;
   hasOpenPr: boolean;
   onCreatePr?: () => void;
+  onDirectMerge?: () => void;
   onRefresh?: () => void;
   isRefreshing?: boolean;
+  isDirectMerging?: boolean;
 }) {
   return (
     <div className="shrink-0 flex items-center justify-between px-2.5 h-10">
@@ -91,17 +101,48 @@ export function PullRequestSectionHeader({
           </span>
         </button>
         <div className="flex items-center gap-1.5">
-          <Tooltip>
-            <TooltipTrigger>
-              <Button variant="outline" size="xs" onClick={onCreatePr} disabled={hasOpenPr}>
-                <Plus className="size-3" />
-                Create PR
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>
-              {hasOpenPr ? 'A pull request is already open' : 'Create a pull request'}
-            </TooltipContent>
-          </Tooltip>
+          <div className="flex items-center">
+            <Tooltip>
+              <TooltipTrigger>
+                <Button
+                  variant="outline"
+                  size="xs"
+                  onClick={onCreatePr}
+                  disabled={hasOpenPr || !onCreatePr}
+                  className="rounded-r-none"
+                >
+                  <Plus className="size-3" />
+                  Create PR
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                {hasOpenPr ? 'A pull request is already open' : 'Create a pull request'}
+              </TooltipContent>
+            </Tooltip>
+            <DropdownMenu>
+              <DropdownMenuTrigger
+                render={
+                  <Button
+                    variant="outline"
+                    size="xs"
+                    disabled={!onDirectMerge || isDirectMerging}
+                    className="rounded-l-none border-l-0 px-1.5"
+                  />
+                }
+              >
+                <ChevronDown className="size-3" />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-64">
+                <DropdownMenuItem
+                  onClick={onDirectMerge}
+                  disabled={!onDirectMerge || isDirectMerging}
+                >
+                  <GitMerge className="size-3.5" />
+                  {isDirectMerging ? 'Merging to main...' : 'Merge to main'}
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
           <Tooltip>
             <TooltipTrigger>
               <Button variant="outline" size="icon-xs" onClick={onRefresh} disabled={isRefreshing}>

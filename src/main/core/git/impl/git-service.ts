@@ -12,6 +12,7 @@ import {
   type DiffLine,
   type DiffMode,
   type DiffResult,
+  type DirectMergeError,
   type FetchError,
   type FetchPrForReviewError,
   type FullGitStatus,
@@ -1041,6 +1042,65 @@ export class GitService implements GitProvider, IDisposable {
         return err({ type: 'no_remote', message });
       }
 
+      return err({ type: 'error', message });
+    }
+  }
+
+  async mergeIntoDefaultBranch(
+    targetBranch: string
+  ): Promise<Result<{ branch: string; output: string }, DirectMergeError>> {
+    const sourceBranch = await this.getCurrentBranch();
+    if (!sourceBranch) return err({ type: 'error', message: 'Current worktree is detached' });
+    if (sourceBranch === targetBranch) return err({ type: 'same_branch', branch: targetBranch });
+
+    let worktreePath: string | undefined;
+    try {
+      const { stdout } = await this.ctx.exec(GIT_EXECUTABLE, ['worktree', 'list', '--porcelain']);
+      const entries = stdout
+        .split('\n\n')
+        .map((entry) => entry.trim())
+        .filter(Boolean);
+      const targetEntry = entries.find((entry) =>
+        entry.split('\n').includes(`branch refs/heads/${targetBranch}`)
+      );
+      worktreePath = /^worktree (.+)$/m.exec(targetEntry ?? '')?.[1];
+      if (!worktreePath) return err({ type: 'default_worktree_not_found', branch: targetBranch });
+
+      const status = await this.ctx.exec(GIT_EXECUTABLE, [
+        '-C',
+        worktreePath,
+        'status',
+        '--porcelain',
+      ]);
+      if (status.stdout.trim()) {
+        return err({
+          type: 'dirty_target',
+          branch: targetBranch,
+          path: worktreePath,
+          message: `The ${targetBranch} worktree has uncommitted changes. Commit, stash, or discard them before merging into it.`,
+        });
+      }
+
+      const { stdout: mergeStdout, stderr: mergeStderr } = await this.ctx.exec(GIT_EXECUTABLE, [
+        '-C',
+        worktreePath,
+        'merge',
+        '--no-ff',
+        sourceBranch,
+      ]);
+      return ok({ branch: targetBranch, output: (mergeStdout || mergeStderr || '').trim() });
+    } catch (error: unknown) {
+      const stderr = (error as { stderr?: string })?.stderr || '';
+      const stdout = (error as { stdout?: string })?.stdout || '';
+      const message = stderr || stdout || String(error);
+      if (message.includes('CONFLICT') || message.includes('Automatic merge failed')) {
+        if (worktreePath) {
+          await this.ctx
+            .exec(GIT_EXECUTABLE, ['-C', worktreePath, 'merge', '--abort'])
+            .catch(() => {});
+        }
+        return err({ type: 'conflict', branch: targetBranch, message });
+      }
       return err({ type: 'error', message });
     }
   }
