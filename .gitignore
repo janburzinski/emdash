@@ -71,5 +71,3 @@ Thumbs.db
 .codex/config.toml
 
 src/main/appConfig.json
-.pi/extensions/emdash-hook.ts
-.opencode/plugins/emdash-notifications.js

@@ -33,7 +33,6 @@ import { parseGitHubRepository } from '@shared/github-repository';
 import { err, ok, type Result } from '@shared/result';
 import type { IExecutionContext } from '@main/core/execution-context/types';
 import type { FileSystemProvider } from '@main/core/fs/types';
-import { GIT_EXECUTABLE } from '@main/core/utils/exec';
 import type { IDisposable } from '@main/lib/lifecycle';
 import { type GitProvider } from '../types';
 import { CatFileBatch } from './cat-file-batch';
@@ -104,10 +103,10 @@ export class GitService implements GitProvider, IDisposable {
       const parser = new StatusParser();
       const [, stagedRes, unstagedRes, currentBranch] = await Promise.all([
         this._runStatusZ(parser),
-        this.ctx.exec(GIT_EXECUTABLE, ['diff', '--numstat', '--cached']).catch(() => ({
+        this.ctx.exec('git', ['diff', '--numstat', '--cached']).catch(() => ({
           stdout: '',
         })),
-        this.ctx.exec(GIT_EXECUTABLE, ['diff', '--numstat']).catch(() => ({ stdout: '' })),
+        this.ctx.exec('git', ['diff', '--numstat']).catch(() => ({ stdout: '' })),
         this.getCurrentBranch(),
       ]);
 
@@ -138,7 +137,7 @@ export class GitService implements GitProvider, IDisposable {
 
   private async _runStatusZ(parser: StatusParser): Promise<void> {
     await this.ctx.execStreaming(
-      GIT_EXECUTABLE,
+      'git',
       ['--no-optional-locks', 'status', '-z', '-uall'],
       (chunk) => {
         parser.update(chunk);
@@ -265,24 +264,24 @@ export class GitService implements GitProvider, IDisposable {
 
   async stageFiles(filePaths: string[]): Promise<void> {
     if (filePaths.length === 0) return;
-    await this.ctx.exec(GIT_EXECUTABLE, ['add', '--', ...filePaths]);
+    await this.ctx.exec('git', ['add', '--', ...filePaths]);
   }
 
   async stageAllFiles(): Promise<void> {
-    await this.ctx.exec(GIT_EXECUTABLE, ['add', '-A']);
+    await this.ctx.exec('git', ['add', '-A']);
   }
 
   async unstageFiles(filePaths: string[]): Promise<void> {
     if (filePaths.length === 0) return;
     try {
-      await this.ctx.exec(GIT_EXECUTABLE, ['reset', 'HEAD', '--', ...filePaths]);
+      await this.ctx.exec('git', ['reset', 'HEAD', '--', ...filePaths]);
     } catch {
       // Fallback for edge cases (e.g. new files with no HEAD): unstage each via rm --cached
       for (const filePath of filePaths) {
         try {
-          await this.ctx.exec(GIT_EXECUTABLE, ['reset', 'HEAD', '--', filePath]);
+          await this.ctx.exec('git', ['reset', 'HEAD', '--', filePath]);
         } catch {
-          await this.ctx.exec(GIT_EXECUTABLE, ['rm', '--cached', '--', filePath]);
+          await this.ctx.exec('git', ['rm', '--cached', '--', filePath]);
         }
       }
     }
@@ -290,7 +289,7 @@ export class GitService implements GitProvider, IDisposable {
 
   async unstageAllFiles(): Promise<void> {
     try {
-      await this.ctx.exec(GIT_EXECUTABLE, ['reset', 'HEAD']);
+      await this.ctx.exec('git', ['reset', 'HEAD']);
     } catch {
       // Repo may have no commits yet; ignore.
     }
@@ -302,7 +301,7 @@ export class GitService implements GitProvider, IDisposable {
     // Determine which files exist in HEAD in a single command
     let trackedPaths = new Set<string>();
     try {
-      const { stdout } = await this.ctx.exec(GIT_EXECUTABLE, [
+      const { stdout } = await this.ctx.exec('git', [
         'ls-tree',
         '--name-only',
         'HEAD',
@@ -318,7 +317,7 @@ export class GitService implements GitProvider, IDisposable {
     const untracked = filePaths.filter((f) => !trackedPaths.has(f));
 
     if (tracked.length > 0) {
-      await this.ctx.exec(GIT_EXECUTABLE, ['checkout', 'HEAD', '--', ...tracked]);
+      await this.ctx.exec('git', ['checkout', 'HEAD', '--', ...tracked]);
     }
 
     // Untracked files don't exist in git history — remove them from disk
@@ -334,11 +333,11 @@ export class GitService implements GitProvider, IDisposable {
     // Reset index and working tree for all tracked changes back to HEAD,
     // then remove any untracked files/directories.
     try {
-      await this.ctx.exec(GIT_EXECUTABLE, ['reset', '--hard', 'HEAD']);
+      await this.ctx.exec('git', ['reset', '--hard', 'HEAD']);
     } catch {
       // Repo may have no commits yet; ignore.
     }
-    await this.ctx.exec(GIT_EXECUTABLE, ['clean', '-fd']);
+    await this.ctx.exec('git', ['clean', '-fd']);
   }
 
   // ---------------------------------------------------------------------------
@@ -359,7 +358,7 @@ export class GitService implements GitProvider, IDisposable {
       }
     }
     try {
-      const { stdout } = await this.ctx.exec(GIT_EXECUTABLE, ['show', `${ref}:${filePath}`], {
+      const { stdout } = await this.ctx.exec('git', ['show', `${ref}:${filePath}`], {
         maxBuffer: MAX_DIFF_CONTENT_BYTES,
       });
       return stripTrailingNewline(stdout);
@@ -378,7 +377,7 @@ export class GitService implements GitProvider, IDisposable {
       }
     }
     try {
-      const { stdout } = await this.ctx.exec(GIT_EXECUTABLE, ['show', `:0:${filePath}`], {
+      const { stdout } = await this.ctx.exec('git', ['show', `:0:${filePath}`], {
         maxBuffer: MAX_DIFF_CONTENT_BYTES,
       });
       return stripTrailingNewline(stdout);
@@ -413,7 +412,7 @@ export class GitService implements GitProvider, IDisposable {
 
     let diffStdout: string | undefined;
     try {
-      const { stdout } = await this.ctx.exec(GIT_EXECUTABLE, diffArgs, {
+      const { stdout } = await this.ctx.exec('git', diffArgs, {
         maxBuffer: MAX_DIFF_OUTPUT_BYTES,
       });
       diffStdout = stdout;
@@ -423,13 +422,9 @@ export class GitService implements GitProvider, IDisposable {
 
     const getOriginalContent = async (): Promise<string | undefined> => {
       try {
-        const { stdout } = await this.ctx.exec(
-          GIT_EXECUTABLE,
-          ['show', `${originalRef}:${filePath}`],
-          {
-            maxBuffer: MAX_DIFF_CONTENT_BYTES,
-          }
-        );
+        const { stdout } = await this.ctx.exec('git', ['show', `${originalRef}:${filePath}`], {
+          maxBuffer: MAX_DIFF_CONTENT_BYTES,
+        });
         return stripTrailingNewline(stdout);
       } catch {
         return undefined;
@@ -439,7 +434,7 @@ export class GitService implements GitProvider, IDisposable {
     const getModifiedContent = async (): Promise<string | undefined> => {
       if (isObjectRef) {
         try {
-          const { stdout } = await this.ctx.exec(GIT_EXECUTABLE, ['show', `HEAD:${filePath}`], {
+          const { stdout } = await this.ctx.exec('git', ['show', `HEAD:${filePath}`], {
             maxBuffer: MAX_DIFF_CONTENT_BYTES,
           });
           return stripTrailingNewline(stdout);
@@ -507,7 +502,7 @@ export class GitService implements GitProvider, IDisposable {
   async getCommitFileDiff(commitHash: string, filePath: string): Promise<DiffResult> {
     const getContentAt = async (ref: string): Promise<string | undefined> => {
       try {
-        const { stdout } = await this.ctx.exec(GIT_EXECUTABLE, ['show', `${ref}:${filePath}`], {
+        const { stdout } = await this.ctx.exec('git', ['show', `${ref}:${filePath}`], {
           maxBuffer: MAX_DIFF_CONTENT_BYTES,
         });
         return stripTrailingNewline(stdout);
@@ -518,7 +513,7 @@ export class GitService implements GitProvider, IDisposable {
 
     let hasParent = true;
     try {
-      await this.ctx.exec(GIT_EXECUTABLE, ['rev-parse', '--verify', `${commitHash}~1`]);
+      await this.ctx.exec('git', ['rev-parse', '--verify', `${commitHash}~1`]);
     } catch {
       hasParent = false;
     }
@@ -606,7 +601,7 @@ export class GitService implements GitProvider, IDisposable {
       if (base !== undefined) {
         // PR-relative count: compare explicitly against the PR base ref.
         try {
-          const { stdout } = await this.ctx.exec(GIT_EXECUTABLE, [
+          const { stdout } = await this.ctx.exec('git', [
             'rev-list',
             '--count',
             `${toRefString(base)}..${headStr}`,
@@ -617,7 +612,7 @@ export class GitService implements GitProvider, IDisposable {
         }
       } else {
         try {
-          const { stdout } = await this.ctx.exec(GIT_EXECUTABLE, [
+          const { stdout } = await this.ctx.exec('git', [
             'rev-list',
             '--count',
             '@{upstream}..HEAD',
@@ -625,13 +620,13 @@ export class GitService implements GitProvider, IDisposable {
           aheadCount = Number.parseInt(stdout.trim(), 10) || 0;
         } catch {
           try {
-            const { stdout: branchOut } = await this.ctx.exec(GIT_EXECUTABLE, [
+            const { stdout: branchOut } = await this.ctx.exec('git', [
               'rev-parse',
               '--abbrev-ref',
               'HEAD',
             ]);
             const currentBranch = branchOut.trim();
-            const { stdout } = await this.ctx.exec(GIT_EXECUTABLE, [
+            const { stdout } = await this.ctx.exec('git', [
               'rev-list',
               '--count',
               `${remote}/${currentBranch}..HEAD`,
@@ -639,13 +634,13 @@ export class GitService implements GitProvider, IDisposable {
             aheadCount = Number.parseInt(stdout.trim(), 10) || 0;
           } catch {
             try {
-              const { stdout: defaultBranchOut } = await this.ctx.exec(GIT_EXECUTABLE, [
+              const { stdout: defaultBranchOut } = await this.ctx.exec('git', [
                 'symbolic-ref',
                 '--short',
                 `refs/remotes/${remote}/HEAD`,
               ]);
               const defaultBranch = defaultBranchOut.trim();
-              const { stdout } = await this.ctx.exec(GIT_EXECUTABLE, [
+              const { stdout } = await this.ctx.exec('git', [
                 'rev-list',
                 '--count',
                 `${defaultBranch}..HEAD`,
@@ -665,7 +660,7 @@ export class GitService implements GitProvider, IDisposable {
     // When base is provided (PR view), use a range so only commits between
     // base and head are returned — not a raw linear walk from head.
     const rangeArg = base ? `${toRefString(base)}..${headStr}` : headStr;
-    const { stdout } = await this.ctx.exec(GIT_EXECUTABLE, [
+    const { stdout } = await this.ctx.exec('git', [
       'log',
       `--max-count=${maxCount}`,
       `--skip=${skip}`,
@@ -740,8 +735,8 @@ export class GitService implements GitProvider, IDisposable {
       : ['diff', '--name-status', ref];
 
     const [numstatResult, nameStatusResult] = await Promise.all([
-      this.ctx.exec(GIT_EXECUTABLE, diffArgs).catch(() => ({ stdout: '' })),
-      this.ctx.exec(GIT_EXECUTABLE, nameArgs).catch(() => ({ stdout: '' })),
+      this.ctx.exec('git', diffArgs).catch(() => ({ stdout: '' })),
+      this.ctx.exec('git', nameArgs).catch(() => ({ stdout: '' })),
     ]);
 
     const numstatMap = parseNumstat(numstatResult.stdout);
@@ -766,7 +761,7 @@ export class GitService implements GitProvider, IDisposable {
   }
 
   async getCommitFiles(commitHash: string): Promise<CommitFile[]> {
-    const { stdout } = await this.ctx.exec(GIT_EXECUTABLE, [
+    const { stdout } = await this.ctx.exec('git', [
       'diff-tree',
       '--root',
       '--no-commit-id',
@@ -777,7 +772,7 @@ export class GitService implements GitProvider, IDisposable {
       commitHash,
     ]);
 
-    const { stdout: nameStatus } = await this.ctx.exec(GIT_EXECUTABLE, [
+    const { stdout: nameStatus } = await this.ctx.exec('git', [
       'diff-tree',
       '--root',
       '--no-commit-id',
@@ -817,7 +812,7 @@ export class GitService implements GitProvider, IDisposable {
   async commit(message: string): Promise<Result<{ hash: string }, CommitError>> {
     if (!message || !message.trim()) return err({ type: 'empty_message' });
     try {
-      await this.ctx.exec(GIT_EXECUTABLE, ['commit', '-m', message]);
+      await this.ctx.exec('git', ['commit', '-m', message]);
     } catch (error: unknown) {
       const stderr = (error as { stderr?: string })?.stderr || '';
       const stdout = (error as { stdout?: string })?.stdout || '';
@@ -828,7 +823,7 @@ export class GitService implements GitProvider, IDisposable {
       return err({ type: 'hook_failed', message: output });
     }
     try {
-      const { stdout } = await this.ctx.exec(GIT_EXECUTABLE, ['rev-parse', 'HEAD']);
+      const { stdout } = await this.ctx.exec('git', ['rev-parse', 'HEAD']);
       return ok({ hash: stdout.trim() });
     } catch (error: unknown) {
       return err({ type: 'error', message: String(error) });
@@ -837,7 +832,7 @@ export class GitService implements GitProvider, IDisposable {
 
   async fetch(remote?: string): Promise<Result<void, FetchError>> {
     try {
-      const remotes = await this.ctx.exec(GIT_EXECUTABLE, ['remote']).catch(() => ({
+      const remotes = await this.ctx.exec('git', ['remote']).catch(() => ({
         stdout: '',
       }));
       const remoteNames = remotes.stdout
@@ -851,11 +846,9 @@ export class GitService implements GitProvider, IDisposable {
         return err({ type: 'remote_not_found', message: `Remote "${selectedRemote}" not found` });
       }
 
-      await this.authCtx.exec(
-        GIT_EXECUTABLE,
-        selectedRemote ? ['fetch', selectedRemote] : ['fetch'],
-        { maxBuffer: MAX_REF_LIST_BYTES }
-      );
+      await this.authCtx.exec('git', selectedRemote ? ['fetch', selectedRemote] : ['fetch'], {
+        maxBuffer: MAX_REF_LIST_BYTES,
+      });
       return ok();
     } catch (error: unknown) {
       const stderr = (error as { stderr?: string })?.stderr || String(error);
@@ -892,7 +885,7 @@ export class GitService implements GitProvider, IDisposable {
 
   async push(preferredRemote?: string): Promise<Result<{ output: string }, PushError>> {
     const doPush = async (args: string[]): Promise<string> => {
-      const { stdout, stderr } = await this.authCtx.exec(GIT_EXECUTABLE, args);
+      const { stdout, stderr } = await this.authCtx.exec('git', args);
       return (stdout || stderr || '').trim();
     };
 
@@ -913,14 +906,11 @@ export class GitService implements GitProvider, IDisposable {
         stderr.includes('upstream branch of your current branch does not match')
       ) {
         try {
-          const { stdout: branchOut } = await this.ctx.exec(GIT_EXECUTABLE, [
-            'branch',
-            '--show-current',
-          ]);
+          const { stdout: branchOut } = await this.ctx.exec('git', ['branch', '--show-current']);
           const currentBranch = branchOut.trim();
           let pushRemote = preferredRemote?.trim() || DEFAULT_REMOTE_NAME;
           try {
-            const { stdout: remoteOut } = await this.ctx.exec(GIT_EXECUTABLE, [
+            const { stdout: remoteOut } = await this.ctx.exec('git', [
               'config',
               '--get',
               `branch.${currentBranch}.remote`,
@@ -980,7 +970,7 @@ export class GitService implements GitProvider, IDisposable {
     remote = 'origin'
   ): Promise<Result<{ output: string }, PushError>> {
     const doPush = async (args: string[]): Promise<string> => {
-      const { stdout, stderr } = await this.authCtx.exec(GIT_EXECUTABLE, args);
+      const { stdout, stderr } = await this.authCtx.exec('git', args);
       return (stdout || stderr || '').trim();
     };
 
@@ -1001,7 +991,7 @@ export class GitService implements GitProvider, IDisposable {
         stderr.includes('non-fast-forward')
       ) {
         try {
-          await this.ctx.exec(GIT_EXECUTABLE, [
+          await this.ctx.exec('git', [
             'branch',
             `--set-upstream-to=${remote}/${branchName}`,
             branchName,
@@ -1107,7 +1097,7 @@ export class GitService implements GitProvider, IDisposable {
 
   async pull(): Promise<Result<{ output: string }, PullError>> {
     try {
-      const { stdout } = await this.authCtx.exec(GIT_EXECUTABLE, ['pull']);
+      const { stdout } = await this.authCtx.exec('git', ['pull']);
       return ok({ output: stdout.trim() });
     } catch (error: unknown) {
       const stdout = (error as { stdout?: string })?.stdout || '';
@@ -1117,7 +1107,7 @@ export class GitService implements GitProvider, IDisposable {
       if (stdout.includes('CONFLICT') || stderr.includes('CONFLICT')) {
         let conflictedFiles: string[] = [];
         try {
-          const { stdout: conflictOut } = await this.ctx.exec(GIT_EXECUTABLE, [
+          const { stdout: conflictOut } = await this.ctx.exec('git', [
             'diff',
             '--name-only',
             '--diff-filter=U',
@@ -1173,7 +1163,7 @@ export class GitService implements GitProvider, IDisposable {
 
   async softReset(): Promise<Result<{ subject: string; body: string }, SoftResetError>> {
     try {
-      await this.ctx.exec(GIT_EXECUTABLE, ['rev-parse', '--verify', 'HEAD~1']);
+      await this.ctx.exec('git', ['rev-parse', '--verify', 'HEAD~1']);
     } catch {
       return err({ type: 'initial_commit' });
     }
@@ -1184,18 +1174,10 @@ export class GitService implements GitProvider, IDisposable {
     }
 
     try {
-      const { stdout: subject } = await this.ctx.exec(GIT_EXECUTABLE, [
-        'log',
-        '-1',
-        '--pretty=format:%s',
-      ]);
-      const { stdout: body } = await this.ctx.exec(GIT_EXECUTABLE, [
-        'log',
-        '-1',
-        '--pretty=format:%b',
-      ]);
+      const { stdout: subject } = await this.ctx.exec('git', ['log', '-1', '--pretty=format:%s']);
+      const { stdout: body } = await this.ctx.exec('git', ['log', '-1', '--pretty=format:%b']);
 
-      await this.ctx.exec(GIT_EXECUTABLE, ['reset', '--soft', 'HEAD~1']);
+      await this.ctx.exec('git', ['reset', '--soft', 'HEAD~1']);
 
       return ok({ subject: subject.trim(), body: body.trim() });
     } catch (error: unknown) {
@@ -1205,11 +1187,7 @@ export class GitService implements GitProvider, IDisposable {
 
   async getCurrentBranch(): Promise<string | null> {
     try {
-      const { stdout } = await this.ctx.exec(GIT_EXECUTABLE, [
-        'rev-parse',
-        '--symbolic-full-name',
-        'HEAD',
-      ]);
+      const { stdout } = await this.ctx.exec('git', ['rev-parse', '--symbolic-full-name', 'HEAD']);
       const ref = stdout.trim();
       if (ref === 'HEAD' || !ref) return null;
       if (ref.startsWith('refs/heads/')) return ref.slice('refs/heads/'.length);
@@ -1222,7 +1200,7 @@ export class GitService implements GitProvider, IDisposable {
 
   async getWorktreeGitDir(mainDotGitAbs: string): Promise<string> {
     try {
-      const { stdout } = await this.ctx.exec(GIT_EXECUTABLE, ['rev-parse', '--git-dir']);
+      const { stdout } = await this.ctx.exec('git', ['rev-parse', '--git-dir']);
       const raw = stdout.trim();
       const root = this.ctx.root ?? '';
       const gitDirAbs = path.isAbsolute(raw) ? raw : path.resolve(root, raw);
@@ -1237,7 +1215,7 @@ export class GitService implements GitProvider, IDisposable {
     const remotes = await this.getRemotes();
     const remoteByName = new Map(remotes.map((remote) => [remote.name, remote]));
     const { stdout } = await this.ctx.exec(
-      GIT_EXECUTABLE,
+      'git',
       ['branch', '-a', '--format=%(refname:short)|%(upstream:short)|%(upstream:track)|%(refname)'],
       { maxBuffer: MAX_REF_LIST_BYTES }
     );
@@ -1288,7 +1266,7 @@ export class GitService implements GitProvider, IDisposable {
     // Heuristic 1: ask the remote what its HEAD points to (fast, no network call needed
     // because git caches this in refs/remotes/<remote>/HEAD after a fetch/clone).
     try {
-      const { stdout } = await this.ctx.exec(GIT_EXECUTABLE, [
+      const { stdout } = await this.ctx.exec('git', [
         'symbolic-ref',
         `refs/remotes/${remote}/HEAD`,
         '--short',
@@ -1302,7 +1280,7 @@ export class GitService implements GitProvider, IDisposable {
 
     // Heuristic 2: ask the remote directly (requires a network call).
     try {
-      const { stdout } = await this.authCtx.exec(GIT_EXECUTABLE, ['remote', 'show', remote]);
+      const { stdout } = await this.authCtx.exec('git', ['remote', 'show', remote]);
       const match = /HEAD branch:\s*(\S+)/.exec(stdout);
       if (match?.[1]) return match[1];
     } catch {}
@@ -1318,7 +1296,7 @@ export class GitService implements GitProvider, IDisposable {
 
   private async _branchExistsLocally(branch: string): Promise<boolean> {
     try {
-      await this.ctx.exec(GIT_EXECUTABLE, ['rev-parse', '--verify', `refs/heads/${branch}`]);
+      await this.ctx.exec('git', ['rev-parse', '--verify', `refs/heads/${branch}`]);
       return true;
     } catch {
       return false;
@@ -1327,7 +1305,7 @@ export class GitService implements GitProvider, IDisposable {
 
   async getRemotes(): Promise<{ name: string; url: string }[]> {
     try {
-      const { stdout } = await this.ctx.exec(GIT_EXECUTABLE, ['remote', '-v']);
+      const { stdout } = await this.ctx.exec('git', ['remote', '-v']);
       const seen = new Set<string>();
       const remotes: { name: string; url: string }[] = [];
       for (const line of stdout.split('\n')) {
@@ -1346,17 +1324,12 @@ export class GitService implements GitProvider, IDisposable {
   async getHeadState(): Promise<GitHeadState> {
     let headName: string | undefined;
     try {
-      const { stdout } = await this.ctx.exec(GIT_EXECUTABLE, [
-        'symbolic-ref',
-        '--quiet',
-        '--short',
-        'HEAD',
-      ]);
+      const { stdout } = await this.ctx.exec('git', ['symbolic-ref', '--quiet', '--short', 'HEAD']);
       headName = stdout.trim() || undefined;
     } catch {}
 
     try {
-      await this.ctx.exec(GIT_EXECUTABLE, ['rev-parse', '--verify', 'HEAD']);
+      await this.ctx.exec('git', ['rev-parse', '--verify', 'HEAD']);
       return { headName, isUnborn: false };
     } catch {
       return { headName, isUnborn: true };
@@ -1364,7 +1337,7 @@ export class GitService implements GitProvider, IDisposable {
   }
 
   async addRemote(name: string, url: string): Promise<void> {
-    await this.ctx.exec(GIT_EXECUTABLE, ['remote', 'add', name, url]);
+    await this.ctx.exec('git', ['remote', 'add', name, url]);
   }
 
   async createBranch(
@@ -1375,14 +1348,14 @@ export class GitService implements GitProvider, IDisposable {
   ): Promise<Result<void, CreateBranchError>> {
     if (syncWithRemote) {
       await this.authCtx
-        .exec(GIT_EXECUTABLE, ['fetch', remote], {
+        .exec('git', ['fetch', remote], {
           maxBuffer: MAX_REF_LIST_BYTES,
         })
         .catch(() => {});
     }
     const base = syncWithRemote ? `${remote}/${from}` : `refs/heads/${from}`;
     try {
-      await this.ctx.exec(GIT_EXECUTABLE, ['branch', '--no-track', name, base]);
+      await this.ctx.exec('git', ['branch', '--no-track', name, base]);
       return ok();
     } catch (error: unknown) {
       const stderr = (error as { stderr?: string })?.stderr || String(error);
@@ -1419,21 +1392,19 @@ export class GitService implements GitProvider, IDisposable {
       if (isFork) {
         const forkRemote = parseGitHubRepository(headRepositoryUrl)?.owner ?? 'fork';
         // Idempotently ensure remote exists with the correct URL
-        const remotes = await this.ctx
-          .exec(GIT_EXECUTABLE, ['remote'])
-          .catch(() => ({ stdout: '' }));
+        const remotes = await this.ctx.exec('git', ['remote']).catch(() => ({ stdout: '' }));
         const names = remotes.stdout
           .split('\n')
           .map((s) => s.trim())
           .filter(Boolean);
         if (!names.includes(forkRemote)) {
-          await this.ctx.exec(GIT_EXECUTABLE, ['remote', 'add', forkRemote, headRepositoryUrl]);
+          await this.ctx.exec('git', ['remote', 'add', forkRemote, headRepositoryUrl]);
         } else {
           await this.ctx
-            .exec(GIT_EXECUTABLE, ['remote', 'set-url', forkRemote, headRepositoryUrl])
+            .exec('git', ['remote', 'set-url', forkRemote, headRepositoryUrl])
             .catch(() => {});
         }
-        await this.authCtx.exec(GIT_EXECUTABLE, [
+        await this.authCtx.exec('git', [
           'fetch',
           forkRemote,
           `${headRefName}:refs/heads/${localBranch}`,
@@ -1441,22 +1412,18 @@ export class GitService implements GitProvider, IDisposable {
         ]);
         // Set tracking so `git push` targets the contributor's fork branch
         await this.ctx
-          .exec(GIT_EXECUTABLE, [
-            'branch',
-            `--set-upstream-to=${forkRemote}/${headRefName}`,
-            localBranch,
-          ])
+          .exec('git', ['branch', `--set-upstream-to=${forkRemote}/${headRefName}`, localBranch])
           .catch(() => {});
       } else {
         // Same-repo: GitHub always exposes refs/pull/{N}/head on origin
-        await this.authCtx.exec(GIT_EXECUTABLE, [
+        await this.authCtx.exec('git', [
           'fetch',
           configuredRemote,
           `refs/pull/${prNumber}/head:refs/heads/${localBranch}`,
           '--force',
         ]);
         await this.ctx
-          .exec(GIT_EXECUTABLE, [
+          .exec('git', [
             'branch',
             `--set-upstream-to=${configuredRemote}/${headRefName}`,
             localBranch,
@@ -1483,7 +1450,7 @@ export class GitService implements GitProvider, IDisposable {
   ): Promise<Result<{ remotePushed: boolean }, RenameBranchError>> {
     let remoteName: string | undefined;
     try {
-      const { stdout } = await this.ctx.exec(GIT_EXECUTABLE, [
+      const { stdout } = await this.ctx.exec('git', [
         'config',
         '--get',
         `branch.${oldBranch}.remote`,
@@ -1492,7 +1459,7 @@ export class GitService implements GitProvider, IDisposable {
     } catch {}
 
     try {
-      await this.ctx.exec(GIT_EXECUTABLE, ['branch', '-m', oldBranch, newBranch]);
+      await this.ctx.exec('git', ['branch', '-m', oldBranch, newBranch]);
     } catch (error: unknown) {
       const stderr = (error as { stderr?: string })?.stderr || String(error);
       if (stderr.includes('already exists')) {
@@ -1503,10 +1470,10 @@ export class GitService implements GitProvider, IDisposable {
 
     if (remoteName) {
       try {
-        await this.authCtx.exec(GIT_EXECUTABLE, ['push', remoteName, '--delete', oldBranch]);
+        await this.authCtx.exec('git', ['push', remoteName, '--delete', oldBranch]);
       } catch {}
       try {
-        await this.authCtx.exec(GIT_EXECUTABLE, ['push', '-u', remoteName, newBranch]);
+        await this.authCtx.exec('git', ['push', '-u', remoteName, newBranch]);
       } catch (error: unknown) {
         const stderr = (error as { stderr?: string })?.stderr || String(error);
         return err({ type: 'remote_push_failed', message: stderr });
@@ -1519,7 +1486,7 @@ export class GitService implements GitProvider, IDisposable {
   async deleteBranch(branch: string, force = true): Promise<Result<void, DeleteBranchError>> {
     const flag = force ? '-D' : '-d';
     try {
-      await this.ctx.exec(GIT_EXECUTABLE, ['branch', flag, branch]);
+      await this.ctx.exec('git', ['branch', flag, branch]);
       return ok();
     } catch (error: unknown) {
       const stderr = (error as { stderr?: string })?.stderr || String(error);
@@ -1542,35 +1509,27 @@ export class GitService implements GitProvider, IDisposable {
 
   async detectInfo(): Promise<GitInfo> {
     try {
-      await this.ctx.exec(GIT_EXECUTABLE, ['rev-parse', '--is-inside-work-tree']);
+      await this.ctx.exec('git', ['rev-parse', '--is-inside-work-tree']);
     } catch {
       return { isGitRepo: false, baseRef: 'main', rootPath: this.ctx.root ?? '' };
     }
 
     let remoteName: string | undefined;
-    let remote: string | undefined;
     try {
-      const { stdout } = await this.ctx.exec(GIT_EXECUTABLE, ['remote']);
+      const { stdout } = await this.ctx.exec('git', ['remote']);
       const remotes = stdout.trim().split('\n').filter(Boolean);
       remoteName = remotes.includes('origin') ? 'origin' : remotes[0];
     } catch {}
 
-    if (remoteName) {
-      try {
-        const { stdout } = await this.ctx.exec(GIT_EXECUTABLE, ['remote', 'get-url', remoteName]);
-        remote = stdout.trim() || undefined;
-      } catch {}
-    }
-
     let branch: string | undefined;
     try {
-      const { stdout } = await this.ctx.exec(GIT_EXECUTABLE, ['branch', '--show-current']);
+      const { stdout } = await this.ctx.exec('git', ['branch', '--show-current']);
       branch = stdout.trim() || undefined;
     } catch {}
 
     if (!branch && remoteName) {
       try {
-        const { stdout } = await this.authCtx.exec(GIT_EXECUTABLE, ['remote', 'show', remoteName]);
+        const { stdout } = await this.authCtx.exec('git', ['remote', 'show', remoteName]);
         const match = /HEAD branch:\s*(\S+)/.exec(stdout);
         branch = match?.[1] ?? undefined;
       } catch {}
@@ -1578,21 +1537,19 @@ export class GitService implements GitProvider, IDisposable {
 
     let rootPath: string = this.ctx.root ?? '';
     try {
-      const { stdout } = await this.ctx.exec(GIT_EXECUTABLE, ['rev-parse', '--show-toplevel']);
+      const { stdout } = await this.ctx.exec('git', ['rev-parse', '--show-toplevel']);
       const trimmed = stdout.trim();
       if (trimmed) rootPath = trimmed;
     } catch {}
 
     return {
       isGitRepo: true,
-      remote,
-      branch,
       baseRef: computeBaseRef(undefined, remoteName, branch),
       rootPath,
     };
   }
 
   async initRepository(): Promise<void> {
-    await this.ctx.exec(GIT_EXECUTABLE, ['init']);
+    await this.ctx.exec('git', ['init']);
   }
 }
