@@ -10,7 +10,7 @@ import { horizontalListSortingStrategy, SortableContext, useSortable } from '@dn
 import { CSS as DndCSS } from '@dnd-kit/utilities';
 import { FileSearch, Loader2, MessageSquarePlus, X } from 'lucide-react';
 import { observer } from 'mobx-react-lite';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { formatConversationTitleForDisplay } from '@renderer/features/tasks/conversations/conversation-title-utils';
 import { GitChangeStatusIcon } from '@renderer/features/tasks/diff-view/changes-panel/components/changes-list-item';
 import type {
@@ -67,15 +67,76 @@ const ConversationTabItem = observer(function ConversationTabItem({
   onPin: () => void;
   onClose: () => void;
 }) {
+  const [isEditing, setIsEditing] = useState(false);
+  const cancelledRef = useRef(false);
+  const { conversations } = useProvisionedTask();
+
   const config = agentConfig[tab.store.data.providerId];
+  const rawTitle = tab.store.data.title ?? '';
   const title = formatConversationTitleForDisplay(tab.store.data.providerId, tab.store.data.title);
+
+  const submitRename = (next: string) => {
+    setIsEditing(false);
+    if (cancelledRef.current) {
+      cancelledRef.current = false;
+      return;
+    }
+    const trimmed = next.trim();
+    if (!trimmed || trimmed === rawTitle) return;
+    void conversations.renameConversation(tab.conversationId, trimmed);
+  };
+
+  const handleDoubleClick = () => {
+    if (tab.isPreview) {
+      onPin();
+    } else {
+      setIsEditing(true);
+    }
+  };
+
+  if (isEditing) {
+    return (
+      <>
+        <div
+          data-tabid={tab.tabId}
+          className={cn(
+            'flex h-full items-center bg-background-secondary px-2',
+            tab.isActive && 'bg-background-secondary-1'
+          )}
+          onPointerDown={(e) => e.stopPropagation()}
+        >
+          <input
+            className="w-32 rounded bg-background-1 px-1.5 py-0.5 text-sm text-foreground outline-none ring-1 ring-foreground/20 focus:ring-foreground/40"
+            defaultValue={rawTitle}
+            autoFocus
+            onFocus={(e) => e.currentTarget.select()}
+            onBlur={(e) => submitRename(e.currentTarget.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                submitRename(e.currentTarget.value);
+              } else if (e.key === 'Escape') {
+                e.preventDefault();
+                cancelledRef.current = true;
+                setIsEditing(false);
+              }
+            }}
+          />
+        </div>
+        <Separator orientation="vertical" />
+      </>
+    );
+  }
 
   return (
     <>
       <button
         onClick={onSelect}
-        onDoubleClick={onPin}
-        title={tab.isPreview ? `${title} (preview — double-click to keep)` : title}
+        onDoubleClick={handleDoubleClick}
+        title={
+          tab.isPreview
+            ? `${title} (preview — double-click to keep)`
+            : `${title} (double-click to rename)`
+        }
         data-tabid={tab.tabId}
         className={cn(
           'group relative flex h-full flex-col bg-background-secondary text-sm text-foreground-muted hover:bg-background-secondary-1/40',

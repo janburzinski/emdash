@@ -28,6 +28,7 @@ const ConversationRow = observer(function ConversationRow({
   conversationId: string;
 }) {
   const [isEditing, setIsEditing] = useState(false);
+  const cancelledRef = useRef(false);
   const provisioned = useProvisionedTask();
   const { tabManager } = provisioned.taskView;
   const showConfirm = useShowModal('confirmActionModal');
@@ -45,6 +46,10 @@ const ConversationRow = observer(function ConversationRow({
 
   const handleRenameSubmit = (newTitle: string) => {
     setIsEditing(false);
+    if (cancelledRef.current) {
+      cancelledRef.current = false;
+      return;
+    }
     void provisioned.conversations.renameConversation(conversationId, newTitle);
   };
 
@@ -84,6 +89,7 @@ const ConversationRow = observer(function ConversationRow({
                 setIsEditing(false);
               }
             } else if (e.key === 'Escape') {
+              cancelledRef.current = true;
               setIsEditing(false);
             }
           }}
