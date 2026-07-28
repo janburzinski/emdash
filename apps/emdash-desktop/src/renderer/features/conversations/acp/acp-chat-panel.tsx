@@ -49,6 +49,7 @@ import { useAgents } from '@renderer/lib/stores/use-agents';
 import { Button } from '@renderer/lib/ui/button';
 import { log } from '@renderer/utils/logger';
 import { linkedIssueMentionName, type LinkedIssue } from '@shared/core/linked-issue';
+import { nextDefaultConversationTitle } from '../conversation-title-utils';
 import type { AcpChatStore, AcpPromptAttachment } from './acp-chat-store';
 import type { AcpChatTabResource } from './acp-chat-tab-resource';
 import { chatViewCommandForShortcut, executeChatViewCommand } from './acp-chat-view-commands';
@@ -61,6 +62,13 @@ const ISSUE_SEARCH_MIN_LENGTH = 2;
 const ISSUE_SEARCH_LIMIT = 20;
 const SLASH_COMMANDS_SECTION = 'Commands';
 const SLASH_PROMPTS_SECTION = 'Prompts';
+const NEW_CHAT_COMMAND: CommandItem = {
+  id: 'new',
+  name: 'new',
+  label: 'New chat',
+  description: 'Start a new chat in a new tab',
+  behavior: 'execute',
+};
 
 function promptPreview(text: string): string {
   return text.split(/\r?\n/, 1)[0] ?? '';
@@ -230,8 +238,10 @@ const ComposerForStore = observer(function ComposerForStore({
   composerSlot: HTMLElement;
   onViewerOpen: (src?: string, alt?: string) => void;
 }) {
+  const { pane } = usePaneContext();
   const editorApiRef = useRef<PromptEditorRef | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const creatingConversationRef = useRef(false);
   const [attachments, setAttachments] = useState<ComposerAttachment[]>([]);
   const { value: promptLibrary } = usePromptLibrary();
 
@@ -548,7 +558,10 @@ const ComposerForStore = observer(function ComposerForStore({
   const querySlashItems = useCallback(
     async (query: string): Promise<CommandItem[]> => {
       const normalized = query.trim().toLowerCase();
-      const commands = store.commands
+      const commands = [
+        NEW_CHAT_COMMAND,
+        ...store.commands.filter((command) => command.name.toLowerCase() !== 'new'),
+      ]
         .filter((command) => commandMatchesQuery(command, normalized))
         .map((command) => ({
           ...command,
@@ -573,6 +586,51 @@ const ComposerForStore = observer(function ComposerForStore({
       return [...commands, ...prompts];
     },
     [store, promptLibrary]
+  );
+
+  const handleCommand = useCallback(
+    (command: CommandItem) => {
+      if (command.id !== NEW_CHAT_COMMAND.id || creatingConversationRef.current) return;
+
+      const conversationManager = conversationRegistry.get(store.taskId);
+      const currentConversation = conversationManager?.conversations.get(
+        store.conversationId
+      )?.data;
+      if (!conversationManager || !currentConversation) {
+        toast({ title: 'Failed to start a new chat', variant: 'destructive' });
+        return;
+      }
+
+      creatingConversationRef.current = true;
+      const conversationId = crypto.randomUUID();
+      const title = nextDefaultConversationTitle(
+        currentConversation.providerId,
+        Array.from(conversationManager.conversations.values(), (conversation) => conversation.data)
+      );
+
+      void conversationManager
+        .createConversation({
+          id: conversationId,
+          projectId: store.projectId,
+          taskId: store.taskId,
+          provider: currentConversation.providerId,
+          title,
+          autoApprove: currentConversation.autoApprove,
+          model: store.model ?? currentConversation.model,
+          type: 'acp',
+        })
+        .then(() => {
+          pane.open('acp-chat', { conversationId }, { preview: false });
+        })
+        .catch((error: unknown) => {
+          log.warn('Failed to create a new ACP chat from slash command', { error });
+          toast({ title: 'Failed to start a new chat', variant: 'destructive' });
+        })
+        .finally(() => {
+          creatingConversationRef.current = false;
+        });
+    },
+    [pane, store]
   );
 
   const a = store.affordances;
@@ -622,6 +680,7 @@ const ComposerForStore = observer(function ComposerForStore({
         mentionProvider={mentionProvider}
         renderMentionIcon={renderMentionIcon}
         queryCommands={querySlashItems}
+        onCommand={handleCommand}
         attachments={attachments}
         onAttachmentsChange={handleAttachmentsChange}
         onAttach={handleAttach}
