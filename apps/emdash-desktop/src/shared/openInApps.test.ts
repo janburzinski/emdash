@@ -2,6 +2,56 @@ import { describe, expect, it } from 'vitest';
 import { isValidOpenInAppId, OPEN_IN_APPS } from './openInApps';
 
 describe('OPEN_IN_APPS', () => {
+  it('opens Cursor folders in a new window on every platform', () => {
+    expect(OPEN_IN_APPS.cursor.platforms.darwin?.openCommands).toEqual([
+      'command -v cursor >/dev/null 2>&1 && cursor --new-window {{path}}',
+      'open -n -a "Cursor" {{path}}',
+    ]);
+    expect(OPEN_IN_APPS.cursor.platforms.win32?.openCommands).toEqual([
+      'cursor --new-window {{path}}',
+    ]);
+    expect(OPEN_IN_APPS.cursor.platforms.linux?.openCommands).toEqual([
+      'cursor --new-window {{path}}',
+    ]);
+  });
+
+  it('opens VS Code folders in a new window on every platform', () => {
+    expect(OPEN_IN_APPS.vscode.platforms.darwin?.openCommands).toContain(
+      'command -v code >/dev/null 2>&1 && code --new-window {{path}}'
+    );
+    expect(OPEN_IN_APPS.vscode.platforms.win32?.openCommands).toEqual([
+      'code --new-window {{path}}',
+      'code-insiders --new-window {{path}}',
+    ]);
+    expect(OPEN_IN_APPS.vscode.platforms.linux?.openCommands).toEqual([
+      'code --new-window {{path}}',
+      'code-insiders --new-window {{path}}',
+    ]);
+  });
+
+  it('opens VSCodium folders in a new window on every platform', () => {
+    expect(OPEN_IN_APPS.vscodium.platforms.darwin?.openCommands).toEqual([
+      'command -v codium >/dev/null 2>&1 && codium --new-window {{path}}',
+      'open -n -b com.vscodium --args {{path}}',
+      'open -n -a "VSCodium" {{path}}',
+    ]);
+    expect(OPEN_IN_APPS.vscodium.platforms.win32?.openCommands).toEqual([
+      'codium --new-window {{path}}',
+    ]);
+    expect(OPEN_IN_APPS.vscodium.platforms.linux?.openCommands).toEqual([
+      'codium --new-window {{path}}',
+    ]);
+  });
+
+  it('opens Zed folders in a new window on every platform', () => {
+    expect(OPEN_IN_APPS.zed.platforms.darwin?.openCommands).toEqual([
+      'command -v zed >/dev/null 2>&1 && zed --new {{path}}',
+      'open -n -a "Zed" {{path}}',
+    ]);
+    expect(OPEN_IN_APPS.zed.platforms.win32?.openCommands).toContain('zed --new {{path}}');
+    expect(OPEN_IN_APPS.zed.platforms.linux?.openCommands).toEqual(['zed --new {{path}}']);
+  });
+
   it('registers Kaku as an open-in terminal option', () => {
     expect(isValidOpenInAppId('kaku')).toBe(true);
     expect(OPEN_IN_APPS.kaku).toMatchObject({
